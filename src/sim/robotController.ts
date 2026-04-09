@@ -194,7 +194,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
       set({ currentCommandIndex: i });
 
-      const cmd = get().commandQueue[i];
+      const cmd = current.commandQueue[i];
       if (cmd.type === 'forward') get().moveForward();
       else if (cmd.type === 'backward') get().moveBackward();
       else if (cmd.type === 'left') get().turnLeft();
@@ -204,11 +204,13 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     }
 
     const wasRunning = get().robot.isRunningQueue;
+    const finalHealth = get().robot.health;
     set((s) => ({
       robot: { ...s.robot, isRunningQueue: false, isMoving: false },
       currentCommandIndex: null,
     }));
-    if (wasRunning && get().robot.health === 'ok') {
+    // Only show "queue finished" if nothing more urgent was already set by a move
+    if (wasRunning && finalHealth === 'ok') {
       set({ feedbackMessage: '✅ Queue finished!', feedbackType: 'info' });
     }
   },
