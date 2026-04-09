@@ -8,6 +8,7 @@ import LessonsSidebar from '@/components/LessonsSidebar';
 import SimFeedback from '@/components/SimFeedback';
 import TelemetryPanel from '@/components/TelemetryPanel';
 import SimSettings from '@/components/SimSettings';
+import EventLog from '@/components/EventLog';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
@@ -42,7 +43,7 @@ export default function SimulatorPage() {
           </div>
         </main>
 
-        {/* Right sidebar: controls + queue + settings + telemetry */}
+        {/* Right sidebar: controls + queue + settings + telemetry + event log */}
         <aside className="w-64 bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex flex-col gap-4">
           <div>
             <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Movement Controls</h3>
@@ -54,6 +55,8 @@ export default function SimulatorPage() {
           <SimSettings />
           <hr className="border-slate-700" />
           <TelemetryPanel />
+          <hr className="border-slate-700" />
+          <EventLog />
         </aside>
       </div>
     </div>
