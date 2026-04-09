@@ -64,9 +64,11 @@ function Obstacles() {
 
 function PulsingRing({ radius, color }: { radius: number; color: string }) {
   const meshRef = useRef<THREE.Mesh>(null);
-  useFrame(() => {
+  const elapsed = useRef(0);
+  useFrame((_, delta) => {
     if (!meshRef.current) return;
-    const t = Date.now() * 0.002;
+    elapsed.current += delta;
+    const t = elapsed.current * 2;
     meshRef.current.scale.setScalar(1 + 0.1 * Math.sin(t));
     (meshRef.current.material as THREE.MeshStandardMaterial).opacity = 0.4 + 0.3 * Math.sin(t);
   });

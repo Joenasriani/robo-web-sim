@@ -93,7 +93,7 @@ export default function LessonsSidebar() {
                         onClick={() => setActiveLesson(nextLesson.id)}
                         className="btn-green text-xs w-full"
                       >
-                        Next: {nextLesson.title.split(':')[0]} →
+                        Next: {nextLesson.title.split(':')[0] ?? nextLesson.title.slice(0, 20)} →
                       </button>
                     )}
                     <button onClick={restartLesson} className="btn-secondary text-xs w-full">

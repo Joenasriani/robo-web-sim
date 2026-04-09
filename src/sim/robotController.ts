@@ -104,8 +104,15 @@ function saveCompletedLessons(lessons: string[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(lessons));
 }
 
+function makeInitialRobot(): RobotState {
+  return {
+    ...INITIAL_ROBOT_STATE,
+    sensors: computeSensors(INITIAL_ROBOT_STATE, DEFAULT_ARENA),
+  };
+}
+
 export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
-  robot: { ...INITIAL_ROBOT_STATE },
+  robot: makeInitialRobot(),
   arena: DEFAULT_ARENA,
   commandQueue: [],
   currentCommandIndex: null,
@@ -146,7 +153,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
   resetRobot: () =>
     set(() => ({
-      robot: { ...INITIAL_ROBOT_STATE },
+      robot: makeInitialRobot(),
       currentCommandIndex: null,
     })),
 
@@ -241,7 +248,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
   restartLesson: () => {
     set({
-      robot: { ...INITIAL_ROBOT_STATE },
+      robot: makeInitialRobot(),
       commandQueue: [],
       currentCommandIndex: null,
       feedbackMessage: '',
