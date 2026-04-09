@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+@layer components {
+  .btn-control {
+    @apply bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+  }
+  .btn-secondary {
+    @apply bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+  }
+  .btn-green {
+    @apply bg-green-700 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+  }
+  .btn-yellow {
+    @apply bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+  }
+  .btn-red {
+    @apply bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+  }
+  .btn-small {
+    @apply bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-2 py-1 rounded transition-colors;
+  }
+}

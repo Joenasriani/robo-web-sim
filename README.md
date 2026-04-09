@@ -1,2 +1,175 @@
-# robo-web-sim
-Robot simulation
+# RoboWebSim 🤖
+
+A beginner-friendly, browser-based robotics simulator for interactive learning and research. Control a virtual robot in a 3D arena, queue commands for automated sequences, and work through guided lessons — all directly in your browser.
+
+---
+
+## Overview
+
+RoboWebSim is an educational robotics simulation platform that runs entirely in the browser. It is designed for beginners learning robot movement, navigation, and simple autonomous behavior. No software installation is required beyond a web browser.
+
+## Webots Inspiration
+
+This project is inspired by [Webots](https://cyberbotics.com/), an open-source desktop robot simulator. Webots is used only as a **conceptual reference** for:
+
+- The separation of robot state, controller, and world (arena) configuration
+- The structure of beginner-friendly simulation workflows
+- How sensors, actuators, and controllers are modularly organized
+
+**RoboWebSim is entirely original**: no Webots code, branding, UI, assets, or documentation has been copied. This is a web-first product built from scratch with Next.js and Three.js.
+
+## What Is Original
+
+- Browser-first architecture (no desktop app, no install)
+- Original 3D robot and arena design built with React Three Fiber
+- Custom simulation engine (motion, collision, command queue)
+- Original lesson content and progression system
+- localStorage-based progress persistence
+- Custom Zustand-based state management for all simulation state
+
+---
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| 🤖 3D Arena | Interactive Three.js arena with grid floor, walls, obstacles, target |
+| 🎮 Direct Control | Arrow keys or on-screen D-pad for real-time robot movement |
+| 📋 Command Queue | Build sequences of forward/backward/left/right/wait commands and run automatically |
+| 📚 Guided Lessons | 3 beginner lessons on navigation, turning, and obstacle avoidance |
+| ✅ Progress Tracking | Lesson completion state saved to localStorage |
+| 🎨 Collision Feedback | Robot changes color when hitting an obstacle or reaching a target |
+| 🔄 Pause/Resume/Stop | Full queue execution control |
+
+---
+
+## Local Setup
+
+### Prerequisites
+
+- Node.js 18 or newer
+- npm (comes with Node.js)
+
+### Install
+
+```bash
+git clone https://github.com/Joenasriani/robo-web-sim.git
+cd robo-web-sim
+npm install
+```
+
+### Run (development)
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Build (production)
+
+```bash
+npm run build
+npm start
+```
+
+---
+
+## Vercel Deployment
+
+1. Push the repository to GitHub (already done)
+2. Go to [vercel.com](https://vercel.com) and import the repository
+3. Framework will be auto-detected as **Next.js**
+4. No environment variables are required for the MVP
+5. Click **Deploy**
+
+The app is fully static-compatible and will be served via Vercel's CDN.
+
+---
+
+## Routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page with product intro and navigation |
+| `/simulator` | 3D simulator with robot controls, command queue, and lessons sidebar |
+| `/lessons` | Full lessons page with progress tracking |
+
+---
+
+## Keyboard Controls
+
+| Key | Action |
+|-----|--------|
+| `↑` | Move forward |
+| `↓` | Move backward |
+| `←` | Turn left |
+| `→` | Turn right |
+
+---
+
+## Project Structure
+
+```
+robo-web-sim/
+├── src/
+│   ├── app/              # Next.js App Router pages
+│   │   ├── page.tsx      # Landing page (/)
+│   │   ├── simulator/    # Simulator page (/simulator)
+│   │   └── lessons/      # Lessons page (/lessons)
+│   ├── components/       # React UI components
+│   │   ├── Arena3D.tsx   # Three.js 3D scene
+│   │   ├── RobotControls.tsx
+│   │   ├── CommandQueue.tsx
+│   │   └── LessonsSidebar.tsx
+│   ├── sim/              # Simulation core modules
+│   │   ├── robotState.ts
+│   │   ├── arenaConfig.ts
+│   │   ├── motionSystem.ts
+│   │   ├── collisionHelpers.ts
+│   │   ├── commandExecution.ts
+│   │   └── robotController.ts  # Zustand store
+│   ├── lessons/          # Lesson content data
+│   └── configs/          # Simulator configuration
+├── docs/                 # Documentation
+├── examples/             # Example arena configs
+├── scripts/              # Utility scripts
+└── public/               # Static assets
+```
+
+---
+
+## Current Limitations
+
+- Arena configuration is static (not editable at runtime via UI)
+- No undo for individual command queue items (only remove-last or clear-all)
+- Robot movement is grid-step-based (not continuous physics)
+- No save/load for command sequences
+- Lessons sidebar is hidden on screens narrower than `lg` breakpoint (1024px)
+- No touch/mobile controls yet
+
+---
+
+## Roadmap
+
+Priority order for future upgrades:
+
+1. **Responsive / mobile controls** — Touch-friendly D-pad, better layout on small screens
+2. **Editable arena** — Drag-and-drop obstacles and target placement
+3. **Save/load command sequences** — Export and import command programs as JSON
+4. **More lessons** — Sensor simulation, grid navigation, pathfinding
+5. **Physics engine** — Rapier.js integration for realistic collisions and dynamics
+6. **Blockly integration** — Visual programming for command sequences
+7. **Telemetry panel** — Live robot position, rotation, and speed display
+8. **Multiple robot types** — Different shapes, sizes, and movement capabilities
+9. **Lesson authoring** — User-created lessons with custom objectives
+10. **Multiplayer / collaborative mode** — Two robots, cooperative challenges
+
+---
+
+## Documentation
+
+- [Quick Start Guide](docs/QUICKSTART.md)
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [Lessons Reference](docs/LESSONS.md)
+- [Implementation Notes](IMPLEMENTATION_NOTES.md)

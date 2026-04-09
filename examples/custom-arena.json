@@ -1,0 +1,37 @@
+{
+  "description": "Example custom arena configuration for RoboWebSim",
+  "note": "This file shows the shape of ArenaConfig. Future UI will allow loading these directly.",
+  "arena": {
+    "size": 10,
+    "wallColor": "#334155",
+    "floorColor": "#0f172a",
+    "obstacles": [
+      {
+        "id": "obs1",
+        "position": [2, 0.5, 1],
+        "size": [1, 1, 1],
+        "color": "#ef4444"
+      },
+      {
+        "id": "obs2",
+        "position": [-2, 0.5, -2],
+        "size": [1, 1, 1],
+        "color": "#f97316"
+      },
+      {
+        "id": "obs3",
+        "position": [0, 0.5, 2],
+        "size": [2, 1, 0.5],
+        "color": "#ef4444"
+      }
+    ],
+    "targets": [
+      {
+        "id": "target1",
+        "position": [3, 0.05, 3],
+        "radius": 0.5,
+        "color": "#22c55e"
+      }
+    ]
+  }
+}
