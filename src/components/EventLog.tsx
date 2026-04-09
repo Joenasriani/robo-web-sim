@@ -3,9 +3,9 @@
 import { useSimulatorStore, EventEntry } from '@/sim/robotController';
 
 const TYPE_DOT: Record<EventEntry['type'], string> = {
-  info:    'bg-blue-500',
+  info: 'bg-blue-500',
   success: 'bg-green-500',
-  error:   'bg-red-500',
+  error: 'bg-red-500',
   warning: 'bg-yellow-500',
 };
 

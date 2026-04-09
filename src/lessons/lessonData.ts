@@ -14,8 +14,8 @@ export interface Lesson {
   steps: LessonStep[];
   successCondition: string;
   hint: string;
-  /** Robot's starting pose for this lesson; used by restartLesson for deterministic reset. */
-  startPose: LessonStartPose;
+  /** Robot's starting pose for this lesson; used by restartLesson for deterministic reset. Falls back to INITIAL_ROBOT_STATE if omitted. */
+  startPose?: LessonStartPose;
 }
 
 export const LESSONS: Lesson[] = [
