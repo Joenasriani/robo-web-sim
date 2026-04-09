@@ -1,6 +1,6 @@
 'use client';
 
-import { useSimulatorStore } from '@/sim/robotController';
+import { useSimulatorStore, LessonStatus } from '@/sim/robotController';
 
 function TelRow({ label, value, color = 'text-slate-200' }: { label: string; value: string; color?: string }) {
   return (
@@ -27,11 +27,27 @@ const SIM_STATE_COLORS: Record<string, string> = {
   blocked: 'text-red-400',
 };
 
+const LESSON_STATUS_LABELS: Record<LessonStatus, string> = {
+  not_started: 'Not Started',
+  in_progress: 'In Progress',
+  completed:   'Completed',
+  failed:      'Failed',
+};
+
+const LESSON_STATUS_COLORS: Record<LessonStatus, string> = {
+  not_started: 'text-slate-500',
+  in_progress: 'text-blue-400',
+  completed:   'text-green-400',
+  failed:      'text-red-400',
+};
+
 export default function TelemetryPanel() {
   const robot = useSimulatorStore((s) => s.robot);
   const commandQueue = useSimulatorStore((s) => s.commandQueue);
   const currentCommandIndex = useSimulatorStore((s) => s.currentCommandIndex);
   const simState = useSimulatorStore((s) => s.simState);
+  const activeLesson = useSimulatorStore((s) => s.activeLesson);
+  const lessonStatus = useSimulatorStore((s) => s.lessonStatus);
 
   const currentCmd = currentCommandIndex !== null ? commandQueue[currentCommandIndex] : null;
   const remaining =
@@ -49,10 +65,17 @@ export default function TelemetryPanel() {
         <TelRow label="Z" value={robot.position.z.toFixed(2)} />
         <TelRow label="Heading" value={`${headingDeg.toFixed(1)}°`} />
         <TelRow
-          label="State"
+          label="Sim State"
           value={SIM_STATE_LABELS[simState] ?? simState}
           color={SIM_STATE_COLORS[simState] ?? 'text-slate-400'}
         />
+        {activeLesson && (
+          <TelRow
+            label="Lesson"
+            value={LESSON_STATUS_LABELS[lessonStatus]}
+            color={LESSON_STATUS_COLORS[lessonStatus]}
+          />
+        )}
         <TelRow label="Command" value={currentCmd?.label ?? '—'} />
         <TelRow label="Remaining" value={`${remaining}`} />
         <div className="border-t border-slate-700 my-1" />
