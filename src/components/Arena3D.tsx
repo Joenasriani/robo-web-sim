@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, Box, Cylinder } from '@react-three/drei';
+import { OrbitControls, Grid, Box, Cylinder, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { useSimulatorStore } from '@/sim/robotController';
 
@@ -26,10 +26,11 @@ function Robot() {
       <Box args={[0.5, 0.4, 0.6]} castShadow>
         <meshStandardMaterial color={bodyColor} />
       </Box>
-      {/* Head indicator (direction arrow) */}
-      <Box args={[0.15, 0.15, 0.25]} position={[0, 0.1, -0.35]} castShadow>
+      {/* Forward direction cone */}
+      <mesh position={[0, 0.1, 0.4]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
+        <coneGeometry args={[0.07, 0.2, 8]} />
         <meshStandardMaterial color="#facc15" />
-      </Box>
+      </mesh>
       {/* Wheels */}
       <Cylinder args={[0.12, 0.12, 0.1, 16]} position={[-0.3, -0.2, 0.2]} rotation={[0, 0, Math.PI / 2]} castShadow>
         <meshStandardMaterial color="#1e293b" />
@@ -60,17 +61,105 @@ function Obstacles() {
   );
 }
 
+
+function PulsingRing({ radius, color }: { radius: number; color: string }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const elapsed = useRef(0);
+  useFrame((_, delta) => {
+    if (!meshRef.current) return;
+    elapsed.current += delta;
+    const t = elapsed.current * 2;
+    meshRef.current.scale.setScalar(1 + 0.1 * Math.sin(t));
+    (meshRef.current.material as THREE.MeshStandardMaterial).opacity = 0.4 + 0.3 * Math.sin(t);
+  });
+  return (
+    <mesh ref={meshRef} receiveShadow>
+      <cylinderGeometry args={[radius + 0.15, radius + 0.15, 0.02, 32]} />
+      <meshStandardMaterial color={color} transparent opacity={0.5} />
+    </mesh>
+  );
+}
+
 function Targets() {
   const arena = useSimulatorStore((s) => s.arena);
+  const health = useSimulatorStore((s) => s.robot.health);
   return (
     <>
       {arena.targets.map((target) => (
         <group key={target.id} position={target.position}>
           <Cylinder args={[target.radius, target.radius, 0.05, 32]} receiveShadow>
-            <meshStandardMaterial color={target.color} transparent opacity={0.8} />
+            <meshStandardMaterial
+              color={health === 'reached_target' ? '#86efac' : target.color}
+              transparent
+              opacity={0.8}
+            />
           </Cylinder>
+          <PulsingRing radius={target.radius} color={target.color} />
         </group>
       ))}
+    </>
+  );
+}
+
+function SensorRays() {
+  const robot = useSimulatorStore((s) => s.robot);
+  const { x, y, z } = robot.position;
+  const rot = robot.rotation;
+  const sensors = robot.sensors;
+
+  const origin: [number, number, number] = [x, y, z];
+
+  const FRONT_LEN = Math.min(sensors.frontDistance, 3);
+  const SIDE_LEN = 1.2;
+
+  const frontEnd: [number, number, number] = [
+    x + Math.sin(rot) * FRONT_LEN,
+    y,
+    z + Math.cos(rot) * FRONT_LEN,
+  ];
+
+  const leftAngle = rot - Math.PI / 4;
+  const leftEnd: [number, number, number] = [
+    x + Math.sin(leftAngle) * SIDE_LEN,
+    y,
+    z + Math.cos(leftAngle) * SIDE_LEN,
+  ];
+
+  const rightAngle = rot + Math.PI / 4;
+  const rightEnd: [number, number, number] = [
+    x + Math.sin(rightAngle) * SIDE_LEN,
+    y,
+    z + Math.cos(rightAngle) * SIDE_LEN,
+  ];
+
+  const frontColor =
+    sensors.frontDistance < 1.5
+      ? '#ef4444'
+      : sensors.frontDistance < 2.5
+      ? '#f97316'
+      : '#00ff88';
+  const leftColor = sensors.leftObstacle ? '#f97316' : '#facc15';
+  const rightColor = sensors.rightObstacle ? '#f97316' : '#facc15';
+
+  return (
+    <>
+      <Line points={[origin, frontEnd]} color={frontColor} lineWidth={1.5} />
+      <Line
+        points={[origin, leftEnd]}
+        color={leftColor}
+        lineWidth={1}
+        dashed
+        dashSize={0.1}
+        gapSize={0.05}
+      />
+      <Line
+        points={[origin, rightEnd]}
+        color={rightColor}
+        lineWidth={1}
+        dashed
+        dashSize={0.1}
+        gapSize={0.05}
+      />
     </>
   );
 }
@@ -134,6 +223,7 @@ export default function Arena3D() {
       <Obstacles />
       <Targets />
       <Robot />
+      <SensorRays />
 
       <OrbitControls makeDefault minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.1} />
     </Canvas>
