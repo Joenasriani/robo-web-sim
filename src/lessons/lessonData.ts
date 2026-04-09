@@ -11,8 +11,10 @@ export interface LessonStartPose {
 
 /**
  * Data-driven success conditions for a lesson.
- * All enabled flags must be satisfied for the lesson to be auto-completed.
- * Any single flag set to `true` acts as an OR check — all `true` flags must pass together.
+ * ALL enabled flags must be satisfied simultaneously for the lesson to be
+ * auto-completed (AND semantics).  A flag set to `true` means that condition
+ * is required; omitting a flag (or setting it to `false`) means it is not
+ * checked.  Every enabled flag must pass — there is no OR shortcut.
  */
 export interface CompletionRules {
   /** Robot must physically reach the target zone. */

@@ -1,6 +1,7 @@
 'use client';
 
 import { useSimulatorStore, LessonStatus } from '@/sim/robotController';
+import { FREE_PLAY_SCENARIOS } from '@/scenarios';
 
 function TelRow({ label, value, color = 'text-slate-200' }: { label: string; value: string; color?: string }) {
   return (
@@ -48,6 +49,7 @@ export default function TelemetryPanel() {
   const simState = useSimulatorStore((s) => s.simState);
   const activeLesson = useSimulatorStore((s) => s.activeLesson);
   const lessonStatus = useSimulatorStore((s) => s.lessonStatus);
+  const activeScenarioId = useSimulatorStore((s) => s.activeScenarioId);
 
   const currentCmd = currentCommandIndex !== null ? commandQueue[currentCommandIndex] : null;
   const remaining =
@@ -56,6 +58,11 @@ export default function TelemetryPanel() {
       : commandQueue.length;
 
   const headingDeg = (((robot.rotation * 180) / Math.PI) % 360 + 360) % 360;
+
+  const isFreePlay = activeLesson === null;
+  const currentScenario = isFreePlay
+    ? FREE_PLAY_SCENARIOS.find((s) => s.id === activeScenarioId)
+    : null;
 
   return (
     <div className="flex flex-col gap-2">
@@ -69,7 +76,15 @@ export default function TelemetryPanel() {
           value={SIM_STATE_LABELS[simState] ?? simState}
           color={SIM_STATE_COLORS[simState] ?? 'text-slate-400'}
         />
-        {activeLesson && (
+        <TelRow
+          label="Mode"
+          value={isFreePlay ? 'Free Play' : 'Lesson'}
+          color={isFreePlay ? 'text-blue-400' : 'text-yellow-400'}
+        />
+        {isFreePlay && currentScenario && (
+          <TelRow label="Scenario" value={currentScenario.title} />
+        )}
+        {!isFreePlay && activeLesson && (
           <TelRow
             label="Lesson"
             value={LESSON_STATUS_LABELS[lessonStatus]}

@@ -31,7 +31,8 @@ src/
 │   ├── RobotControls.tsx # D-pad buttons + play/pause/stop
 │   ├── CommandQueue.tsx  # Command builder + queue list + run/clear controls
 │   ├── LessonsSidebar.tsx # Collapsible lesson list with status + completion rules
-│   ├── TelemetryPanel.tsx # Numeric readouts + sim state + lesson status
+│   ├── ScenarioSelector.tsx # Free-play scenario chooser with metadata panel
+│   ├── TelemetryPanel.tsx # Numeric readouts + sim state + mode + scenario/lesson status
 │   ├── EventLog.tsx      # Chronological event ring-buffer panel
 │   ├── SimFeedback.tsx   # Overlay feedback toast
 │   └── SimSettings.tsx   # Speed / step sliders
@@ -49,8 +50,9 @@ src/
 │
 ├── scenarios/            # Arena loader + importable example scenarios
 │   ├── arenaLoader.ts    # mergeArena(base, overrides) + arenaForLesson() helper
-│   ├── index.ts          # Barrel export for all scenarios
+│   ├── index.ts          # Barrel export for all scenarios + FREE_PLAY_SCENARIOS registry
 │   └── examples/
+│       ├── defaultArenaScenario.ts  # Beginner: default sandbox arena
 │       ├── straightLineScenario.ts  # Beginner: clear straight path to target
 │       └── mazeLiteScenario.ts      # Intermediate: three-obstacle corridor
 │
@@ -80,7 +82,7 @@ Data-driven arena assembly:
 ### `lessons/lessonData.ts`
 Each `Lesson` now carries:
 - `arenaOverrides?: ArenaOverrides` — per-lesson obstacle/target layout
-- `completionRules?: CompletionRules` — explicit success conditions:
+- `completionRules?: CompletionRules` — explicit success conditions (AND semantics: **all** enabled flags must pass):
   - `reachTarget` — robot must reach the target zone
   - `avoidCollision` — robot must not hit any obstacle
   - `makeAtLeastOneTurn` — robot must turn at least once
@@ -109,6 +111,10 @@ The single source of truth for all simulator state. New in PR #4:
 - Auto-completes lessons when all `CompletionRules` are satisfied
 - Auto-fails lessons when `avoidCollision` is required and a collision occurs
 
+Added in PR #5:
+- `activeScenarioId: string | null` — ID of the active free-play scenario (`null` when a lesson is running)
+- `loadScenario(id)` — loads a free-play scenario by ID: resets arena, robot pose, queue, lesson state, and logs an event
+
 ## Lesson Status Lifecycle
 
 ```
@@ -135,20 +141,22 @@ User Input (key / button)
        │
        ▼
 useSimulatorStore action
-  (moveForward, addCommand, etc.)
+  (moveForward, addCommand, loadScenario, etc.)
        │
        ▼
 Zustand State Update
   + lesson-rule evaluation
-  + arena = mergeArena(DEFAULT_ARENA, lesson.arenaOverrides)
+  + arena = mergeArena(DEFAULT_ARENA, lesson.arenaOverrides)   [lesson mode]
+  + arena = scenario.arena                                     [free-play mode]
        │
        ▼
 React re-render
   ├── Arena3D (useFrame reads robot state each frame)
   ├── RobotControls (reads robot.health, robot.isRunningQueue)
   ├── CommandQueue (reads commandQueue, currentCommandIndex)
+  ├── ScenarioSelector (reads activeScenarioId, activeLesson; calls loadScenario)
   ├── LessonsSidebar (reads completedLessons, lessonStatus, completionRules)
-  └── TelemetryPanel (reads simState, lessonStatus)
+  └── TelemetryPanel (reads simState, activeScenarioId, activeLesson, lessonStatus)
 ```
 
 ## 3D Rendering
@@ -165,14 +173,21 @@ Lesson completion is stored in `localStorage` under the key `robo-web-sim-comple
 
 ## Scenario Examples
 
-Two importable scenarios live in `src/scenarios/examples/`:
+Three importable free-play scenarios live in `src/scenarios/examples/` and are registered in `FREE_PLAY_SCENARIOS`:
 
-| Scenario | ID | Description |
-|----------|----|-------------|
-| `straightLineScenario` | `example-straight-line` | Clear path; press Forward to win |
-| `mazeLiteScenario` | `example-maze-lite` | Three-obstacle corridor requiring turns |
+| Scenario | ID | Difficulty | Description |
+|----------|----|------------|-------------|
+| `defaultArenaScenario` | `default-arena` | beginner | Default sandbox: two obstacles, one target |
+| `straightLineScenario` | `example-straight-line` | beginner | Clear path; press Forward to win |
+| `mazeLiteScenario` | `example-maze-lite` | intermediate | Three-obstacle corridor requiring turns |
 
-These are self-contained `ScenarioExample` objects (startPose + arena) ready for future UI-level scenario loading.
+Each `ScenarioExample` carries: `id`, `title`, `description`, `difficulty`, `startPose`, and a full `arena`.
+`loadScenario(id)` in the Zustand store switches the active arena + robot pose, clears lesson state, and logs an event.
+
+The `ScenarioSelector` component (left sidebar) exposes all `FREE_PLAY_SCENARIOS` with:
+- Metadata preview: description, target count, obstacle count, arena size, difficulty badge
+- A "Load Scenario" button that calls `loadScenario`
+- Clear visual distinction between **Free Play** mode (scenario active) and **Lesson** mode
 
 ## Tech Stack Summary
 

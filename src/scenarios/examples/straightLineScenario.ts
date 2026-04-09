@@ -12,6 +12,8 @@ export interface ScenarioExample {
   id: string;
   title: string;
   description: string;
+  /** Recommended difficulty level for this scenario. */
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
   startPose: LessonStartPose;
   arena: ArenaConfig;
 }
@@ -21,6 +23,7 @@ export const straightLineScenario: ScenarioExample = {
   title: 'Straight-Line Approach',
   description:
     'Clear path to the target — press Forward repeatedly until you reach the green circle.',
+  difficulty: 'beginner',
   startPose: {
     position: { x: 0, y: 0.25, z: 0 },
     rotation: 0,
