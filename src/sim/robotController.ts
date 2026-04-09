@@ -1,8 +1,15 @@
 import { create } from 'zustand';
 import { RobotState, INITIAL_ROBOT_STATE } from './robotState';
 import { ArenaConfig, DEFAULT_ARENA } from './arenaConfig';
-import { moveForward, moveBackward, turnLeft, turnRight } from './motionSystem';
-import { checkCollisions } from './collisionHelpers';
+import {
+  moveForward as mF,
+  moveBackward as mB,
+  turnLeft as tL,
+  turnRight as tR,
+  DEFAULT_MOVE_STEP,
+  DEFAULT_TURN_STEP,
+} from './motionSystem';
+import { checkCollisions, computeSensors } from './collisionHelpers';
 import { Command, CommandType, createCommand } from './commandExecution';
 
 export interface SimulatorStore {
@@ -11,6 +18,18 @@ export interface SimulatorStore {
   commandQueue: Command[];
   currentCommandIndex: number | null;
   completedLessons: string[];
+
+  // Settings
+  simSpeed: number;
+  moveStep: number;
+  turnStep: number;
+
+  // Feedback
+  feedbackMessage: string;
+  feedbackType: 'info' | 'success' | 'error' | 'warning';
+
+  // Active lesson
+  activeLesson: string | null;
 
   // Robot controls
   moveForward: () => void;
@@ -31,12 +50,41 @@ export interface SimulatorStore {
   // Lessons
   completeLesson: (lessonId: string) => void;
   resetLessonProgress: () => void;
+
+  // Settings setters
+  setSimSpeed: (speed: number) => void;
+  setMoveStep: (step: number) => void;
+  setTurnStep: (step: number) => void;
+
+  // Feedback
+  setFeedback: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
+  clearFeedback: () => void;
+
+  // Lesson helpers
+  setActiveLesson: (id: string | null) => void;
+  restartLesson: () => void;
+  restartQueue: () => void;
 }
 
-function applyMove(current: RobotState, mover: (s: RobotState) => Partial<RobotState>, arena: ArenaConfig): RobotState {
+function applyMove(
+  current: RobotState,
+  mover: (s: RobotState) => Partial<RobotState>,
+  arena: ArenaConfig
+): RobotState {
   const next = { ...current, ...mover(current) };
   const health = checkCollisions(next, arena);
-  return { ...next, health };
+  const sensors = computeSensors({ ...next, health }, arena);
+  return { ...next, health, sensors };
+}
+
+function feedbackForHealth(
+  health: RobotState['health'],
+  prevMessage: string,
+  prevType: SimulatorStore['feedbackType']
+): { feedbackMessage: string; feedbackType: SimulatorStore['feedbackType'] } {
+  if (health === 'hit_obstacle') return { feedbackMessage: '💥 Collision detected!', feedbackType: 'error' };
+  if (health === 'reached_target') return { feedbackMessage: '🎯 Target reached!', feedbackType: 'success' };
+  return { feedbackMessage: prevMessage, feedbackType: prevType };
 }
 
 const STORAGE_KEY = 'robo-web-sim-completed-lessons';
@@ -63,32 +111,65 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   currentCommandIndex: null,
   completedLessons: loadCompletedLessons(),
 
-  moveForward: () => set((s) => ({ robot: applyMove(s.robot, moveForward, s.arena) })),
-  moveBackward: () => set((s) => ({ robot: applyMove(s.robot, moveBackward, s.arena) })),
-  turnLeft: () => set((s) => ({ robot: applyMove(s.robot, turnLeft, s.arena) })),
-  turnRight: () => set((s) => ({ robot: applyMove(s.robot, turnRight, s.arena) })),
+  simSpeed: 1,
+  moveStep: DEFAULT_MOVE_STEP,
+  turnStep: DEFAULT_TURN_STEP,
 
-  resetRobot: () => set(() => ({
-    robot: { ...INITIAL_ROBOT_STATE },
-    currentCommandIndex: null,
-  })),
+  feedbackMessage: '',
+  feedbackType: 'info',
 
-  pauseRobot: () => set((s) => ({
-    robot: { ...s.robot, isPaused: !s.robot.isPaused },
-  })),
+  activeLesson: null,
 
-  stopRobot: () => set((s) => ({
-    robot: { ...s.robot, isRunningQueue: false, isPaused: false, isMoving: false },
-    currentCommandIndex: null,
-  })),
+  moveForward: () =>
+    set((s) => {
+      const robot = applyMove(s.robot, (r) => mF(r, s.moveStep), s.arena);
+      return { robot, ...feedbackForHealth(robot.health, s.feedbackMessage, s.feedbackType) };
+    }),
 
-  addCommand: (type) => set((s) => ({
-    commandQueue: [...s.commandQueue, createCommand(type)],
-  })),
+  moveBackward: () =>
+    set((s) => {
+      const robot = applyMove(s.robot, (r) => mB(r, s.moveStep), s.arena);
+      return { robot, ...feedbackForHealth(robot.health, s.feedbackMessage, s.feedbackType) };
+    }),
 
-  removeLastCommand: () => set((s) => ({
-    commandQueue: s.commandQueue.slice(0, -1),
-  })),
+  turnLeft: () =>
+    set((s) => {
+      const robot = applyMove(s.robot, (r) => tL(r, s.turnStep), s.arena);
+      return { robot, ...feedbackForHealth(robot.health, s.feedbackMessage, s.feedbackType) };
+    }),
+
+  turnRight: () =>
+    set((s) => {
+      const robot = applyMove(s.robot, (r) => tR(r, s.turnStep), s.arena);
+      return { robot, ...feedbackForHealth(robot.health, s.feedbackMessage, s.feedbackType) };
+    }),
+
+  resetRobot: () =>
+    set(() => ({
+      robot: { ...INITIAL_ROBOT_STATE },
+      currentCommandIndex: null,
+    })),
+
+  pauseRobot: () =>
+    set((s) => ({
+      robot: { ...s.robot, isPaused: !s.robot.isPaused },
+    })),
+
+  stopRobot: () =>
+    set((s) => ({
+      robot: { ...s.robot, isRunningQueue: false, isPaused: false, isMoving: false },
+      currentCommandIndex: null,
+    })),
+
+  addCommand: (type) =>
+    set((s) => ({
+      commandQueue: [...s.commandQueue, createCommand(type)],
+    })),
+
+  removeLastCommand: () =>
+    set((s) => ({
+      commandQueue: s.commandQueue.slice(0, -1),
+    })),
 
   clearQueue: () => set({ commandQueue: [], currentCommandIndex: null }),
 
@@ -105,7 +186,6 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       const current = get();
       if (!current.robot.isRunningQueue) break;
 
-      // Wait if paused
       while (get().robot.isPaused) {
         await new Promise((r) => setTimeout(r, 100));
         if (!get().robot.isRunningQueue) break;
@@ -114,20 +194,23 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
       set({ currentCommandIndex: i });
 
-      const cmd = current.commandQueue[i];
+      const cmd = get().commandQueue[i];
       if (cmd.type === 'forward') get().moveForward();
       else if (cmd.type === 'backward') get().moveBackward();
       else if (cmd.type === 'left') get().turnLeft();
       else if (cmd.type === 'right') get().turnRight();
-      // wait: just delay
 
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, Math.round(600 / get().simSpeed)));
     }
 
+    const wasRunning = get().robot.isRunningQueue;
     set((s) => ({
       robot: { ...s.robot, isRunningQueue: false, isMoving: false },
       currentCommandIndex: null,
     }));
+    if (wasRunning && get().robot.health === 'ok') {
+      set({ feedbackMessage: '✅ Queue finished!', feedbackType: 'info' });
+    }
   },
 
   completeLesson: (lessonId) => {
@@ -141,5 +224,35 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   resetLessonProgress: () => {
     saveCompletedLessons([]);
     set({ completedLessons: [] });
+  },
+
+  setSimSpeed: (speed) => set({ simSpeed: speed }),
+  setMoveStep: (step) => set({ moveStep: step }),
+  setTurnStep: (step) => set({ turnStep: step }),
+
+  setFeedback: (message, type = 'info') =>
+    set({ feedbackMessage: message, feedbackType: type }),
+
+  clearFeedback: () => set({ feedbackMessage: '' }),
+
+  setActiveLesson: (id) => set({ activeLesson: id }),
+
+  restartLesson: () => {
+    set({
+      robot: { ...INITIAL_ROBOT_STATE },
+      commandQueue: [],
+      currentCommandIndex: null,
+      feedbackMessage: '',
+    });
+  },
+
+  restartQueue: () => {
+    const store = get();
+    if (store.commandQueue.length === 0) return;
+    set((s) => ({
+      robot: { ...s.robot, isRunningQueue: false, isPaused: false, isMoving: false },
+      currentCommandIndex: null,
+    }));
+    setTimeout(() => get().runQueue(), 50);
   },
 }));

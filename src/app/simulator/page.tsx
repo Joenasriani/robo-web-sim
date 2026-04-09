@@ -5,6 +5,9 @@ import Link from 'next/link';
 import RobotControls from '@/components/RobotControls';
 import CommandQueue from '@/components/CommandQueue';
 import LessonsSidebar from '@/components/LessonsSidebar';
+import SimFeedback from '@/components/SimFeedback';
+import TelemetryPanel from '@/components/TelemetryPanel';
+import SimSettings from '@/components/SimSettings';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
@@ -33,12 +36,13 @@ export default function SimulatorPage() {
         {/* 3D Canvas */}
         <main className="flex-1 relative">
           <Arena3D />
+          <SimFeedback />
           <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none">
             Drag to orbit • Scroll to zoom • Right-drag to pan
           </div>
         </main>
 
-        {/* Right sidebar: controls + queue */}
+        {/* Right sidebar: controls + queue + settings + telemetry */}
         <aside className="w-64 bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex flex-col gap-4">
           <div>
             <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Movement Controls</h3>
@@ -46,6 +50,10 @@ export default function SimulatorPage() {
           </div>
           <hr className="border-slate-700" />
           <CommandQueue />
+          <hr className="border-slate-700" />
+          <SimSettings />
+          <hr className="border-slate-700" />
+          <TelemetryPanel />
         </aside>
       </div>
     </div>

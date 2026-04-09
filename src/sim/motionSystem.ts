@@ -1,32 +1,36 @@
 import { RobotState } from './robotState';
 
-export const MOVE_STEP = 0.5;
-export const TURN_STEP = Math.PI / 8;
+export const DEFAULT_MOVE_STEP = 0.5;
+export const DEFAULT_TURN_STEP = Math.PI / 8;
 
-export function moveForward(state: RobotState): Partial<RobotState> {
+// Backward-compat aliases
+export const MOVE_STEP = DEFAULT_MOVE_STEP;
+export const TURN_STEP = DEFAULT_TURN_STEP;
+
+export function moveForward(state: RobotState, step: number = DEFAULT_MOVE_STEP): Partial<RobotState> {
   return {
     position: {
-      x: state.position.x + Math.sin(state.rotation) * MOVE_STEP,
+      x: state.position.x + Math.sin(state.rotation) * step,
       y: state.position.y,
-      z: state.position.z + Math.cos(state.rotation) * MOVE_STEP,
+      z: state.position.z + Math.cos(state.rotation) * step,
     },
   };
 }
 
-export function moveBackward(state: RobotState): Partial<RobotState> {
+export function moveBackward(state: RobotState, step: number = DEFAULT_MOVE_STEP): Partial<RobotState> {
   return {
     position: {
-      x: state.position.x - Math.sin(state.rotation) * MOVE_STEP,
+      x: state.position.x - Math.sin(state.rotation) * step,
       y: state.position.y,
-      z: state.position.z - Math.cos(state.rotation) * MOVE_STEP,
+      z: state.position.z - Math.cos(state.rotation) * step,
     },
   };
 }
 
-export function turnLeft(state: RobotState): Partial<RobotState> {
-  return { rotation: state.rotation - TURN_STEP };
+export function turnLeft(state: RobotState, step: number = DEFAULT_TURN_STEP): Partial<RobotState> {
+  return { rotation: state.rotation - step };
 }
 
-export function turnRight(state: RobotState): Partial<RobotState> {
-  return { rotation: state.rotation + TURN_STEP };
+export function turnRight(state: RobotState, step: number = DEFAULT_TURN_STEP): Partial<RobotState> {
+  return { rotation: state.rotation + step };
 }
