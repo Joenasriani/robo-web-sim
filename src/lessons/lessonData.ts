@@ -2,6 +2,11 @@ export interface LessonStep {
   instruction: string;
 }
 
+export interface LessonStartPose {
+  position: { x: number; y: number; z: number };
+  rotation: number; // radians, Y-axis
+}
+
 export interface Lesson {
   id: string;
   title: string;
@@ -9,6 +14,8 @@ export interface Lesson {
   steps: LessonStep[];
   successCondition: string;
   hint: string;
+  /** Robot's starting pose for this lesson; used by restartLesson for deterministic reset. Falls back to INITIAL_ROBOT_STATE if omitted. */
+  startPose?: LessonStartPose;
 }
 
 export const LESSONS: Lesson[] = [
@@ -23,6 +30,7 @@ export const LESSONS: Lesson[] = [
     ],
     successCondition: 'Robot reaches the green target marker.',
     hint: 'The target is ahead and to the right. Move forward several steps then turn right.',
+    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
   },
   {
     id: 'lesson-2',
@@ -35,6 +43,7 @@ export const LESSONS: Lesson[] = [
     ],
     successCondition: 'Robot reaches the target after making at least one turn.',
     hint: 'Try turning right first, then move forward several steps.',
+    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
   },
   {
     id: 'lesson-3',
@@ -47,5 +56,6 @@ export const LESSONS: Lesson[] = [
     ],
     successCondition: 'Robot reaches the target without hitting any obstacles.',
     hint: 'Try moving forward a couple steps, turning left to go around the red box, then turning right and heading for the target.',
+    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
   },
 ];

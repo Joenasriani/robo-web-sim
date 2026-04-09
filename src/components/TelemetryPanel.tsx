@@ -11,10 +11,27 @@ function TelRow({ label, value, color = 'text-slate-200' }: { label: string; val
   );
 }
 
+const SIM_STATE_LABELS: Record<string, string> = {
+  idle: 'Idle',
+  running: 'Running',
+  paused: 'Paused',
+  completed: 'Completed',
+  blocked: 'Blocked',
+};
+
+const SIM_STATE_COLORS: Record<string, string> = {
+  idle: 'text-slate-400',
+  running: 'text-green-400',
+  paused: 'text-yellow-400',
+  completed: 'text-green-300',
+  blocked: 'text-red-400',
+};
+
 export default function TelemetryPanel() {
   const robot = useSimulatorStore((s) => s.robot);
   const commandQueue = useSimulatorStore((s) => s.commandQueue);
   const currentCommandIndex = useSimulatorStore((s) => s.currentCommandIndex);
+  const simState = useSimulatorStore((s) => s.simState);
 
   const currentCmd = currentCommandIndex !== null ? commandQueue[currentCommandIndex] : null;
   const remaining =
@@ -24,18 +41,6 @@ export default function TelemetryPanel() {
 
   const headingDeg = (((robot.rotation * 180) / Math.PI) % 360 + 360) % 360;
 
-  const statusStr = robot.isRunningQueue
-    ? robot.isPaused
-      ? 'Paused'
-      : 'Running'
-    : 'Stopped';
-
-  const statusColor = robot.isRunningQueue
-    ? robot.isPaused
-      ? 'text-yellow-400'
-      : 'text-green-400'
-    : 'text-slate-400';
-
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Telemetry</h3>
@@ -43,7 +48,11 @@ export default function TelemetryPanel() {
         <TelRow label="X" value={robot.position.x.toFixed(2)} />
         <TelRow label="Z" value={robot.position.z.toFixed(2)} />
         <TelRow label="Heading" value={`${headingDeg.toFixed(1)}°`} />
-        <TelRow label="Status" value={statusStr} color={statusColor} />
+        <TelRow
+          label="State"
+          value={SIM_STATE_LABELS[simState] ?? simState}
+          color={SIM_STATE_COLORS[simState] ?? 'text-slate-400'}
+        />
         <TelRow label="Command" value={currentCmd?.label ?? '—'} />
         <TelRow label="Remaining" value={`${remaining}`} />
         <div className="border-t border-slate-700 my-1" />
