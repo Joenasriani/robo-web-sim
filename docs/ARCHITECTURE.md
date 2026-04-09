@@ -30,18 +30,29 @@ src/
 │   ├── Arena3D.tsx       # Three.js 3D scene (Robot, Obstacles, Targets, Walls)
 │   ├── RobotControls.tsx # D-pad buttons + play/pause/stop
 │   ├── CommandQueue.tsx  # Command builder + queue list + run/clear controls
-│   └── LessonsSidebar.tsx # Collapsible lesson list with completion state
+│   ├── LessonsSidebar.tsx # Collapsible lesson list with status + completion rules
+│   ├── TelemetryPanel.tsx # Numeric readouts + sim state + lesson status
+│   ├── EventLog.tsx      # Chronological event ring-buffer panel
+│   ├── SimFeedback.tsx   # Overlay feedback toast
+│   └── SimSettings.tsx   # Speed / step sliders
 │
 ├── sim/                  # Simulation core (pure logic, no UI)
 │   ├── robotState.ts     # RobotState type + INITIAL_ROBOT_STATE constant
-│   ├── arenaConfig.ts    # Obstacle/Target/ArenaConfig types + DEFAULT_ARENA
+│   ├── arenaConfig.ts    # Obstacle/Target/ArenaConfig/ArenaOverrides types + DEFAULT_ARENA
 │   ├── motionSystem.ts   # moveForward, moveBackward, turnLeft, turnRight
 │   ├── collisionHelpers.ts # AABB obstacle collision, radius target detection, wall check
 │   ├── commandExecution.ts # CommandType enum + Command type + createCommand factory
 │   └── robotController.ts  # Zustand store (SimulatorStore) — wires everything together
 │
 ├── lessons/
-│   └── lessonData.ts     # LESSONS array (id, title, objective, steps, successCondition, hint)
+│   └── lessonData.ts     # LESSONS array with CompletionRules + ArenaOverrides per lesson
+│
+├── scenarios/            # Arena loader + importable example scenarios
+│   ├── arenaLoader.ts    # mergeArena(base, overrides) + arenaForLesson() helper
+│   ├── index.ts          # Barrel export for all scenarios
+│   └── examples/
+│       ├── straightLineScenario.ts  # Beginner: clear straight path to target
+│       └── mazeLiteScenario.ts      # Intermediate: three-obstacle corridor
 │
 └── configs/
     └── simulatorConfig.ts # Constants (move step, turn step, camera position, delay)
@@ -59,6 +70,21 @@ Defines the shape of the robot's runtime state:
 ### `arenaConfig.ts`
 Static configuration for the simulation world:
 - `DEFAULT_ARENA`: two red obstacles, one green circular target, 10×10 arena
+- `ArenaOverrides`: partial override type (size, obstacles, targets, colors)
+
+### `scenarios/arenaLoader.ts`
+Data-driven arena assembly:
+- `mergeArena(base, overrides)` — shallow-merges overrides on top of a base `ArenaConfig`
+- `arenaForLesson(lesson)` — convenience wrapper: `mergeArena(DEFAULT_ARENA, lesson?.arenaOverrides)`
+
+### `lessons/lessonData.ts`
+Each `Lesson` now carries:
+- `arenaOverrides?: ArenaOverrides` — per-lesson obstacle/target layout
+- `completionRules?: CompletionRules` — explicit success conditions:
+  - `reachTarget` — robot must reach the target zone
+  - `avoidCollision` — robot must not hit any obstacle
+  - `makeAtLeastOneTurn` — robot must turn at least once
+  - `completeQueue` — command queue must run to completion
 
 ### `motionSystem.ts`
 Pure functions that take `RobotState` and return a partial state diff:
@@ -74,11 +100,33 @@ Pure functions that take `RobotState` and return a partial state diff:
 Defines `CommandType` and the `Command` interface. `createCommand(type)` generates a command with a unique id and display label.
 
 ### `robotController.ts` (Zustand store)
-The single source of truth for all simulator state. Exposes:
-- Robot movement methods (call motionSystem + collisionHelpers)
-- Queue management methods (add, removeLastCommand, clearQueue)
-- `runQueue()` — async loop with 600ms delay per command, supports pause/stop
-- Lesson completion (with localStorage persistence)
+The single source of truth for all simulator state. New in PR #4:
+- `lessonStatus: LessonStatus` — `'not_started' | 'in_progress' | 'completed' | 'failed'`
+- `hasTurned: boolean` — tracks whether the robot has turned (feeds `makeAtLeastOneTurn` rule)
+- `queueEverCompleted: boolean` — tracks whether the queue ran to completion (feeds `completeQueue` rule)
+- `setActiveLesson(id)` — now also applies the lesson's arena overrides and resets the robot pose
+- `restartLesson()` — restores lesson-specific arena + robot pose + clears completion-rule trackers
+- Auto-completes lessons when all `CompletionRules` are satisfied
+- Auto-fails lessons when `avoidCollision` is required and a collision occurs
+
+## Lesson Status Lifecycle
+
+```
+setActiveLesson(id)
+       │
+       ▼
+ lessonStatus = 'not_started'
+       │
+  (first action)
+       ▼
+ lessonStatus = 'in_progress'
+       │
+  ┌────┴─────────────┐
+  │ avoidCollision   │ all rules satisfied
+  │ + collision      │
+  ▼                  ▼
+'failed'         'completed'
+```
 
 ## Data Flow
 
@@ -91,13 +139,16 @@ useSimulatorStore action
        │
        ▼
 Zustand State Update
+  + lesson-rule evaluation
+  + arena = mergeArena(DEFAULT_ARENA, lesson.arenaOverrides)
        │
        ▼
 React re-render
   ├── Arena3D (useFrame reads robot state each frame)
   ├── RobotControls (reads robot.health, robot.isRunningQueue)
   ├── CommandQueue (reads commandQueue, currentCommandIndex)
-  └── LessonsSidebar (reads completedLessons, robot.health)
+  ├── LessonsSidebar (reads completedLessons, lessonStatus, completionRules)
+  └── TelemetryPanel (reads simState, lessonStatus)
 ```
 
 ## 3D Rendering
@@ -111,6 +162,17 @@ Arena3D is **dynamically imported** in the simulator page with `ssr: false` to p
 ## State Persistence
 
 Lesson completion is stored in `localStorage` under the key `robo-web-sim-completed-lessons`. All localStorage access is guarded with `typeof window !== 'undefined'` for SSR compatibility.
+
+## Scenario Examples
+
+Two importable scenarios live in `src/scenarios/examples/`:
+
+| Scenario | ID | Description |
+|----------|----|-------------|
+| `straightLineScenario` | `example-straight-line` | Clear path; press Forward to win |
+| `mazeLiteScenario` | `example-maze-lite` | Three-obstacle corridor requiring turns |
+
+These are self-contained `ScenarioExample` objects (startPose + arena) ready for future UI-level scenario loading.
 
 ## Tech Stack Summary
 

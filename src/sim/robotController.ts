@@ -11,10 +11,14 @@ import {
 } from './motionSystem';
 import { checkCollisions, computeSensors } from './collisionHelpers';
 import { Command, CommandType, createCommand } from './commandExecution';
-import { LESSONS } from '@/lessons/lessonData';
+import { LESSONS, Lesson, CompletionRules } from '@/lessons/lessonData';
+import { arenaForLesson } from '@/scenarios/arenaLoader';
 
 // Explicit simulator state enum
 export type SimState = 'idle' | 'running' | 'paused' | 'completed' | 'blocked';
+
+// Lesson-level status
+export type LessonStatus = 'not_started' | 'in_progress' | 'completed' | 'failed';
 
 // Event log entry
 export interface EventEntry {
@@ -33,6 +37,43 @@ function makeEvent(message: string, type: EventEntry['type']): EventEntry {
 
 // Module-level run ID — incremented on each runQueue call to cancel stale loops
 let _currentRunId = 0;
+
+// ---------------------------------------------------------------------------
+// Completion-rule helpers
+// ---------------------------------------------------------------------------
+
+/** Resolve effective completion rules for a lesson. Defaults to { reachTarget: true }. */
+function effectiveRules(lesson: Lesson | undefined): CompletionRules {
+  return lesson?.completionRules ?? { reachTarget: true };
+}
+
+/**
+ * Evaluate whether a lesson is completed or failed given the current robot
+ * health, turn history and queue-completion history.
+ */
+function evaluateCompletion(
+  lesson: Lesson | undefined,
+  robotHealth: RobotState['health'],
+  hasTurned: boolean,
+  queueEverCompleted: boolean,
+): { completed: boolean; failed: boolean } {
+  const rules = effectiveRules(lesson);
+
+  // Failure: collision occurred while avoidCollision is required
+  if (rules.avoidCollision && robotHealth === 'hit_obstacle') {
+    return { completed: false, failed: true };
+  }
+
+  const reachTargetOk       = !rules.reachTarget       || robotHealth === 'reached_target';
+  const avoidCollisionOk    = !rules.avoidCollision     || robotHealth !== 'hit_obstacle';
+  const makeAtLeastOneTurnOk = !rules.makeAtLeastOneTurn || hasTurned;
+  const completeQueueOk     = !rules.completeQueue      || queueEverCompleted;
+
+  return {
+    completed: reachTargetOk && avoidCollisionOk && makeAtLeastOneTurnOk && completeQueueOk,
+    failed: false,
+  };
+}
 
 export interface SimulatorStore {
   robot: RobotState;
@@ -59,6 +100,13 @@ export interface SimulatorStore {
 
   // Active lesson
   activeLesson: string | null;
+
+  // Lesson-level status
+  lessonStatus: LessonStatus;
+
+  // Completion-rule tracking
+  hasTurned: boolean;
+  queueEverCompleted: boolean;
 
   // Robot controls
   moveForward: () => void;
@@ -149,17 +197,55 @@ function makeInitialRobot(): RobotState {
   };
 }
 
-// Build a robot starting at a lesson-specific pose (if provided)
-function makeRobotForLesson(lesson: (typeof LESSONS)[number] | undefined): RobotState {
+// Build a robot starting at a lesson-specific pose (if provided), using the lesson's arena.
+function makeRobotForLesson(lesson: Lesson | undefined, arena: ArenaConfig): RobotState {
   if (lesson?.startPose) {
     const base: RobotState = {
       ...INITIAL_ROBOT_STATE,
       position: lesson.startPose.position,
       rotation: lesson.startPose.rotation,
     };
-    return { ...base, sensors: computeSensors(base, DEFAULT_ARENA) };
+    return { ...base, sensors: computeSensors(base, arena) };
   }
-  return makeInitialRobot();
+  return {
+    ...INITIAL_ROBOT_STATE,
+    sensors: computeSensors(INITIAL_ROBOT_STATE, arena),
+  };
+}
+
+/**
+ * Compute the new lessonStatus and completedLessons list after a robot action.
+ * Pass `turnedThisStep = true` when a turn was just executed.
+ */
+function applyLessonStatusUpdate(
+  activeLesson: string | null,
+  prevLessonStatus: LessonStatus,
+  prevCompletedLessons: string[],
+  robotHealth: RobotState['health'],
+  hasTurned: boolean,
+  queueEverCompleted: boolean,
+): { lessonStatus: LessonStatus; completedLessons: string[] } {
+  // Once completed, stay completed
+  if (prevLessonStatus === 'completed') {
+    return { lessonStatus: 'completed', completedLessons: prevCompletedLessons };
+  }
+
+  const activeLessonObj = LESSONS.find((l) => l.id === activeLesson);
+  const { completed, failed } = evaluateCompletion(activeLessonObj, robotHealth, hasTurned, queueEverCompleted);
+
+  const lessonStatus: LessonStatus =
+    completed ? 'completed'
+    : failed ? 'failed'
+    : activeLesson ? 'in_progress'
+    : prevLessonStatus;
+
+  let completedLessons = prevCompletedLessons;
+  if (completed && activeLesson && !completedLessons.includes(activeLesson)) {
+    completedLessons = [...completedLessons, activeLesson];
+    saveCompletedLessons(completedLessons);
+  }
+
+  return { lessonStatus, completedLessons };
 }
 
 export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
@@ -181,6 +267,9 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   eventLog: [],
 
   activeLesson: null,
+  lessonStatus: 'not_started',
+  hasTurned: false,
+  queueEverCompleted: false,
 
   moveForward: () =>
     set((s) => {
@@ -194,7 +283,12 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         robot.health === 'hit_obstacle' ? makeEvent('💥 Collision!', 'error')
         : robot.health === 'reached_target' ? makeEvent('🎯 Target reached!', 'success')
         : makeEvent('Moved forward', 'info');
-      return { robot, ...healthFeedback, simState: newSimState, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG) };
+
+      const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
+        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, s.hasTurned, s.queueEverCompleted,
+      );
+
+      return { robot, ...healthFeedback, simState: newSimState, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG), lessonStatus: newLessonStatus, completedLessons };
     }),
 
   moveBackward: () =>
@@ -209,7 +303,12 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         robot.health === 'hit_obstacle' ? makeEvent('💥 Collision!', 'error')
         : robot.health === 'reached_target' ? makeEvent('🎯 Target reached!', 'success')
         : makeEvent('Moved backward', 'info');
-      return { robot, ...healthFeedback, simState: newSimState, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG) };
+
+      const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
+        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, s.hasTurned, s.queueEverCompleted,
+      );
+
+      return { robot, ...healthFeedback, simState: newSimState, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG), lessonStatus: newLessonStatus, completedLessons };
     }),
 
   turnLeft: () =>
@@ -224,7 +323,13 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         robot.health === 'hit_obstacle' ? makeEvent('💥 Collision!', 'error')
         : robot.health === 'reached_target' ? makeEvent('🎯 Target reached!', 'success')
         : makeEvent('Turned left', 'info');
-      return { robot, ...healthFeedback, simState: newSimState, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG) };
+
+      const hasTurned = true;
+      const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
+        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, hasTurned, s.queueEverCompleted,
+      );
+
+      return { robot, ...healthFeedback, simState: newSimState, hasTurned, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG), lessonStatus: newLessonStatus, completedLessons };
     }),
 
   turnRight: () =>
@@ -239,7 +344,13 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         robot.health === 'hit_obstacle' ? makeEvent('💥 Collision!', 'error')
         : robot.health === 'reached_target' ? makeEvent('🎯 Target reached!', 'success')
         : makeEvent('Turned right', 'info');
-      return { robot, ...healthFeedback, simState: newSimState, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG) };
+
+      const hasTurned = true;
+      const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
+        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, hasTurned, s.queueEverCompleted,
+      );
+
+      return { robot, ...healthFeedback, simState: newSimState, hasTurned, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG), lessonStatus: newLessonStatus, completedLessons };
     }),
 
   resetRobot: () =>
@@ -297,6 +408,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     set((s) => ({
       robot: { ...s.robot, isRunningQueue: true, isPaused: false },
       simState: 'running',
+      lessonStatus: s.activeLesson && s.lessonStatus === 'not_started' ? 'in_progress' : s.lessonStatus,
       eventLog: [...s.eventLog, makeEvent('▶ Queue started', 'info')].slice(-MAX_EVENT_LOG),
     }));
 
@@ -342,11 +454,22 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       : finalHealth === 'reached_target' ? 'completed'
       : 'idle';
 
-    set((s) => ({
-      robot: { ...s.robot, isRunningQueue: false, isMoving: false },
-      currentCommandIndex: null,
-      simState: finalSimState,
-    }));
+    // Mark queue as ever-completed (ran to end without being stopped)
+    const queueEverCompleted = true;
+
+    set((s) => {
+      const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
+        s.activeLesson, s.lessonStatus, s.completedLessons, finalHealth, s.hasTurned, queueEverCompleted,
+      );
+      return {
+        robot: { ...s.robot, isRunningQueue: false, isMoving: false },
+        currentCommandIndex: null,
+        simState: finalSimState,
+        queueEverCompleted,
+        lessonStatus: newLessonStatus,
+        completedLessons,
+      };
+    });
 
     // Only show "queue finished" if nothing more urgent is already showing
     if (wasRunning && finalHealth === 'ok') {
@@ -367,7 +490,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     if (current.includes(lessonId)) return;
     const updated = [...current, lessonId];
     saveCompletedLessons(updated);
-    set({ completedLessons: updated });
+    set({ completedLessons: updated, lessonStatus: 'completed' });
   },
 
   resetLessonProgress: () => {
@@ -393,20 +516,45 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       eventLog: [...s.eventLog, makeEvent(message, type)].slice(-MAX_EVENT_LOG),
     })),
 
-  setActiveLesson: (id) => set({ activeLesson: id }),
+  setActiveLesson: (id) => {
+    const lesson = LESSONS.find((l) => l.id === id);
+    const arena = arenaForLesson(lesson);
+    const robot = makeRobotForLesson(lesson, arena);
+    set((s) => ({
+      activeLesson: id,
+      arena,
+      robot,
+      commandQueue: [],
+      currentCommandIndex: null,
+      simState: 'idle',
+      feedbackMessage: '',
+      feedbackPriority: 'low',
+      hasTurned: false,
+      queueEverCompleted: false,
+      lessonStatus: id === null ? 'not_started' : (s.completedLessons.includes(id) ? 'completed' : 'not_started'),
+      eventLog: id
+        ? [...s.eventLog, makeEvent(`📖 Lesson started: ${lesson?.title ?? id}`, 'info')].slice(-MAX_EVENT_LOG)
+        : s.eventLog,
+    }));
+  },
 
   restartLesson: () => {
     // Increment runId to cancel any in-flight queue loop
     ++_currentRunId;
     const activeId = get().activeLesson;
     const lesson = LESSONS.find((l) => l.id === activeId);
+    const arena = arenaForLesson(lesson);
     set((s) => ({
-      robot: makeRobotForLesson(lesson),
+      robot: makeRobotForLesson(lesson, arena),
+      arena,
       commandQueue: [],
       currentCommandIndex: null,
       feedbackMessage: '',
       feedbackPriority: 'low',
       simState: 'idle',
+      hasTurned: false,
+      queueEverCompleted: false,
+      lessonStatus: 'not_started',
       eventLog: [...s.eventLog, makeEvent('🔄 Lesson restarted', 'info')].slice(-MAX_EVENT_LOG),
     }));
   },

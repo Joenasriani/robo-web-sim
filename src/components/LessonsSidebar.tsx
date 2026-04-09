@@ -1,11 +1,34 @@
 'use client';
 
-import { useSimulatorStore } from '@/sim/robotController';
+import { useSimulatorStore, LessonStatus } from '@/sim/robotController';
 import { LESSONS } from '@/lessons/lessonData';
+
+const STATUS_LABEL: Record<LessonStatus, string> = {
+  not_started: 'Not Started',
+  in_progress: 'In Progress',
+  completed:   'Completed',
+  failed:      'Failed',
+};
+
+const STATUS_COLOR: Record<LessonStatus, string> = {
+  not_started: 'text-slate-500',
+  in_progress: 'text-blue-400',
+  completed:   'text-green-400',
+  failed:      'text-red-400',
+};
+
+const STATUS_DOT: Record<LessonStatus, string> = {
+  not_started: 'bg-slate-600',
+  in_progress: 'bg-blue-500',
+  completed:   'bg-green-500',
+  failed:      'bg-red-500',
+};
 
 export default function LessonsSidebar() {
   const completedLessons = useSimulatorStore((s) => s.completedLessons);
   const activeLesson = useSimulatorStore((s) => s.activeLesson);
+  const lessonStatus = useSimulatorStore((s) => s.lessonStatus);
+  const hasTurned = useSimulatorStore((s) => s.hasTurned);
   const robot = useSimulatorStore((s) => s.robot);
   const completeLesson = useSimulatorStore((s) => s.completeLesson);
   const setActiveLesson = useSimulatorStore((s) => s.setActiveLesson);
@@ -19,6 +42,8 @@ export default function LessonsSidebar() {
         const isActive = activeLesson === lesson.id;
         const canComplete = robot.health === 'reached_target' && !isComplete;
         const nextLesson = LESSONS[lessonIndex + 1];
+        // Resolve the current status for this lesson card
+        const status: LessonStatus = isActive ? lessonStatus : isComplete ? 'completed' : 'not_started';
 
         return (
           <div
@@ -62,6 +87,14 @@ export default function LessonsSidebar() {
             {/* Expanded content */}
             {isActive && (
               <div className="px-3 pb-3 space-y-2">
+                {/* Lesson status badge */}
+                <div className="flex items-center gap-1.5">
+                  <span className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT[status]}`} />
+                  <span className={`text-xs font-semibold ${STATUS_COLOR[status]}`}>
+                    {STATUS_LABEL[status]}
+                  </span>
+                </div>
+
                 <p className="text-xs text-slate-300 leading-relaxed">{lesson.objective}</p>
 
                 <div>
@@ -81,6 +114,40 @@ export default function LessonsSidebar() {
                   {lesson.successCondition}
                 </p>
 
+                {lesson.completionRules && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 mb-1">Rules:</p>
+                    <ul className="space-y-0.5">
+                      {lesson.completionRules.reachTarget && (
+                        <li className="text-xs text-slate-400 flex items-center gap-1">
+                          <span className={robot.health === 'reached_target' ? 'text-green-400' : 'text-slate-500'}>
+                            {robot.health === 'reached_target' ? '✓' : '○'}
+                          </span> Reach the target
+                        </li>
+                      )}
+                      {lesson.completionRules.avoidCollision && (
+                        <li className="text-xs text-slate-400 flex items-center gap-1">
+                          <span className={robot.health === 'hit_obstacle' ? 'text-red-400' : 'text-slate-500'}>
+                            {robot.health === 'hit_obstacle' ? '✗' : '○'}
+                          </span> Avoid all obstacles
+                        </li>
+                      )}
+                      {lesson.completionRules.makeAtLeastOneTurn && (
+                        <li className="text-xs text-slate-400 flex items-center gap-1">
+                          <span className={hasTurned ? 'text-green-400' : 'text-slate-500'}>
+                            {hasTurned ? '✓' : '○'}
+                          </span> Turn at least once
+                        </li>
+                      )}
+                      {lesson.completionRules.completeQueue && (
+                        <li className="text-xs text-slate-400 flex items-center gap-1">
+                          <span className="text-slate-500">○</span> Complete the queue
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+
                 <p className="text-xs text-slate-500 italic">💡 {lesson.hint}</p>
 
                 {isComplete ? (
@@ -98,6 +165,15 @@ export default function LessonsSidebar() {
                     )}
                     <button onClick={restartLesson} className="btn-secondary text-xs w-full">
                       🔄 Restart Lesson
+                    </button>
+                  </div>
+                ) : status === 'failed' ? (
+                  <div className="space-y-1">
+                    <div className="text-xs text-red-400 font-semibold bg-red-900/20 rounded px-2 py-1 text-center">
+                      ❌ Lesson Failed — try again!
+                    </div>
+                    <button onClick={restartLesson} className="btn-secondary text-xs w-full">
+                      🔄 Restart
                     </button>
                   </div>
                 ) : canComplete ? (

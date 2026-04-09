@@ -20,6 +20,15 @@ export interface ArenaConfig {
   floorColor: string;
 }
 
+/** Partial override applied on top of DEFAULT_ARENA for a specific lesson or scenario. */
+export interface ArenaOverrides {
+  size?: number;
+  obstacles?: Obstacle[];
+  targets?: Target[];
+  wallColor?: string;
+  floorColor?: string;
+}
+
 export const DEFAULT_ARENA: ArenaConfig = {
   size: 10,
   obstacles: [
