@@ -13,6 +13,7 @@ export default function SimSettings() {
   const restartQueue = useSimulatorStore((s) => s.restartQueue);
   const commandQueue = useSimulatorStore((s) => s.commandQueue);
   const isRunning = useSimulatorStore((s) => s.robot.isRunningQueue);
+  const activeLesson = useSimulatorStore((s) => s.activeLesson);
 
   return (
     <div className="flex flex-col gap-3">
@@ -64,13 +65,18 @@ export default function SimSettings() {
       </label>
 
       <div className="flex flex-col gap-1">
-        <button onClick={restartLesson} className="btn-secondary text-xs w-full">
-          🔄 Reset Lesson
+        <button
+          onClick={restartLesson}
+          className="btn-secondary text-xs w-full"
+          title={activeLesson ? 'Restart the current lesson' : 'Reset robot pose and clear feedback'}
+        >
+          🔄 {activeLesson ? 'Reset Lesson' : 'Reset Robot'}
         </button>
         <button
           onClick={restartQueue}
           disabled={isRunning || commandQueue.length === 0}
           className="btn-secondary text-xs w-full"
+          title={commandQueue.length === 0 ? 'Add commands first' : isRunning ? 'Stop queue first' : 'Reset robot and replay the queue from the start'}
         >
           ↩ Restart Queue
         </button>

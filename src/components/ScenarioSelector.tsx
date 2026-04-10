@@ -87,6 +87,12 @@ export default function ScenarioSelector() {
           )}
         </div>
 
+        {!isFreePlay && (
+          <p className="text-xs text-slate-500 italic leading-relaxed">
+            A lesson is active. Expand a scenario below to preview and load it.
+          </p>
+        )}
+
         {FREE_PLAY_SCENARIOS.map((scenario) => {
           const isActive   = isFreePlay && activeScenarioId === scenario.id;
           const isExpanded = expanded === scenario.id;

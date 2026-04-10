@@ -37,6 +37,20 @@ export default function MobileTabPanel() {
       {/* Expandable panel — max 50vh so canvas is still visible */}
       {activeTab && (
         <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[50vh] p-3">
+          {/* Panel header with close button */}
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+              {TABS.find((t) => t.id === activeTab)?.label}
+            </span>
+            <button
+              onClick={() => setActiveTab(null)}
+              aria-label="Close panel"
+              className="text-slate-500 hover:text-white text-xs leading-none transition-colors p-1 -mr-1 touch-manipulation"
+            >
+              ✕ Close
+            </button>
+          </div>
+
           {activeTab === 'controls' && (
             <div className="flex flex-col gap-4">
               <RobotControls />

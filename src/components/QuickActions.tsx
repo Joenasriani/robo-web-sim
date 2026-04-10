@@ -22,7 +22,7 @@ export default function QuickActions() {
             onClick={() => activeScenarioId && loadScenario(activeScenarioId)}
             disabled={!activeScenarioId}
             className="btn-small disabled:opacity-40"
-            title="Reset current scenario (robot pose, queue, feedback)"
+            title={activeScenarioId ? 'Reset robot pose, queue, and feedback' : 'No scenario selected'}
           >
             🔄 Reset
           </button>
@@ -30,7 +30,7 @@ export default function QuickActions() {
             onClick={replayFromStart}
             disabled={!activeScenarioId || !hasQueue}
             className="btn-small disabled:opacity-40"
-            title="Reset robot to start pose and replay the current queue"
+            title={!activeScenarioId ? 'No scenario selected' : !hasQueue ? 'Add commands to the queue first' : 'Reset robot to start pose and replay the queue'}
           >
             ↩ Replay
           </button>
@@ -38,11 +38,16 @@ export default function QuickActions() {
             onClick={() => loadScenario('default-arena')}
             disabled={activeScenarioId === 'default-arena'}
             className="btn-small disabled:opacity-40"
-            title="Back to Default Arena"
+            title={activeScenarioId === 'default-arena' ? 'Already on default arena' : 'Back to Default Arena'}
           >
             🏠 Default
           </button>
         </div>
+        {!hasQueue && activeScenarioId && (
+          <p className="text-[10px] text-slate-600 italic mt-0.5">
+            Add commands to enable Replay.
+          </p>
+        )}
       </div>
     );
   }
@@ -55,7 +60,7 @@ export default function QuickActions() {
           onClick={restartLesson}
           disabled={!activeLesson}
           className="btn-small disabled:opacity-40"
-          title="Restart lesson (resets robot, queue, feedback)"
+          title="Restart lesson: resets robot, queue, and feedback"
         >
           🔄 Restart
         </button>
@@ -63,11 +68,16 @@ export default function QuickActions() {
           onClick={replayFromStart}
           disabled={!activeLesson || !hasQueue}
           className="btn-small disabled:opacity-40"
-          title="Reset robot to lesson start pose and replay the current queue"
+          title={!hasQueue ? 'Add commands to the queue first' : 'Reset robot to lesson start pose and replay the queue'}
         >
           ↩ Replay
         </button>
       </div>
+      {!hasQueue && activeLesson && (
+        <p className="text-[10px] text-slate-600 italic mt-0.5">
+          Add commands to enable Replay.
+        </p>
+      )}
     </div>
   );
 }
