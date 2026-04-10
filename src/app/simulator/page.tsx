@@ -23,11 +23,16 @@ import SavedPrograms from '@/components/SavedPrograms';
 import BlocklyPanel from '@/components/BlocklyPanel';
 import MobileEditOverlay from '@/components/MobileEditOverlay';
 import LessonAuthor from '@/components/LessonAuthor';
+import DemoModeToggle from '@/components/DemoModeToggle';
+import DemoLessonPanel from '@/components/DemoLessonPanel';
+import { useSimulatorStore } from '@/sim/robotController';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
 
 export default function SimulatorPage() {
+  const demoMode = useSimulatorStore((s) => s.demoMode);
+
   return (
     <div className="h-screen flex flex-col bg-slate-900 text-white overflow-hidden">
       {/* Hydrate store from localStorage on first client render */}
@@ -39,9 +44,12 @@ export default function SimulatorPage() {
           ← Home
         </Link>
         <h1 className="text-base font-bold text-white">🤖 RoboWebSim — Simulator</h1>
-        <Link href="/lessons" className="text-blue-400 hover:text-blue-300 text-sm">
-          Lessons →
-        </Link>
+        <div className="flex items-center gap-2">
+          <DemoModeToggle />
+          <Link href="/lessons" className="text-blue-400 hover:text-blue-300 text-sm">
+            Lessons →
+          </Link>
+        </div>
       </header>
 
       {/* Current context bar — visible above the canvas, full-width */}
@@ -49,16 +57,20 @@ export default function SimulatorPage() {
         <CurrentContextPanel />
       </div>
 
-      {/* Dismissible beginner onboarding strip */}
-      <OnboardingStrip />
+      {/* Demo Mode: prominent lesson context strip */}
+      {demoMode && <DemoLessonPanel />}
+
+      {/* Dismissible beginner onboarding strip — hidden in demo mode */}
+      {!demoMode && <OnboardingStrip />}
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar: scenario selector + lessons */}
         <aside className="w-64 bg-slate-800 border-r border-slate-700 overflow-y-auto p-3 shrink-0 hidden lg:block">
           <div className="flex flex-col gap-4">
-            <ScenarioSelector />
-            <hr className="border-slate-700" />
+            {/* In demo mode hide the free-play scenario selector to keep focus on lessons */}
+            {!demoMode && <ScenarioSelector />}
+            {!demoMode && <hr className="border-slate-700" />}
             <LessonsSidebar />
           </div>
         </aside>
@@ -87,26 +99,39 @@ export default function SimulatorPage() {
           </div>
           <hr className="border-slate-700" />
           <QuickActions />
-          <hr className="border-slate-700" />
-          <ArenaEditor />
-          <hr className="border-slate-700" />
-          <ModelLibrary />
-          <hr className="border-slate-700" />
-          <SavedScenes />
-          <hr className="border-slate-700" />
-          <SavedPrograms />
-          <hr className="border-slate-700" />
-          <LessonAuthor />
-          <hr className="border-slate-700" />
-          <BlocklyPanel />
+          {/* Advanced power-user panels — collapsed in demo mode */}
+          {!demoMode && (
+            <>
+              <hr className="border-slate-700" />
+              <ArenaEditor />
+              <hr className="border-slate-700" />
+              <ModelLibrary />
+              <hr className="border-slate-700" />
+              <SavedScenes />
+              <hr className="border-slate-700" />
+              <SavedPrograms />
+              <hr className="border-slate-700" />
+              <LessonAuthor />
+              <hr className="border-slate-700" />
+              <BlocklyPanel />
+            </>
+          )}
           <hr className="border-slate-700" />
           <CommandQueue />
           <hr className="border-slate-700" />
-          <SimSettings />
-          <hr className="border-slate-700" />
+          {!demoMode && (
+            <>
+              <SimSettings />
+              <hr className="border-slate-700" />
+            </>
+          )}
           <TelemetryPanel />
-          <hr className="border-slate-700" />
-          <EventLog />
+          {!demoMode && (
+            <>
+              <hr className="border-slate-700" />
+              <EventLog />
+            </>
+          )}
         </aside>
       </div>
 
@@ -115,3 +140,4 @@ export default function SimulatorPage() {
     </div>
   );
 }
+

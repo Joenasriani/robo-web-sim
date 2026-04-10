@@ -41,6 +41,7 @@ export default function CurrentContextPanel() {
   const lessonStatus     = useSimulatorStore((s) => s.lessonStatus);
   const simState         = useSimulatorStore((s) => s.simState);
   const isHydrated       = useSimulatorStore((s) => s.isHydrated);
+  const demoMode         = useSimulatorStore((s) => s.demoMode);
 
   // Show a transient "context restored" badge for 3 s after hydration completes
   const [showRestored, setShowRestored] = useState(false);
@@ -59,6 +60,44 @@ export default function CurrentContextPanel() {
   const lesson = !isFreePlay
     ? LESSONS.find((l) => l.id === activeLesson) ?? null
     : null;
+
+  // In demo mode: render a slightly more prominent context bar
+  if (demoMode) {
+    return (
+      <div className="bg-slate-800/90 border border-amber-700/50 rounded-lg px-3 py-2 flex items-center justify-between gap-3 text-xs">
+        {/* Demo mode indicator */}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="shrink-0 font-bold uppercase tracking-wide text-[10px] px-1.5 py-0.5 rounded bg-amber-700/60 text-amber-300 border border-amber-600">
+            🎓 Demo
+          </span>
+          <span className={`font-bold uppercase tracking-wide text-[10px] px-1.5 py-0.5 rounded ${
+            isFreePlay
+              ? 'bg-blue-900/50 text-blue-300 border border-blue-700'
+              : 'bg-yellow-900/50 text-yellow-300 border border-yellow-700'
+          }`}>
+            {isFreePlay ? 'Free Play' : 'Lesson'}
+          </span>
+          {!isFreePlay && lesson && (
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${LESSON_STATUS_BADGE[lessonStatus]}`}>
+              {LESSON_STATUS_LABEL[lessonStatus]}
+            </span>
+          )}
+          <span className="text-white font-medium truncate">
+            {isFreePlay
+              ? (scenario?.title ?? 'No Scenario')
+              : (lesson?.title ?? activeLesson ?? 'No Lesson')}
+          </span>
+        </div>
+        {/* Sim state */}
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-slate-500 text-[10px] uppercase tracking-wide">State:</span>
+          <span className={`font-semibold ${SIM_STATE_COLOR[simState]}`}>
+            {SIM_STATE_LABEL[simState]}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 flex items-start justify-between gap-3 text-xs">
@@ -117,3 +156,4 @@ export default function CurrentContextPanel() {
     </div>
   );
 }
+

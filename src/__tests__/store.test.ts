@@ -6,7 +6,7 @@
  *  - queue does not auto-resume after hydration
  */
 
-import { PERSIST_KEY_MODE, PERSIST_KEY_SCENARIO, PERSIST_KEY_LESSON, useSimulatorStore } from '@/sim/robotController';
+import { PERSIST_KEY_MODE, PERSIST_KEY_SCENARIO, PERSIST_KEY_LESSON, PERSIST_KEY_DEMO_MODE, useSimulatorStore } from '@/sim/robotController';
 
 // ---------------------------------------------------------------------------
 // localStorage mock (provided by jest-environment-jsdom)
@@ -375,5 +375,53 @@ describe('route modules export a default component', () => {
     jest.mock('next/dynamic', () => () => () => null);
     const mod = await import('@/app/simulator/page');
     expect(typeof mod.default).toBe('function');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Teacher / Demo Mode
+// ---------------------------------------------------------------------------
+describe('demoMode', () => {
+  beforeEach(() => {
+    localStorage.removeItem(PERSIST_KEY_DEMO_MODE);
+    useSimulatorStore.setState({ demoMode: false });
+  });
+
+  it('defaults to false', () => {
+    expect(useSimulatorStore.getState().demoMode).toBe(false);
+  });
+
+  it('toggleDemoMode flips demoMode to true then back to false', () => {
+    useSimulatorStore.getState().toggleDemoMode();
+    expect(useSimulatorStore.getState().demoMode).toBe(true);
+
+    useSimulatorStore.getState().toggleDemoMode();
+    expect(useSimulatorStore.getState().demoMode).toBe(false);
+  });
+
+  it('toggleDemoMode persists the new value to localStorage', () => {
+    useSimulatorStore.getState().toggleDemoMode();
+    expect(localStorage.getItem(PERSIST_KEY_DEMO_MODE)).toBe('true');
+
+    useSimulatorStore.getState().toggleDemoMode();
+    expect(localStorage.getItem(PERSIST_KEY_DEMO_MODE)).toBe('false');
+  });
+
+  it('hydrateFromStorage restores demoMode true from localStorage', () => {
+    localStorage.setItem(PERSIST_KEY_DEMO_MODE, 'true');
+    useSimulatorStore.getState().hydrateFromStorage();
+    expect(useSimulatorStore.getState().demoMode).toBe(true);
+  });
+
+  it('hydrateFromStorage does not enable demoMode when key is absent', () => {
+    useSimulatorStore.getState().hydrateFromStorage();
+    expect(useSimulatorStore.getState().demoMode).toBe(false);
+  });
+
+  it('does not affect lesson or scenario state when toggled', () => {
+    useSimulatorStore.getState().loadScenario('default-arena');
+    useSimulatorStore.getState().toggleDemoMode();
+    expect(useSimulatorStore.getState().activeScenarioId).toBe('default-arena');
+    expect(useSimulatorStore.getState().activeLesson).toBeNull();
   });
 });
