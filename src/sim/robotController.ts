@@ -174,7 +174,11 @@ export interface SimulatorStore {
   selectEditObject: (type: 'obstacle' | 'target', id: string) => void;
   deselectEditObject: () => void;
   moveSelectedObject: (direction: 'north' | 'south' | 'east' | 'west') => void;
+  /** Rotate the selected obstacle by 45° CW or CCW around the Y axis. */
+  rotateSelectedObject: (direction: 'cw' | 'ccw') => void;
   deleteSelectedObstacle: () => void;
+  /** Duplicate the selected obstacle, placing the copy nearby. */
+  duplicateSelectedObstacle: () => void;
   addObstacle: () => void;
   resetArenaToDefault: () => void;
 
@@ -848,6 +852,48 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       robot,
       selectedEditObject: null,
       eventLog: [...s.eventLog, makeEvent('🗑️ Obstacle removed', 'warning')].slice(-MAX_EVENT_LOG),
+    }));
+  },
+
+  rotateSelectedObject: (direction) => {
+    const { selectedEditObject, arena } = get();
+    if (!selectedEditObject || selectedEditObject.type !== 'obstacle') return;
+    const ROTATE_STEP = Math.PI / 4; // 45 degrees
+    const delta = direction === 'cw' ? ROTATE_STEP : -ROTATE_STEP;
+    const obstacles = arena.obstacles.map((obs) =>
+      obs.id === selectedEditObject.id
+        ? { ...obs, rotation: (obs.rotation ?? 0) + delta }
+        : obs
+    );
+    const newArena = { ...arena, obstacles };
+    set((s) => ({
+      arena: newArena,
+      eventLog: [...s.eventLog, makeEvent('🔄 Obstacle rotated', 'info')].slice(-MAX_EVENT_LOG),
+    }));
+  },
+
+  duplicateSelectedObstacle: () => {
+    const { selectedEditObject, arena } = get();
+    if (!selectedEditObject || selectedEditObject.type !== 'obstacle') return;
+    const obs = arena.obstacles.find((o) => o.id === selectedEditObject.id);
+    if (!obs) return;
+    const OFFSET = 1.5;
+    const half = arena.size / 2 - 0.6;
+    const newX = Math.max(-half, Math.min(half, obs.position[0] + OFFSET));
+    const newZ = Math.max(-half, Math.min(half, obs.position[2] + OFFSET));
+    const newId = `ml-dup-${Date.now()}`;
+    const newObs = {
+      ...obs,
+      id: newId,
+      position: [newX, obs.position[1], newZ] as [number, number, number],
+    };
+    const newArena = { ...arena, obstacles: [...arena.obstacles, newObs] };
+    const robot = { ...get().robot, sensors: computeSensors(get().robot, newArena) };
+    set((s) => ({
+      arena: newArena,
+      robot,
+      selectedEditObject: { type: 'obstacle', id: newId },
+      eventLog: [...s.eventLog, makeEvent('📋 Obstacle duplicated', 'success')].slice(-MAX_EVENT_LOG),
     }));
   },
 

@@ -50,6 +50,7 @@ function GlbObstacleInner({
       object={clone}
       position={obs.position}
       scale={obs.size}
+      rotation={[0, obs.rotation ?? 0, 0]}
       onClick={onSelect ? (e: THREE.Event) => { (e as unknown as { stopPropagation: () => void }).stopPropagation(); onSelect(); } : undefined}
     />
   );
@@ -148,6 +149,7 @@ function Obstacles() {
                 <Box
                   args={[(obs.size[0] + 0.12) as number, (obs.size[1] + 0.12) as number, (obs.size[2] + 0.12) as number]}
                   position={obs.position}
+                  rotation={[0, obs.rotation ?? 0, 0]}
                 >
                   <meshStandardMaterial color="#fbbf24" transparent opacity={0.25} wireframe />
                 </Box>
@@ -162,6 +164,7 @@ function Obstacles() {
             <Box
               args={obs.size as [number, number, number]}
               position={obs.position}
+              rotation={[0, obs.rotation ?? 0, 0]}
               castShadow
               receiveShadow
               onClick={isEditMode ? (e) => { e.stopPropagation(); selectEditObject('obstacle', obs.id); } : undefined}
@@ -173,6 +176,7 @@ function Obstacles() {
               <Box
                 args={[(obs.size[0] + 0.12) as number, (obs.size[1] + 0.12) as number, (obs.size[2] + 0.12) as number]}
                 position={obs.position}
+                rotation={[0, obs.rotation ?? 0, 0]}
               >
                 <meshStandardMaterial color="#fbbf24" transparent opacity={0.25} wireframe />
               </Box>

@@ -3,6 +3,8 @@ export interface Obstacle {
   position: [number, number, number];
   size: [number, number, number];
   color: string;
+  /** Y-axis rotation in radians. Applied when rendering the obstacle. */
+  rotation?: number;
   /** The library model id this obstacle was placed from, if any. */
   modelId?: string;
   /** Local GLB path (e.g. '/models/crate-box.glb') for renderType:'glb' obstacles. */
