@@ -10,6 +10,9 @@ import SimFeedback from '@/components/SimFeedback';
 import TelemetryPanel from '@/components/TelemetryPanel';
 import SimSettings from '@/components/SimSettings';
 import EventLog from '@/components/EventLog';
+import StoreHydrator from '@/components/StoreHydrator';
+import CurrentContextPanel from '@/components/CurrentContextPanel';
+import QuickActions from '@/components/QuickActions';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
@@ -17,6 +20,9 @@ const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
 export default function SimulatorPage() {
   return (
     <div className="h-screen flex flex-col bg-slate-900 text-white overflow-hidden">
+      {/* Hydrate store from localStorage on first client render */}
+      <StoreHydrator />
+
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 shrink-0">
         <Link href="/" className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1">
@@ -27,6 +33,11 @@ export default function SimulatorPage() {
           Lessons →
         </Link>
       </header>
+
+      {/* Current context bar — visible above the canvas, full-width */}
+      <div className="px-3 py-1.5 bg-slate-900 border-b border-slate-800 shrink-0">
+        <CurrentContextPanel />
+      </div>
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
@@ -54,6 +65,8 @@ export default function SimulatorPage() {
             <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Movement Controls</h3>
             <RobotControls />
           </div>
+          <hr className="border-slate-700" />
+          <QuickActions />
           <hr className="border-slate-700" />
           <CommandQueue />
           <hr className="border-slate-700" />
