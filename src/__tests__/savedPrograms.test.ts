@@ -1,6 +1,8 @@
 /**
  * Tests for saved-program store actions and validation:
  *  - isValidSavedProgram validates structure and command types
+ *  - validateImportedProgram validates import payloads (versioned + legacy)
+ *  - buildProgramExport creates a versioned, portable export payload
  *  - saveCurrentProgram persists to localStorage
  *  - loadSavedProgram restores the command queue
  *  - renameSavedProgram updates the name
@@ -13,7 +15,13 @@ import {
   useSimulatorStore,
   PERSIST_KEY_SAVED_PROGRAMS,
 } from '@/sim/robotController';
-import { isValidSavedProgram } from '@/sim/savedPrograms';
+import {
+  isValidSavedProgram,
+  validateImportedProgram,
+  buildProgramExport,
+  CURRENT_SCHEMA_VERSION,
+  MAX_SUPPORTED_SCHEMA_VERSION,
+} from '@/sim/savedPrograms';
 import { DEFAULT_ARENA } from '@/sim/arenaConfig';
 
 // ---------------------------------------------------------------------------
@@ -128,6 +136,223 @@ describe('isValidSavedProgram', () => {
     const allTypes = ['forward', 'backward', 'left', 'right', 'wait'];
     const cmds = allTypes.map((type, i) => ({ id: `c${i}`, type, label: type }));
     expect(isValidSavedProgram({ ...validProgram, commands: cmds })).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateImportedProgram
+// ---------------------------------------------------------------------------
+describe('validateImportedProgram', () => {
+  // --- versioned format ---
+  it('accepts a well-formed versioned program (schemaVersion 1)', () => {
+    const payload = {
+      schemaVersion: 1,
+      name: 'My Program',
+      commands: validCommands,
+      createdAt: 1700000000000,
+    };
+    const result = validateImportedProgram(payload);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.name).toBe('My Program');
+      expect(result.data.commands).toHaveLength(3);
+      expect(result.data.createdAt).toBe(1700000000000);
+    }
+  });
+
+  it('trims name whitespace in the returned data', () => {
+    const payload = { schemaVersion: 1, name: '  Padded  ', commands: [], createdAt: 1 };
+    const result = validateImportedProgram(payload);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.name).toBe('Padded');
+  });
+
+  it('accepts an empty commands array', () => {
+    const payload = { schemaVersion: 1, name: 'Empty', commands: [], createdAt: 1 };
+    expect(validateImportedProgram(payload).ok).toBe(true);
+  });
+
+  // --- legacy format (no schemaVersion) ---
+  it('accepts a legacy program without schemaVersion', () => {
+    // Old exports include id and updatedAt but no schemaVersion
+    const legacy = {
+      id: 'prog-123',
+      name: 'Legacy Program',
+      commands: validCommands,
+      createdAt: 1700000000000,
+      updatedAt: 1700000000000,
+    };
+    const result = validateImportedProgram(legacy);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.name).toBe('Legacy Program');
+  });
+
+  // --- schemaVersion validation ---
+  it('rejects a future (unsupported) schemaVersion', () => {
+    const payload = {
+      schemaVersion: MAX_SUPPORTED_SCHEMA_VERSION + 1,
+      name: 'Future',
+      commands: [],
+      createdAt: 1,
+    };
+    const result = validateImportedProgram(payload);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/unsupported schemaVersion/i);
+      expect(result.error).toContain(String(MAX_SUPPORTED_SCHEMA_VERSION + 1));
+    }
+  });
+
+  it('rejects schemaVersion 0', () => {
+    const payload = { schemaVersion: 0, name: 'Bad', commands: [], createdAt: 1 };
+    const result = validateImportedProgram(payload);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/invalid schemaVersion/i);
+  });
+
+  it('rejects a non-integer schemaVersion', () => {
+    const payload = { schemaVersion: 1.5, name: 'Bad', commands: [], createdAt: 1 };
+    const result = validateImportedProgram(payload);
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a string schemaVersion', () => {
+    const payload = { schemaVersion: '1', name: 'Bad', commands: [], createdAt: 1 };
+    const result = validateImportedProgram(payload);
+    expect(result.ok).toBe(false);
+  });
+
+  // --- name validation ---
+  it('rejects missing name', () => {
+    const { name: _omit, ...rest } = { schemaVersion: 1, name: 'X', commands: [], createdAt: 1 };
+    const result = validateImportedProgram(rest);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/name/i);
+  });
+
+  it('rejects empty name', () => {
+    const result = validateImportedProgram({ schemaVersion: 1, name: '   ', commands: [], createdAt: 1 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/name/i);
+  });
+
+  it('rejects non-string name', () => {
+    const result = validateImportedProgram({ schemaVersion: 1, name: 42, commands: [], createdAt: 1 });
+    expect(result.ok).toBe(false);
+  });
+
+  // --- createdAt validation ---
+  it('rejects missing createdAt', () => {
+    const result = validateImportedProgram({ schemaVersion: 1, name: 'X', commands: [] });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/createdAt/i);
+  });
+
+  it('rejects string createdAt', () => {
+    const result = validateImportedProgram({ schemaVersion: 1, name: 'X', commands: [], createdAt: '2024' });
+    expect(result.ok).toBe(false);
+  });
+
+  // --- commands validation ---
+  it('rejects missing commands', () => {
+    const result = validateImportedProgram({ schemaVersion: 1, name: 'X', createdAt: 1 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/commands/i);
+  });
+
+  it('rejects non-array commands', () => {
+    const result = validateImportedProgram({ schemaVersion: 1, name: 'X', commands: 'bad', createdAt: 1 });
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a command that is not an object', () => {
+    const result = validateImportedProgram({ schemaVersion: 1, name: 'X', commands: ['oops'], createdAt: 1 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/index 0/);
+  });
+
+  it('rejects a command with missing id', () => {
+    const bad = { type: 'forward', label: '↑' };
+    const result = validateImportedProgram({ schemaVersion: 1, name: 'X', commands: [bad], createdAt: 1 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/id/i);
+  });
+
+  it('rejects a command with empty id', () => {
+    const bad = { id: '', type: 'forward', label: '↑' };
+    const result = validateImportedProgram({ schemaVersion: 1, name: 'X', commands: [bad], createdAt: 1 });
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a command with an unsupported type', () => {
+    const bad = { id: 'c1', type: 'fly', label: '✈️' };
+    const result = validateImportedProgram({ schemaVersion: 1, name: 'X', commands: [bad], createdAt: 1 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/fly/);
+      expect(result.error).toMatch(/index 0/);
+    }
+  });
+
+  it('rejects a command with a non-string label', () => {
+    const bad = { id: 'c1', type: 'forward', label: 99 };
+    const result = validateImportedProgram({ schemaVersion: 1, name: 'X', commands: [bad], createdAt: 1 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/label/i);
+  });
+
+  // --- top-level structure ---
+  it('rejects null', () => {
+    const result = validateImportedProgram(null);
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a plain array', () => {
+    const result = validateImportedProgram([]);
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a string', () => {
+    const result = validateImportedProgram('{}');
+    expect(result.ok).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildProgramExport
+// ---------------------------------------------------------------------------
+describe('buildProgramExport', () => {
+  it('sets schemaVersion to CURRENT_SCHEMA_VERSION', () => {
+    const exported = buildProgramExport(validProgram);
+    expect(exported.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+  });
+
+  it('includes name, commands, and createdAt', () => {
+    const exported = buildProgramExport(validProgram);
+    expect(exported.name).toBe(validProgram.name);
+    expect(exported.commands).toHaveLength(validProgram.commands.length);
+    expect(exported.createdAt).toBe(validProgram.createdAt);
+  });
+
+  it('does not include the internal id field', () => {
+    const exported = buildProgramExport(validProgram);
+    expect('id' in exported).toBe(false);
+  });
+
+  it('does not include the updatedAt field', () => {
+    const exported = buildProgramExport(validProgram);
+    expect('updatedAt' in exported).toBe(false);
+  });
+
+  it('references the original commands array', () => {
+    const exported = buildProgramExport(validProgram);
+    expect(exported.commands).toBe(validProgram.commands);
+  });
+
+  it('produces output that is accepted by validateImportedProgram', () => {
+    const exported = buildProgramExport(validProgram);
+    const result = validateImportedProgram(exported);
+    expect(result.ok).toBe(true);
   });
 });
 

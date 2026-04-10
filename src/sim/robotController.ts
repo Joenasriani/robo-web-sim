@@ -229,7 +229,7 @@ export interface SimulatorStore {
   /** Permanently delete a saved program. */
   deleteSavedProgram: (id: string) => void;
   /** Import a validated program (e.g. from a JSON file) and add it to the saved programs list. */
-  importProgram: (program: SavedProgram) => void;
+  importProgram: (program: Pick<SavedProgram, 'name' | 'commands' | 'createdAt'>) => void;
 }
 
 function applyMove(
@@ -1226,7 +1226,9 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   importProgram: (program) => {
     const now = Date.now();
     const imported: SavedProgram = {
-      ...program,
+      name: program.name,
+      commands: program.commands,
+      createdAt: program.createdAt,
       id: `prog-import-${now}-${Math.random().toString(36).slice(2, 7)}`,
       updatedAt: now,
     };
