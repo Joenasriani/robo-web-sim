@@ -22,8 +22,15 @@ import {
   persistSavedScenes,
   isValidSavedScene,
 } from './savedScenes';
+import {
+  SavedProgram,
+  loadSavedProgramsFromStorage,
+  persistSavedPrograms,
+  isValidSavedProgram,
+} from './savedPrograms';
 
 export { PERSIST_KEY_SAVED_SCENES } from './savedScenes';
+export { PERSIST_KEY_SAVED_PROGRAMS } from './savedPrograms';
 
 // Explicit simulator state enum
 export type SimState = 'idle' | 'running' | 'paused' | 'completed' | 'blocked';
@@ -207,6 +214,22 @@ export interface SimulatorStore {
   renameSavedScene: (id: string, name: string) => void;
   /** Permanently delete a saved scene. */
   deleteSavedScene: (id: string) => void;
+
+  // ---------------------------------------------------------------------------
+  // Saved programs (command sequences, local-only)
+  // ---------------------------------------------------------------------------
+  /** All user-saved command programs, ordered newest first. */
+  savedPrograms: SavedProgram[];
+  /** Save the current command queue as a named program. No-op when queue is empty. */
+  saveCurrentProgram: (name: string) => void;
+  /** Load a saved program into the command queue. Replaces the current queue. */
+  loadSavedProgram: (id: string) => void;
+  /** Rename a saved program. */
+  renameSavedProgram: (id: string, name: string) => void;
+  /** Permanently delete a saved program. */
+  deleteSavedProgram: (id: string) => void;
+  /** Import a validated program (e.g. from a JSON file) and add it to the saved programs list. */
+  importProgram: (program: SavedProgram) => void;
 }
 
 function applyMove(
@@ -384,6 +407,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   defaultArenaSnapshot: DEFAULT_ARENA,
 
   savedScenes: loadSavedScenesFromStorage(),
+  savedPrograms: loadSavedProgramsFromStorage(),
 
   moveForward: () =>
     set((s) => {
@@ -1111,6 +1135,107 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       return {
         savedScenes: updated,
         eventLog: [...s.eventLog, makeEvent('🗑️ Saved scene deleted', 'warning')].slice(-MAX_EVENT_LOG),
+      };
+    });
+  },
+
+  // ---------------------------------------------------------------------------
+  // Saved programs actions
+  // ---------------------------------------------------------------------------
+
+  saveCurrentProgram: (name) => {
+    const { commandQueue } = get();
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    if (commandQueue.length === 0) return;
+
+    const now = Date.now();
+    const newProgram: SavedProgram = {
+      id: `prog-${now}-${Math.random().toString(36).slice(2, 7)}`,
+      name: trimmedName,
+      commands: commandQueue.map((cmd) => ({ ...cmd })),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    set((s) => {
+      const updated = [newProgram, ...s.savedPrograms];
+      persistSavedPrograms(updated);
+      return {
+        savedPrograms: updated,
+        eventLog: [...s.eventLog, makeEvent(`💾 Program saved: "${trimmedName}"`, 'success')].slice(-MAX_EVENT_LOG),
+      };
+    });
+  },
+
+  loadSavedProgram: (id) => {
+    const { savedPrograms } = get();
+
+    const program = savedPrograms.find((p) => p.id === id);
+    if (!program) {
+      set((s) => ({
+        eventLog: [...s.eventLog, makeEvent('⚠️ Saved program not found', 'warning')].slice(-MAX_EVENT_LOG),
+      }));
+      return;
+    }
+
+    // Validate before applying
+    if (!isValidSavedProgram(program)) {
+      set((s) => ({
+        eventLog: [...s.eventLog, makeEvent('⚠️ Saved program data is invalid — load aborted', 'error')].slice(-MAX_EVENT_LOG),
+      }));
+      return;
+    }
+
+    // Cancel any in-flight queue loop
+    ++_currentRunId;
+    // Re-create commands with fresh IDs to avoid any stale-id conflicts
+    const newQueue = program.commands.map((cmd) => createCommand(cmd.type));
+    set((s) => ({
+      commandQueue: newQueue,
+      currentCommandIndex: null,
+      simState: s.simState === 'running' || s.simState === 'paused' ? 'idle' : s.simState,
+      robot: { ...s.robot, isRunningQueue: false, isPaused: false },
+      eventLog: [...s.eventLog, makeEvent(`📂 Program loaded: "${program.name}"`, 'info')].slice(-MAX_EVENT_LOG),
+    }));
+  },
+
+  renameSavedProgram: (id, name) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    set((s) => {
+      const updated = s.savedPrograms.map((p) =>
+        p.id === id ? { ...p, name: trimmedName, updatedAt: Date.now() } : p
+      );
+      persistSavedPrograms(updated);
+      return { savedPrograms: updated };
+    });
+  },
+
+  deleteSavedProgram: (id) => {
+    set((s) => {
+      const updated = s.savedPrograms.filter((p) => p.id !== id);
+      persistSavedPrograms(updated);
+      return {
+        savedPrograms: updated,
+        eventLog: [...s.eventLog, makeEvent('🗑️ Saved program deleted', 'warning')].slice(-MAX_EVENT_LOG),
+      };
+    });
+  },
+
+  importProgram: (program) => {
+    const now = Date.now();
+    const imported: SavedProgram = {
+      ...program,
+      id: `prog-import-${now}-${Math.random().toString(36).slice(2, 7)}`,
+      updatedAt: now,
+    };
+    set((s) => {
+      const updated = [imported, ...s.savedPrograms];
+      persistSavedPrograms(updated);
+      return {
+        savedPrograms: updated,
+        eventLog: [...s.eventLog, makeEvent(`📥 Program imported: "${imported.name}"`, 'success')].slice(-MAX_EVENT_LOG),
       };
     });
   },

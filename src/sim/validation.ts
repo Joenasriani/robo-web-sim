@@ -12,6 +12,8 @@ import { LESSONS } from '@/lessons/lessonData';
 
 // Re-export saved-scene validator so callers only need one import
 export { isValidSavedScene } from './savedScenes';
+// Re-export saved-program validator so callers only need one import
+export { isValidSavedProgram } from './savedPrograms';
 
 /**
  * Returns true if `value` is a structurally valid ArenaConfig.
