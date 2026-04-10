@@ -66,5 +66,20 @@ export function isValidSavedScene(value: unknown): value is SavedScene {
   if (typeof a.size !== 'number' || a.size <= 0) return false;
   if (!Array.isArray(a.obstacles)) return false;
   if (!Array.isArray(a.targets)) return false;
+  // Validate each obstacle has minimum required fields
+  for (const obs of a.obstacles) {
+    if (!obs || typeof obs !== 'object') return false;
+    const o = obs as Record<string, unknown>;
+    if (typeof o.id !== 'string' || o.id.length === 0) return false;
+    if (!Array.isArray(o.position) || o.position.length < 3) return false;
+    if (!Array.isArray(o.size) || o.size.length < 3) return false;
+  }
+  // Validate each target has minimum required fields
+  for (const tgt of a.targets) {
+    if (!tgt || typeof tgt !== 'object') return false;
+    const t = tgt as Record<string, unknown>;
+    if (typeof t.id !== 'string' || t.id.length === 0) return false;
+    if (!Array.isArray(t.position) || t.position.length < 3) return false;
+  }
   return true;
 }

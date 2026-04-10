@@ -49,13 +49,33 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 // isValidSavedScene
 // ---------------------------------------------------------------------------
+
+// Reusable test obstacle factory
+function makeObstacle(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'o1',
+    position: [1, 0.5, 1] as [number, number, number],
+    size: [1, 1, 1] as [number, number, number],
+    color: '#ff0000',
+    ...overrides,
+  };
+}
+
+const validArena = {
+  size: 10,
+  obstacles: [] as ReturnType<typeof makeObstacle>[],
+  targets: [] as { id: string; position: [number, number, number]; radius: number; color: string }[],
+  wallColor: '#fff',
+  floorColor: '#000',
+};
+
 describe('isValidSavedScene', () => {
   const validScene = {
     id: 'scene-123',
     name: 'My Scene',
     savedAt: 1234567890,
     scenarioBase: 'default-arena',
-    arena: { size: 10, obstacles: [], targets: [], wallColor: '#fff', floorColor: '#000' },
+    arena: validArena,
   };
 
   it('returns true for a well-formed scene', () => {
@@ -64,6 +84,18 @@ describe('isValidSavedScene', () => {
 
   it('returns true when scenarioBase is null', () => {
     expect(isValidSavedScene({ ...validScene, scenarioBase: null })).toBe(true);
+  });
+
+  it('returns true for a scene with valid obstacles and targets', () => {
+    const withContent = {
+      ...validScene,
+      arena: {
+        ...validArena,
+        obstacles: [makeObstacle()],
+        targets: [{ id: 't1', position: [3, 0.05, 3] as [number, number, number], radius: 0.5, color: '#00ff00' }],
+      },
+    };
+    expect(isValidSavedScene(withContent)).toBe(true);
   });
 
   it('returns false for null', () => {
@@ -93,16 +125,43 @@ describe('isValidSavedScene', () => {
   });
 
   it('returns false when arena.size is not a positive number', () => {
-    expect(isValidSavedScene({ ...validScene, arena: { ...validScene.arena, size: 0 } })).toBe(false);
-    expect(isValidSavedScene({ ...validScene, arena: { ...validScene.arena, size: -1 } })).toBe(false);
+    expect(isValidSavedScene({ ...validScene, arena: { ...validArena, size: 0 } })).toBe(false);
+    expect(isValidSavedScene({ ...validScene, arena: { ...validArena, size: -1 } })).toBe(false);
   });
 
   it('returns false when arena.obstacles is not an array', () => {
-    expect(isValidSavedScene({ ...validScene, arena: { ...validScene.arena, obstacles: 'bad' } })).toBe(false);
+    expect(isValidSavedScene({ ...validScene, arena: { ...validArena, obstacles: 'bad' } })).toBe(false);
   });
 
   it('returns false when arena.targets is not an array', () => {
-    expect(isValidSavedScene({ ...validScene, arena: { ...validScene.arena, targets: null } })).toBe(false);
+    expect(isValidSavedScene({ ...validScene, arena: { ...validArena, targets: null } })).toBe(false);
+  });
+
+  it('returns false when an obstacle is missing id', () => {
+    const { id: _omit, ...noId } = makeObstacle();
+    const scene = { ...validScene, arena: { ...validArena, obstacles: [noId] } };
+    expect(isValidSavedScene(scene)).toBe(false);
+  });
+
+  it('returns false when an obstacle has empty id', () => {
+    const scene = { ...validScene, arena: { ...validArena, obstacles: [makeObstacle({ id: '' })] } };
+    expect(isValidSavedScene(scene)).toBe(false);
+  });
+
+  it('returns false when an obstacle position is not an array', () => {
+    const scene = { ...validScene, arena: { ...validArena, obstacles: [makeObstacle({ position: 'bad' })] } };
+    expect(isValidSavedScene(scene)).toBe(false);
+  });
+
+  it('returns false when a target is missing id', () => {
+    const scene = {
+      ...validScene,
+      arena: {
+        ...validArena,
+        targets: [{ position: [0, 0, 0] as [number, number, number], radius: 0.5, color: '#0f0' }],
+      },
+    };
+    expect(isValidSavedScene(scene)).toBe(false);
   });
 });
 
@@ -168,7 +227,7 @@ describe('saveCurrentScene', () => {
 describe('loadSavedScene', () => {
   const testArena = {
     size: 12,
-    obstacles: [{ id: 'o1', position: [1, 0.5, 1] as [number, number, number], size: [1, 1, 1] as [number, number, number], color: '#ff0000', rotation: 0.5 }],
+    obstacles: [makeObstacle({ id: 'o1', position: [1, 0.5, 1] as [number, number, number], rotation: 0.5 })],
     targets: [{ id: 't1', position: [3, 0.05, 3] as [number, number, number], radius: 0.5, color: '#00ff00' }],
     wallColor: '#888',
     floorColor: '#111',
