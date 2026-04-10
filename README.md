@@ -40,6 +40,8 @@ This project is inspired by [Webots](https://cyberbotics.com/), an open-source d
 | ✅ Progress Tracking | Lesson completion state saved to localStorage |
 | 🎨 Collision Feedback | Robot changes color when hitting an obstacle or reaching a target |
 | 🔄 Pause/Resume/Stop | Full queue execution control |
+| 💾 Session Persistence | Restores last free-play scenario or lesson on reload (safe fallback to default arena) |
+| 🛡 Runtime Validation | Scenario/lesson IDs and arena shapes validated before loading |
 
 ---
 
@@ -72,6 +74,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 npm run build
 npm start
 ```
+
+### Run tests
+
+```bash
+npm test
+```
+
+The test suite covers store behaviors (scenario loading, lesson persistence, hydration fallback) and route smoke tests. Tests use Jest + ts-jest with a jsdom environment.
 
 ---
 
@@ -128,9 +138,11 @@ robo-web-sim/
 │   │   ├── motionSystem.ts
 │   │   ├── collisionHelpers.ts
 │   │   ├── commandExecution.ts
-│   │   └── robotController.ts  # Zustand store
+│   │   ├── robotController.ts  # Zustand store
+│   │   └── validation.ts       # Runtime validation helpers
 │   ├── lessons/          # Lesson content data
-│   └── configs/          # Simulator configuration
+│   ├── configs/          # Simulator configuration
+│   └── __tests__/        # Jest smoke tests
 ├── docs/                 # Documentation
 ├── examples/             # Example arena configs
 ├── scripts/              # Utility scripts

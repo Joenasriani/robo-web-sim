@@ -14,6 +14,7 @@ import { Command, CommandType, createCommand } from './commandExecution';
 import { LESSONS, Lesson, CompletionRules } from '@/lessons/lessonData';
 import { arenaForLesson } from '@/scenarios/arenaLoader';
 import { FREE_PLAY_SCENARIOS, ScenarioExample } from '@/scenarios';
+import { isValidScenarioId, isValidLessonId, isValidArena } from './validation';
 
 // Explicit simulator state enum
 export type SimState = 'idle' | 'running' | 'paused' | 'completed' | 'blocked';
@@ -153,6 +154,9 @@ export interface SimulatorStore {
   restartQueue: () => void;
   replayFromStart: () => void;
   hydrateFromStorage: () => void;
+
+  // Hydration guard — false until hydrateFromStorage completes on the client
+  isHydrated: boolean;
 }
 
 function applyMove(
@@ -324,6 +328,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   lessonStatus: 'not_started',
   hasTurned: false,
   queueEverCompleted: false,
+  isHydrated: false,
 
   moveForward: () =>
     set((s) => {
@@ -571,8 +576,18 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     })),
 
   setActiveLesson: (id) => {
+    // Validate lesson ID — fall back to default-arena if unknown
+    if (id !== null && !isValidLessonId(id)) {
+      get().loadScenario('default-arena');
+      return;
+    }
     const lesson = LESSONS.find((l) => l.id === id);
     const arena = arenaForLesson(lesson);
+    // Defensive arena shape check
+    if (!isValidArena(arena)) {
+      get().loadScenario('default-arena');
+      return;
+    }
     const robot = makeRobotForLesson(lesson, arena);
     set((s) => ({
       activeLesson: id,
@@ -631,8 +646,20 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   },
 
   loadScenario: (id) => {
+    // Validate scenario ID — silently fall back to default-arena if invalid
+    if (!isValidScenarioId(id)) {
+      // Avoid infinite recursion: only fall back if we're not already on default-arena
+      if (id === 'default-arena') return;
+      get().loadScenario('default-arena');
+      return;
+    }
     const scenario = FREE_PLAY_SCENARIOS.find((s) => s.id === id);
     if (!scenario) return;
+    // Defensive arena shape check
+    if (!isValidArena(scenario.arena)) {
+      get().loadScenario('default-arena');
+      return;
+    }
     // Cancel any in-flight queue loop
     ++_currentRunId;
     const robot = makeRobotForScenario(scenario);
@@ -697,21 +724,18 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const scenarioId = safeLocalGet(PERSIST_KEY_SCENARIO);
     const lessonId   = safeLocalGet(PERSIST_KEY_LESSON);
 
-    if (mode === 'lesson' && lessonId) {
-      const lesson = LESSONS.find((l) => l.id === lessonId);
-      if (lesson) {
-        get().setActiveLesson(lessonId);
-        return;
-      }
+    if (mode === 'lesson' && isValidLessonId(lessonId)) {
+      get().setActiveLesson(lessonId);
+      set({ isHydrated: true });
+      return;
     }
-    if (mode === 'free_play' && scenarioId) {
-      const scenario = FREE_PLAY_SCENARIOS.find((s) => s.id === scenarioId);
-      if (scenario) {
-        get().loadScenario(scenarioId);
-        return;
-      }
+    if (mode === 'free_play' && isValidScenarioId(scenarioId)) {
+      get().loadScenario(scenarioId);
+      set({ isHydrated: true });
+      return;
     }
     // Fallback: load default arena
     get().loadScenario('default-arena');
+    set({ isHydrated: true });
   },
 }));
