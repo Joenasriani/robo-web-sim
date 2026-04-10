@@ -15,6 +15,7 @@ import { LESSONS, Lesson, CompletionRules } from '@/lessons/lessonData';
 import { arenaForLesson } from '@/scenarios/arenaLoader';
 import { FREE_PLAY_SCENARIOS, ScenarioExample } from '@/scenarios';
 import { isValidScenarioId, isValidLessonId, isValidArena } from './validation';
+import { getModelById } from '@/models/modelLibrary';
 
 // Explicit simulator state enum
 export type SimState = 'idle' | 'running' | 'paused' | 'completed' | 'blocked';
@@ -176,6 +177,10 @@ export interface SimulatorStore {
   deleteSelectedObstacle: () => void;
   addObstacle: () => void;
   resetArenaToDefault: () => void;
+
+  // Model library (free-play only)
+  /** Place a curated model from the library into the current free-play arena. */
+  placeModelFromLibrary: (modelId: string) => void;
 }
 
 function applyMove(
@@ -886,6 +891,60 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       eventLog: [
         ...s.eventLog,
         makeEvent(`🔁 Arena reset to ${activeScenarioId ?? 'default'}`, 'info'),
+      ].slice(-MAX_EVENT_LOG),
+    }));
+  },
+
+  placeModelFromLibrary: (modelId) => {
+    const { activeLesson, arena } = get();
+    // Model library is only available in free-play mode
+    if (activeLesson !== null) return;
+
+    const model = getModelById(modelId);
+    if (!model) {
+      // Unknown model id — fail safely without crashing
+      set((s) => ({
+        eventLog: [
+          ...s.eventLog,
+          makeEvent(`⚠️ Unknown model: ${modelId}`, 'warning'),
+        ].slice(-MAX_EVENT_LOG),
+      }));
+      return;
+    }
+
+    // Find a placement position that avoids stacking on existing obstacles
+    const half = arena.size / 2 - 0.6;
+    const existingPositions = new Set(
+      arena.obstacles.map((o) => `${o.position[0]},${o.position[2]}`)
+    );
+    const MAX_PLACEMENT_ATTEMPTS = 8;
+    const PLACEMENT_STEP = 1.5;
+    const PLACEMENT_GRID_SIZE = 4;
+    let candidateX = 0, candidateZ = -2;
+    let attempt = 0;
+    while (existingPositions.has(`${candidateX},${candidateZ}`) && attempt < MAX_PLACEMENT_ATTEMPTS) {
+      candidateX = Math.round((candidateX + PLACEMENT_STEP) % PLACEMENT_GRID_SIZE);
+      attempt++;
+    }
+    const x = Math.max(-half, Math.min(half, candidateX));
+    const z = Math.max(-half, Math.min(half, candidateZ));
+
+    const newId = `ml-${model.id}-${Date.now()}`;
+    const yOffset = model.placementDefaults.size[1] / 2;
+    const newObs = {
+      id: newId,
+      position: [x, yOffset, z] as [number, number, number],
+      size: model.placementDefaults.size,
+      color: model.placementDefaults.color,
+    };
+    const newArena = { ...arena, obstacles: [...arena.obstacles, newObs] };
+    const robot = { ...get().robot, sensors: computeSensors(get().robot, newArena) };
+    set((s) => ({
+      arena: newArena,
+      robot,
+      eventLog: [
+        ...s.eventLog,
+        makeEvent(`📦 Placed: ${model.name}`, 'success'),
       ].slice(-MAX_EVENT_LOG),
     }));
   },
