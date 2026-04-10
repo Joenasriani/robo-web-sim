@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
-import { isValidSavedProgram } from '@/sim/savedPrograms';
+import { buildProgramExport, validateImportedProgram } from '@/sim/savedPrograms';
 import type { SavedProgram } from '@/sim/savedPrograms';
 
 function formatDate(ts: number): string {
@@ -228,7 +228,7 @@ export default function SavedPrograms() {
 
   function handleExport(program: SavedProgram) {
     const safeName = program.name.replace(/[^a-z0-9_\- ]/gi, '_').trim() || 'program';
-    downloadJson(`${safeName}.json`, program);
+    downloadJson(`${safeName}.json`, buildProgramExport(program));
   }
 
   function handleImportClick() {
@@ -257,11 +257,12 @@ export default function SavedPrograms() {
         setImportError('Invalid JSON — could not parse file.');
         return;
       }
-      if (!isValidSavedProgram(parsed)) {
-        setImportError('File does not contain a valid saved program.');
+      const result = validateImportedProgram(parsed);
+      if (!result.ok) {
+        setImportError(result.error);
         return;
       }
-      importProgram(parsed);
+      importProgram(result.data);
     };
     reader.onerror = () => {
       setImportError('Failed to read file.');
