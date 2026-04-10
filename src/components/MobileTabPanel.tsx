@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import RobotControls from '@/components/RobotControls';
 import QuickActions from '@/components/QuickActions';
+import ArenaEditor from '@/components/ArenaEditor';
 import ScenarioSelector from '@/components/ScenarioSelector';
 import LessonsSidebar from '@/components/LessonsSidebar';
 import CommandQueue from '@/components/CommandQueue';
@@ -56,6 +57,8 @@ export default function MobileTabPanel() {
               <RobotControls />
               <hr className="border-slate-700" />
               <QuickActions />
+              <hr className="border-slate-700" />
+              <ArenaEditor />
             </div>
           )}
           {activeTab === 'scenarios' && (

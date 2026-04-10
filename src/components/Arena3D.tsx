@@ -49,14 +49,39 @@ function Robot() {
 }
 
 function Obstacles() {
-  const arena = useSimulatorStore((s) => s.arena);
+  const arena              = useSimulatorStore((s) => s.arena);
+  const isEditMode         = useSimulatorStore((s) => s.isEditMode);
+  const selectedEditObject = useSimulatorStore((s) => s.selectedEditObject);
+  const selectEditObject   = useSimulatorStore((s) => s.selectEditObject);
+
   return (
     <>
-      {arena.obstacles.map((obs) => (
-        <Box key={obs.id} args={obs.size as [number, number, number]} position={obs.position} castShadow receiveShadow>
-          <meshStandardMaterial color={obs.color} />
-        </Box>
-      ))}
+      {arena.obstacles.map((obs) => {
+        const isSelected =
+          isEditMode && selectedEditObject?.type === 'obstacle' && selectedEditObject.id === obs.id;
+        return (
+          <group key={obs.id}>
+            <Box
+              args={obs.size as [number, number, number]}
+              position={obs.position}
+              castShadow
+              receiveShadow
+              onClick={isEditMode ? (e) => { e.stopPropagation(); selectEditObject('obstacle', obs.id); } : undefined}
+            >
+              <meshStandardMaterial color={isSelected ? '#fbbf24' : obs.color} />
+            </Box>
+            {/* Selection outline */}
+            {isSelected && (
+              <Box
+                args={[(obs.size[0] + 0.12) as number, (obs.size[1] + 0.12) as number, (obs.size[2] + 0.12) as number]}
+                position={obs.position}
+              >
+                <meshStandardMaterial color="#fbbf24" transparent opacity={0.25} wireframe />
+              </Box>
+            )}
+          </group>
+        );
+      })}
     </>
   );
 }
@@ -81,22 +106,43 @@ function PulsingRing({ radius, color }: { radius: number; color: string }) {
 }
 
 function Targets() {
-  const arena = useSimulatorStore((s) => s.arena);
-  const health = useSimulatorStore((s) => s.robot.health);
+  const arena              = useSimulatorStore((s) => s.arena);
+  const health             = useSimulatorStore((s) => s.robot.health);
+  const isEditMode         = useSimulatorStore((s) => s.isEditMode);
+  const selectedEditObject = useSimulatorStore((s) => s.selectedEditObject);
+  const selectEditObject   = useSimulatorStore((s) => s.selectEditObject);
+
   return (
     <>
-      {arena.targets.map((target) => (
-        <group key={target.id} position={target.position}>
-          <Cylinder args={[target.radius, target.radius, 0.05, 32]} receiveShadow>
-            <meshStandardMaterial
-              color={health === 'reached_target' ? '#86efac' : target.color}
-              transparent
-              opacity={0.8}
-            />
-          </Cylinder>
-          <PulsingRing radius={target.radius} color={target.color} />
-        </group>
-      ))}
+      {arena.targets.map((target) => {
+        const isSelected =
+          isEditMode && selectedEditObject?.type === 'target' && selectedEditObject.id === target.id;
+        return (
+          <group
+            key={target.id}
+            position={target.position}
+            onClick={isEditMode ? (e) => { e.stopPropagation(); selectEditObject('target', target.id); } : undefined}
+          >
+            <Cylinder args={[target.radius, target.radius, 0.05, 32]} receiveShadow>
+              <meshStandardMaterial
+                color={isSelected ? '#fbbf24' : health === 'reached_target' ? '#86efac' : target.color}
+                transparent
+                opacity={0.8}
+              />
+            </Cylinder>
+            <PulsingRing radius={target.radius} color={isSelected ? '#fbbf24' : target.color} />
+            {/* Selection ring */}
+            {isSelected && (
+              <Cylinder
+                args={[target.radius + 0.15, target.radius + 0.15, 0.08, 32]}
+                receiveShadow
+              >
+                <meshStandardMaterial color="#fbbf24" transparent opacity={0.3} wireframe />
+              </Cylinder>
+            )}
+          </group>
+        );
+      })}
     </>
   );
 }
@@ -192,6 +238,9 @@ function Walls({ size }: { size: number }) {
 }
 
 export default function Arena3D() {
+  const isEditMode        = useSimulatorStore((s) => s.isEditMode);
+  const deselectEditObject = useSimulatorStore((s) => s.deselectEditObject);
+
   return (
     <Canvas
       shadows
@@ -201,7 +250,7 @@ export default function Arena3D() {
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
 
-      {/* Floor */}
+      {/* Floor — click on empty floor to deselect when in edit mode */}
       <Grid
         args={[10, 10]}
         cellSize={1}
@@ -215,7 +264,12 @@ export default function Arena3D() {
         followCamera={false}
         infiniteGrid={false}
       />
-      <Box args={[10, 0.1, 10]} position={[0, -0.05, 0]} receiveShadow>
+      <Box
+        args={[10, 0.1, 10]}
+        position={[0, -0.05, 0]}
+        receiveShadow
+        onClick={isEditMode ? () => deselectEditObject() : undefined}
+      >
         <meshStandardMaterial color="#0f172a" />
       </Box>
 

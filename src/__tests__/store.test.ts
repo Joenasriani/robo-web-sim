@@ -165,6 +165,123 @@ describe('hydrateFromStorage', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Arena editor
+// ---------------------------------------------------------------------------
+describe('arena editor', () => {
+  beforeEach(() => {
+    // Ensure we are in free-play mode with a known scenario loaded
+    useSimulatorStore.getState().loadScenario('default-arena');
+  });
+
+  it('setEditMode enables and disables edit mode', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    expect(useSimulatorStore.getState().isEditMode).toBe(true);
+
+    useSimulatorStore.getState().setEditMode(false);
+    expect(useSimulatorStore.getState().isEditMode).toBe(false);
+  });
+
+  it('setEditMode(false) clears selectedEditObject', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    expect(useSimulatorStore.getState().selectedEditObject).not.toBeNull();
+
+    useSimulatorStore.getState().setEditMode(false);
+    expect(useSimulatorStore.getState().selectedEditObject).toBeNull();
+  });
+
+  it('selectEditObject and deselectEditObject work correctly', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    expect(useSimulatorStore.getState().selectedEditObject).toEqual({ type: 'obstacle', id: 'obs1' });
+
+    useSimulatorStore.getState().deselectEditObject();
+    expect(useSimulatorStore.getState().selectedEditObject).toBeNull();
+  });
+
+  it('addObstacle increases obstacle count by one', () => {
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().addObstacle();
+    expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before + 1);
+  });
+
+  it('addObstacle selects the new obstacle', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().addObstacle();
+    const sel = useSimulatorStore.getState().selectedEditObject;
+    expect(sel?.type).toBe('obstacle');
+    const ids = useSimulatorStore.getState().arena.obstacles.map((o) => o.id);
+    expect(ids).toContain(sel?.id);
+  });
+
+  it('deleteSelectedObstacle removes the selected obstacle', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+    useSimulatorStore.getState().deleteSelectedObstacle();
+    expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before - 1);
+    expect(useSimulatorStore.getState().arena.obstacles.find((o) => o.id === 'obs1')).toBeUndefined();
+  });
+
+  it('deleteSelectedObstacle clears selectedEditObject afterward', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    useSimulatorStore.getState().deleteSelectedObstacle();
+    expect(useSimulatorStore.getState().selectedEditObject).toBeNull();
+  });
+
+  it('deleteSelectedObstacle does nothing when a target is selected', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('target', 'target1');
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+    useSimulatorStore.getState().deleteSelectedObstacle();
+    expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before);
+  });
+
+  it('moveSelectedObject moves an obstacle position', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    const beforePos = useSimulatorStore.getState().arena.obstacles.find((o) => o.id === 'obs1')!.position[2];
+    useSimulatorStore.getState().moveSelectedObject('north');
+    const afterPos = useSimulatorStore.getState().arena.obstacles.find((o) => o.id === 'obs1')!.position[2];
+    expect(afterPos).toBeCloseTo(beforePos - 0.5, 5);
+  });
+
+  it('moveSelectedObject clamps position to arena bounds', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    // Move way out of bounds many times
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    for (let i = 0; i < 30; i++) {
+      useSimulatorStore.getState().moveSelectedObject('north');
+    }
+    const pos = useSimulatorStore.getState().arena.obstacles.find((o) => o.id === 'obs1')!.position;
+    const arenaSize = useSimulatorStore.getState().arena.size;
+    const limit = arenaSize / 2 - 0.6;
+    expect(Math.abs(pos[2])).toBeLessThanOrEqual(limit + 0.001);
+  });
+
+  it('resetArenaToDefault restores the scenario arena and exits edit mode', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().addObstacle();
+    const countBefore = useSimulatorStore.getState().arena.obstacles.length;
+    expect(countBefore).toBeGreaterThan(2); // added one extra
+
+    useSimulatorStore.getState().resetArenaToDefault();
+    expect(useSimulatorStore.getState().arena.obstacles.length).toBe(2); // back to default
+    expect(useSimulatorStore.getState().isEditMode).toBe(false);
+    expect(useSimulatorStore.getState().selectedEditObject).toBeNull();
+  });
+
+  it('loadScenario resets edit mode and snapshots the default arena', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().loadScenario('example-straight-line');
+    expect(useSimulatorStore.getState().isEditMode).toBe(false);
+    expect(useSimulatorStore.getState().defaultArenaSnapshot).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Route smoke tests: verify page modules export a default component
 // ---------------------------------------------------------------------------
 describe('route modules export a default component', () => {
