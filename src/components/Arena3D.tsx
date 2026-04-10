@@ -29,11 +29,9 @@ function Robot() {
     meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, y, alpha);
     meshRef.current.position.z = THREE.MathUtils.lerp(meshRef.current.position.z, z, alpha);
 
-    // Short-path rotation lerp — handles angle wrap-around so turns always go
-    // the short way and feel visually clear.
-    let rotDiff = rot - meshRef.current.rotation.y;
-    while (rotDiff > Math.PI) rotDiff -= 2 * Math.PI;
-    while (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
+    // Short-path rotation lerp — normalise difference to [-π, π] so turns
+    // always go the short way and feel visually clear.
+    const rotDiff = Math.atan2(Math.sin(rot - meshRef.current.rotation.y), Math.cos(rot - meshRef.current.rotation.y));
     meshRef.current.rotation.y += rotDiff * alpha;
   });
 
@@ -101,7 +99,10 @@ function PulsingRing({ radius, color }: { radius: number; color: string }) {
   );
 }
 
-// Targets only change color on health change and positions on scenario switch.
+// Targets re-render when the arena layout or robot health changes.
+// memo prevents redundant reconciliation from parent canvas re-renders
+// while still allowing the internal store subscriptions to trigger updates
+// on arena/health changes (which is correct and infrequent).
 const Targets = memo(function Targets() {
   const arena = useSimulatorStore((s) => s.arena);
   const health = useSimulatorStore((s) => s.robot.health);
