@@ -21,6 +21,7 @@ import ModelLibrary from '@/components/ModelLibrary';
 import SavedScenes from '@/components/SavedScenes';
 import SavedPrograms from '@/components/SavedPrograms';
 import BlocklyPanel from '@/components/BlocklyPanel';
+import MobileEditOverlay from '@/components/MobileEditOverlay';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
@@ -66,8 +67,14 @@ export default function SimulatorPage() {
           <Arena3D />
           <SimFeedback />
           <EditModeBadge />
+          {/* Touch-friendly edit controls overlay — mobile only, visible when object is selected */}
+          <MobileEditOverlay />
+          {/* Canvas interaction hint */}
           <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
             Drag to orbit • Scroll to zoom • Right-drag to pan
+          </div>
+          <div className="absolute bottom-2 left-2 text-xs text-slate-600 pointer-events-none sm:hidden">
+            Drag to orbit • Pinch to zoom
           </div>
         </main>
 

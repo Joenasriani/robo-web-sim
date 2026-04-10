@@ -206,10 +206,15 @@ RoboWebSim adapts across screen sizes using a breakpoint-based layout strategy:
 - No horizontal scrolling on any supported width
 - Touch-friendly tap targets (`touch-manipulation`, `min-h-[52px]` tab buttons, `active:` states on all buttons)
 - Current Context panel always visible above the canvas at all sizes
+- **Controls tab opens by default** on mobile so users see robot controls immediately on landing
+- **Mobile-specific onboarding strip** — shows tab-based instructions (e.g. "Tap Controls to move") instead of sidebar steps on small screens
+- **Mobile Edit Overlay** — when in arena edit mode and an object is selected, a floating D-pad + rotate + delete panel appears at the bottom of the canvas so users never have to hunt for the Controls tab
+- **Canvas orbit hint** visible on all sizes — "Drag to orbit • Pinch to zoom" on mobile, full instructions on desktop
 
 ### Remaining layout limitations
 - OrbitControls touch-pan/pinch-zoom uses Three.js defaults; multi-touch may feel slightly different from native apps
 - Keyboard arrow key shortcuts still work on mobile but are only useful when an external keyboard is connected
+- Object selection in 3D uses R3F's standard pointer-event raycasting; a very fast swipe may occasionally not register as a tap
 
 ---
 
@@ -219,14 +224,15 @@ Priority order for future upgrades:
 
 1. ~~**Responsive / mobile controls** — Touch-friendly D-pad, better layout on small screens~~ ✅ Done in PR #9
 2. ~~**UX polish and demo readiness** — Onboarding strip, empty states, disabled states, microcopy~~ ✅ Done in PR #10
-3. **Editable arena** — Drag-and-drop obstacles and target placement
-4. **Save/load command sequences** — Export and import command programs as JSON
-5. **More lessons** — Sensor simulation, grid navigation, pathfinding
-6. **Physics engine** — Rapier.js integration for realistic collisions and dynamics
-7. **Blockly integration** — Visual programming for command sequences
-8. **Multiple robot types** — Different shapes, sizes, and movement capabilities
-9. **Lesson authoring** — User-created lessons with custom objectives
-10. **Multiplayer / collaborative mode** — Two robots, cooperative challenges
+3. ~~**Mobile touch usability** — Touch object selection, mobile edit overlay, better discoverability~~ ✅ Done in PR #21
+4. **Editable arena** — Drag-and-drop obstacles and target placement
+5. **Save/load command sequences** — Export and import command programs as JSON
+6. **More lessons** — Sensor simulation, grid navigation, pathfinding
+7. **Physics engine** — Rapier.js integration for realistic collisions and dynamics
+8. **Blockly integration** — Visual programming for command sequences
+9. **Multiple robot types** — Different shapes, sizes, and movement capabilities
+10. **Lesson authoring** — User-created lessons with custom objectives
+11. **Multiplayer / collaborative mode** — Two robots, cooperative challenges
 
 ---
 
