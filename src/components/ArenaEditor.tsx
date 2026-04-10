@@ -1,18 +1,21 @@
 'use client';
 
 import { useSimulatorStore } from '@/sim/robotController';
+import { getModelById } from '@/models/modelLibrary';
 
 export default function ArenaEditor() {
-  const isEditMode          = useSimulatorStore((s) => s.isEditMode);
-  const activeLesson        = useSimulatorStore((s) => s.activeLesson);
-  const selectedEditObject  = useSimulatorStore((s) => s.selectedEditObject);
-  const arena               = useSimulatorStore((s) => s.arena);
-  const setEditMode         = useSimulatorStore((s) => s.setEditMode);
-  const deselectEditObject  = useSimulatorStore((s) => s.deselectEditObject);
-  const moveSelectedObject  = useSimulatorStore((s) => s.moveSelectedObject);
-  const deleteSelectedObstacle = useSimulatorStore((s) => s.deleteSelectedObstacle);
-  const addObstacle         = useSimulatorStore((s) => s.addObstacle);
-  const resetArenaToDefault = useSimulatorStore((s) => s.resetArenaToDefault);
+  const isEditMode               = useSimulatorStore((s) => s.isEditMode);
+  const activeLesson             = useSimulatorStore((s) => s.activeLesson);
+  const selectedEditObject       = useSimulatorStore((s) => s.selectedEditObject);
+  const arena                    = useSimulatorStore((s) => s.arena);
+  const setEditMode              = useSimulatorStore((s) => s.setEditMode);
+  const deselectEditObject       = useSimulatorStore((s) => s.deselectEditObject);
+  const moveSelectedObject       = useSimulatorStore((s) => s.moveSelectedObject);
+  const rotateSelectedObject     = useSimulatorStore((s) => s.rotateSelectedObject);
+  const deleteSelectedObstacle   = useSimulatorStore((s) => s.deleteSelectedObstacle);
+  const duplicateSelectedObstacle = useSimulatorStore((s) => s.duplicateSelectedObstacle);
+  const addObstacle              = useSimulatorStore((s) => s.addObstacle);
+  const resetArenaToDefault      = useSimulatorStore((s) => s.resetArenaToDefault);
 
   // Edit mode is only available in free-play
   if (activeLesson !== null) return null;
@@ -32,24 +35,30 @@ export default function ArenaEditor() {
     );
   }
 
-  // Determine selected object label
+  // Resolve selected object details
+  const selectedObs = selectedEditObject?.type === 'obstacle'
+    ? arena.obstacles.find((o) => o.id === selectedEditObject.id)
+    : undefined;
+  const selectedTgt = selectedEditObject?.type === 'target'
+    ? arena.targets.find((t) => t.id === selectedEditObject.id)
+    : undefined;
+
+  // Look up model library metadata if this obstacle was placed from the library
+  const placedModel = selectedObs?.modelId ? getModelById(selectedObs.modelId) : undefined;
+
+  // Human-readable selection label
   let selectionLabel = 'Nothing selected';
-  if (selectedEditObject) {
-    if (selectedEditObject.type === 'obstacle') {
-      const obs = arena.obstacles.find((o) => o.id === selectedEditObject.id);
-      selectionLabel = obs
-        ? `Obstacle (${obs.position[0].toFixed(1)}, ${obs.position[2].toFixed(1)})`
-        : 'Obstacle (not found)';
-    } else {
-      const tgt = arena.targets.find((t) => t.id === selectedEditObject.id);
-      selectionLabel = tgt
-        ? `Target (${tgt.position[0].toFixed(1)}, ${tgt.position[2].toFixed(1)})`
-        : 'Target (not found)';
-    }
+  if (selectedObs) {
+    const name = placedModel?.name ?? 'Obstacle';
+    selectionLabel = `${name} (${selectedObs.position[0].toFixed(1)}, ${selectedObs.position[2].toFixed(1)})`;
+  } else if (selectedTgt) {
+    selectionLabel = `Target (${selectedTgt.position[0].toFixed(1)}, ${selectedTgt.position[2].toFixed(1)})`;
   }
 
   const hasSelection = selectedEditObject !== null;
-  const canDelete = hasSelection && selectedEditObject?.type === 'obstacle';
+  const canDelete    = hasSelection && selectedEditObject?.type === 'obstacle';
+  const canRotate    = hasSelection && selectedEditObject?.type === 'obstacle';
+  const canDuplicate = hasSelection && selectedEditObject?.type === 'obstacle';
 
   return (
     <div className="flex flex-col gap-2">
@@ -78,6 +87,31 @@ export default function ArenaEditor() {
       }`}>
         {hasSelection ? `✔ ${selectionLabel}` : 'Nothing selected — click an object'}
       </div>
+
+      {/* Model metadata panel — shown when a library-placed obstacle is selected */}
+      {placedModel && (
+        <div className="rounded border border-slate-600 bg-slate-800/60 px-2 py-1.5 space-y-0.5">
+          <p className="text-[10px] font-semibold text-slate-300 leading-snug">{placedModel.name}</p>
+          <dl className="grid grid-cols-2 gap-x-2 text-[9px] text-slate-400">
+            <div>
+              <dt className="inline font-medium text-slate-500">Category: </dt>
+              <dd className="inline">{placedModel.category}</dd>
+            </div>
+            <div>
+              <dt className="inline font-medium text-slate-500">Type: </dt>
+              <dd className="inline">{placedModel.renderType === 'glb' ? 'GLB' : 'Built-in'}</dd>
+            </div>
+            <div className="col-span-2">
+              <dt className="inline font-medium text-slate-500">Source: </dt>
+              <dd className="inline">{placedModel.source}</dd>
+            </div>
+            <div className="col-span-2">
+              <dt className="inline font-medium text-slate-500">ID: </dt>
+              <dd className="inline font-mono text-slate-500">{placedModel.id}</dd>
+            </div>
+          </dl>
+        </div>
+      )}
 
       {/* Directional movement */}
       <div className="flex flex-col items-center gap-0.5">
@@ -120,6 +154,23 @@ export default function ArenaEditor() {
         </div>
       </div>
 
+      {/* Rotation */}
+      <div className="flex items-center gap-1">
+        <span className="text-[9px] text-slate-600 uppercase tracking-wide flex-1">Rotate</span>
+        <button
+          onClick={() => rotateSelectedObject('ccw')}
+          disabled={!canRotate}
+          className="btn-small disabled:opacity-30 px-2"
+          title="Rotate 45° counter-clockwise"
+        >↺</button>
+        <button
+          onClick={() => rotateSelectedObject('cw')}
+          disabled={!canRotate}
+          className="btn-small disabled:opacity-30 px-2"
+          title="Rotate 45° clockwise"
+        >↻</button>
+      </div>
+
       {/* Action buttons */}
       <div className="flex flex-wrap gap-1">
         <button
@@ -128,6 +179,14 @@ export default function ArenaEditor() {
           title="Add a new obstacle to the arena"
         >
           ➕ Add Obstacle
+        </button>
+        <button
+          onClick={duplicateSelectedObstacle}
+          disabled={!canDuplicate}
+          className="btn-small disabled:opacity-30"
+          title={canDuplicate ? 'Duplicate selected obstacle' : 'Select an obstacle first'}
+        >
+          📋 Duplicate
         </button>
         <button
           onClick={deleteSelectedObstacle}
@@ -153,3 +212,4 @@ export default function ArenaEditor() {
     </div>
   );
 }
+

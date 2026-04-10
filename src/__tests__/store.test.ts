@@ -261,6 +261,80 @@ describe('arena editor', () => {
     expect(Math.abs(pos[2])).toBeLessThanOrEqual(limit + 0.001);
   });
 
+  it('rotateSelectedObject rotates the selected obstacle by 45°', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    const before = useSimulatorStore.getState().arena.obstacles.find((o) => o.id === 'obs1')!.rotation ?? 0;
+    useSimulatorStore.getState().rotateSelectedObject('cw');
+    const after = useSimulatorStore.getState().arena.obstacles.find((o) => o.id === 'obs1')!.rotation ?? 0;
+    expect(after).toBeCloseTo(before + Math.PI / 4, 5);
+  });
+
+  it('rotateSelectedObject CCW decrements rotation', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    const before = useSimulatorStore.getState().arena.obstacles.find((o) => o.id === 'obs1')!.rotation ?? 0;
+    useSimulatorStore.getState().rotateSelectedObject('ccw');
+    const after = useSimulatorStore.getState().arena.obstacles.find((o) => o.id === 'obs1')!.rotation ?? 0;
+    expect(after).toBeCloseTo(before - Math.PI / 4, 5);
+  });
+
+  it('rotateSelectedObject does nothing when no obstacle is selected', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    const obsBefore = useSimulatorStore.getState().arena.obstacles.map((o) => ({ ...o }));
+    useSimulatorStore.getState().rotateSelectedObject('cw');
+    const obsAfter = useSimulatorStore.getState().arena.obstacles;
+    expect(obsAfter).toHaveLength(obsBefore.length);
+    obsBefore.forEach((o, i) => {
+      expect(obsAfter[i].rotation ?? 0).toBeCloseTo(o.rotation ?? 0, 5);
+    });
+  });
+
+  it('duplicateSelectedObstacle adds a copy of the selected obstacle', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+    useSimulatorStore.getState().duplicateSelectedObstacle();
+    expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before + 1);
+  });
+
+  it('duplicateSelectedObstacle preserves modelId, glbUrl, and rotation on the copy', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    // Place a model-library object so it has modelId + glbUrl
+    useSimulatorStore.getState().placeModelFromLibrary('ml-glb-crate');
+    const placed = useSimulatorStore.getState().arena.obstacles.at(-1)!;
+    // Give it a rotation
+    useSimulatorStore.getState().selectEditObject('obstacle', placed.id);
+    useSimulatorStore.getState().rotateSelectedObject('cw');
+    const rotated = useSimulatorStore.getState().arena.obstacles.find((o) => o.id === placed.id)!;
+    // Duplicate
+    useSimulatorStore.getState().duplicateSelectedObstacle();
+    const dup = useSimulatorStore.getState().arena.obstacles.at(-1)!;
+    expect(dup.id).not.toBe(rotated.id);
+    expect(dup.modelId).toBe(rotated.modelId);
+    expect(dup.glbUrl).toBe(rotated.glbUrl);
+    expect(dup.rotation).toBeCloseTo(rotated.rotation ?? 0, 5);
+  });
+
+  it('duplicateSelectedObstacle selects the new copy', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    useSimulatorStore.getState().duplicateSelectedObstacle();
+    const sel = useSimulatorStore.getState().selectedEditObject;
+    expect(sel?.type).toBe('obstacle');
+    const ids = useSimulatorStore.getState().arena.obstacles.map((o) => o.id);
+    expect(ids).toContain(sel?.id);
+    // The copy is not 'obs1'
+    expect(sel?.id).not.toBe('obs1');
+  });
+
+  it('duplicateSelectedObstacle does nothing when no obstacle is selected', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+    useSimulatorStore.getState().duplicateSelectedObstacle();
+    expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before);
+  });
+
   it('resetArenaToDefault restores the scenario arena and exits edit mode', () => {
     useSimulatorStore.getState().setEditMode(true);
     useSimulatorStore.getState().addObstacle();
