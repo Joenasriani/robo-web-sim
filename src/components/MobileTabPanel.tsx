@@ -12,6 +12,7 @@ import TelemetryPanel from '@/components/TelemetryPanel';
 import EventLog from '@/components/EventLog';
 import ModelLibrary from '@/components/ModelLibrary';
 import SavedScenes from '@/components/SavedScenes';
+import SavedPrograms from '@/components/SavedPrograms';
 
 type Tab = 'controls' | 'scenarios' | 'models' | 'scenes' | 'queue' | 'info';
 
@@ -85,6 +86,8 @@ export default function MobileTabPanel() {
           {activeTab === 'queue' && (
             <div className="flex flex-col gap-4">
               <CommandQueue />
+              <hr className="border-slate-700" />
+              <SavedPrograms />
               <hr className="border-slate-700" />
               <SimSettings />
             </div>
