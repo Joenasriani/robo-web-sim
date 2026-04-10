@@ -13,6 +13,7 @@ import EventLog from '@/components/EventLog';
 import ModelLibrary from '@/components/ModelLibrary';
 import SavedScenes from '@/components/SavedScenes';
 import SavedPrograms from '@/components/SavedPrograms';
+import BlocklyPanel from '@/components/BlocklyPanel';
 
 type Tab = 'controls' | 'scenarios' | 'models' | 'scenes' | 'queue' | 'info';
 
@@ -85,6 +86,8 @@ export default function MobileTabPanel() {
           )}
           {activeTab === 'queue' && (
             <div className="flex flex-col gap-4">
+              <BlocklyPanel />
+              <hr className="border-slate-700" />
               <CommandQueue />
               <hr className="border-slate-700" />
               <SavedPrograms />
