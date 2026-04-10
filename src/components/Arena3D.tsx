@@ -45,12 +45,18 @@ function GlbObstacleInner({
   const { scene } = useGLTF(obs.glbUrl!);
   // Clone the scene so multiple instances don't share the same object
   const clone = useMemo(() => scene.clone(true), [scene]);
+
+  function handleClick(e: { stopPropagation: () => void }) {
+    e.stopPropagation();
+    onSelect?.();
+  }
+
   return (
     <primitive
       object={clone}
       position={obs.position}
       scale={obs.size}
-      onClick={onSelect ? (e: THREE.Event) => { (e as unknown as { stopPropagation: () => void }).stopPropagation(); onSelect(); } : undefined}
+      onClick={onSelect ? handleClick : undefined}
     />
   );
 }

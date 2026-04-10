@@ -24,6 +24,10 @@ function ModelCard({
   onPlace: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
+
+  // Show preview image when available and not yet failed; fall back to emoji thumbnail.
+  const showImage = Boolean(model.previewImage) && !previewFailed;
 
   return (
     <div className="rounded-lg border border-slate-700 bg-slate-800/50">
@@ -68,28 +72,19 @@ function ModelCard({
             aria-hidden="true"
             className="w-full h-14 rounded bg-slate-700/60 border border-slate-600 flex items-center justify-center gap-2 overflow-hidden"
           >
-            {model.previewImage ? (
+            {showImage ? (
               <img
                 src={model.previewImage}
                 alt={model.name}
                 className="h-12 w-12 object-contain"
-                onError={(e) => {
-                  // If image fails to load, hide it and fall back to emoji
-                  (e.currentTarget as HTMLImageElement).style.display = 'none';
-                  const next = e.currentTarget.nextElementSibling as HTMLElement | null;
-                  if (next) next.style.display = '';
-                }}
+                onError={() => setPreviewFailed(true)}
               />
-            ) : null}
-            <span
-              className="text-3xl leading-none"
-              style={model.previewImage ? { display: 'none' } : {}}
-            >
-              {model.thumbnail}
-            </span>
-            <span className="text-slate-500 text-[10px] uppercase tracking-wide">
-              {model.previewImage ? '' : 'Preview'}
-            </span>
+            ) : (
+              <>
+                <span className="text-3xl leading-none">{model.thumbnail}</span>
+                <span className="text-slate-500 text-[10px] uppercase tracking-wide">Preview</span>
+              </>
+            )}
           </div>
 
           {/* Description */}
