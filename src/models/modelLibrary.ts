@@ -1,13 +1,13 @@
 /**
- * Model Library — curated built-in 3D model definitions for the free-play arena.
+ * Model Library — curated 3D model definitions for the free-play arena.
  *
- * v1 strategy: all models use `renderType: 'builtin'` (Three.js box primitives).
- * The metadata structure is attribution-ready and extensible to real GLB/glTF
- * assets in a future release.
+ * v2 strategy: built-in primitives (renderType: 'builtin') are preserved and a
+ * local GLB asset pipeline (renderType: 'glb') is introduced alongside them.
  *
  * Rules:
  *   - No live third-party API dependencies.
- *   - Permissive licensing only (MIT for built-ins).
+ *   - All assets committed locally under /public/models/.
+ *   - Permissive licensing only (CC0, MIT, CC-BY 4.0 with attribution).
  *   - Source metadata preserved for every entry.
  *   - Do not mutate lesson content.
  */
@@ -42,16 +42,30 @@ export interface ModelDefinition {
   // Rendering
   // ---------------------------------------------------------------------------
   /**
-   * v1: 'builtin' — rendered as a Three.js box primitive using placementDefaults.
-   * Future: 'glb' — loaded via @react-three/drei <useGLTF> with a glbUrl field.
+   * 'builtin' — rendered as a Three.js box primitive using placementDefaults.
+   * 'glb'     — loaded via @react-three/drei useGLTF from a local glbUrl path.
    */
-  renderType: 'builtin';
+  renderType: 'builtin' | 'glb';
 
   /**
-   * Emoji or short text used as a thumbnail placeholder.
-   * Real image paths can replace this in a future pass.
+   * Emoji or short text used as a thumbnail placeholder in the card header.
+   * Shown whenever previewImage is absent or fails to load.
    */
   thumbnail: string;
+
+  /**
+   * Optional path to a real preview image (relative to /public/).
+   * e.g. '/model-previews/crate-box.svg'
+   * When present the model card shows the image instead of the emoji.
+   */
+  previewImage?: string;
+
+  /**
+   * Path to the local GLB/glTF file served from /public/.
+   * Required when renderType is 'glb'. Ignored for 'builtin' entries.
+   * e.g. '/models/crate-box.glb'
+   */
+  glbUrl?: string;
 
   // ---------------------------------------------------------------------------
   // Placement
@@ -67,7 +81,7 @@ export interface ModelDefinition {
 }
 
 // ---------------------------------------------------------------------------
-// Curated model registry (v1 — built-in primitives only)
+// Curated model registry
 // ---------------------------------------------------------------------------
 
 export const CURATED_MODELS: ModelDefinition[] = [
@@ -108,6 +122,38 @@ export const CURATED_MODELS: ModelDefinition[] = [
     thumbnail: '🧱',
     placementDefaults: { size: [2.5, 1, 0.4], color: '#94a3b8' },
   },
+  {
+    id: 'ml-glb-crate',
+    name: 'Crate (GLB)',
+    category: 'obstacle',
+    description: 'A solid storage crate loaded from a local GLB asset (Kenney-style).',
+    source: 'Local GLB asset — /public/models/crate-box.glb',
+    creator: 'robo-web-sim',
+    license: 'CC0 1.0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    sourceUrl: 'https://kenney.nl/assets',
+    renderType: 'glb',
+    thumbnail: '📦',
+    previewImage: '/model-previews/crate-box.svg',
+    glbUrl: '/models/crate-box.glb',
+    placementDefaults: { size: [1, 1, 1], color: '#ef4444' },
+  },
+  {
+    id: 'ml-glb-barrel',
+    name: 'Barrel (GLB)',
+    category: 'obstacle',
+    description: 'A GLB barrel asset loaded from a local file.',
+    source: 'Local GLB asset — /public/models/barrel.glb',
+    creator: 'robo-web-sim',
+    license: 'CC0 1.0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    sourceUrl: 'https://kenney.nl/assets',
+    renderType: 'glb',
+    thumbnail: '🛢️',
+    previewImage: '/model-previews/barrel.svg',
+    glbUrl: '/models/barrel.glb',
+    placementDefaults: { size: [0.8, 1.2, 0.8], color: '#3b82f6' },
+  },
 
   // ── Props ─────────────────────────────────────────────────────────────────
   {
@@ -145,6 +191,22 @@ export const CURATED_MODELS: ModelDefinition[] = [
     renderType: 'builtin',
     thumbnail: '🟪',
     placementDefaults: { size: [0.6, 0.6, 0.6], color: '#a855f7' },
+  },
+  {
+    id: 'ml-glb-cone',
+    name: 'Traffic Cone (GLB)',
+    category: 'prop',
+    description: 'An orange traffic cone loaded from a local GLB asset.',
+    source: 'Local GLB asset — /public/models/traffic-cone.glb',
+    creator: 'robo-web-sim',
+    license: 'CC0 1.0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    sourceUrl: 'https://kenney.nl/assets',
+    renderType: 'glb',
+    thumbnail: '🚧',
+    previewImage: '/model-previews/traffic-cone.svg',
+    glbUrl: '/models/traffic-cone.glb',
+    placementDefaults: { size: [0.4, 0.8, 0.4], color: '#f97316' },
   },
 
   // ── Targets ───────────────────────────────────────────────────────────────

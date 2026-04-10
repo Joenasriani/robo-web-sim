@@ -1,10 +1,73 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useMemo, Suspense, Component, ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, Box, Cylinder, Line } from '@react-three/drei';
+import { OrbitControls, Grid, Box, Cylinder, Line, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { useSimulatorStore } from '@/sim/robotController';
+import { Obstacle } from '@/sim/arenaConfig';
+
+// ---------------------------------------------------------------------------
+// GLB obstacle — renders a locally-hosted GLB asset via useGLTF.
+// Must be rendered inside a <Suspense> boundary.
+// ---------------------------------------------------------------------------
+
+/** React error boundary that catches GLB load failures and renders a fallback. */
+class GlbErrorBoundary extends Component<
+  { fallback: ReactNode; onError: (msg: string) => void; children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { fallback: ReactNode; onError: (msg: string) => void; children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    this.props.onError(`⚠️ GLB load failed: ${error.message}`);
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+function GlbObstacleInner({
+  obs,
+  isSelected,
+  onSelect,
+}: {
+  obs: Obstacle;
+  isSelected: boolean;
+  onSelect?: () => void;
+}) {
+  const { scene } = useGLTF(obs.glbUrl!);
+  // Clone the scene so multiple instances don't share the same object
+  const clone = useMemo(() => scene.clone(true), [scene]);
+  return (
+    <primitive
+      object={clone}
+      position={obs.position}
+      scale={obs.size}
+      onClick={onSelect ? (e: THREE.Event) => { (e as unknown as { stopPropagation: () => void }).stopPropagation(); onSelect(); } : undefined}
+    />
+  );
+}
+
+/** Box fallback shown while a GLB loads or if it fails to load. */
+function GlbFallbackBox({ obs, isSelected }: { obs: Obstacle; isSelected: boolean }) {
+  return (
+    <Box
+      args={obs.size as [number, number, number]}
+      position={obs.position}
+      castShadow
+      receiveShadow
+    >
+      <meshStandardMaterial color={isSelected ? '#fbbf24' : obs.color} wireframe={false} />
+    </Box>
+  );
+}
 
 function Robot() {
   const meshRef = useRef<THREE.Group>(null);
@@ -53,12 +116,47 @@ function Obstacles() {
   const isEditMode         = useSimulatorStore((s) => s.isEditMode);
   const selectedEditObject = useSimulatorStore((s) => s.selectedEditObject);
   const selectEditObject   = useSimulatorStore((s) => s.selectEditObject);
+  const appendEvent        = useSimulatorStore((s) => s.appendEvent);
 
   return (
     <>
       {arena.obstacles.map((obs) => {
         const isSelected =
           isEditMode && selectedEditObject?.type === 'obstacle' && selectedEditObject.id === obs.id;
+        const onSelect = isEditMode
+          ? () => selectEditObject('obstacle', obs.id)
+          : undefined;
+
+        if (obs.glbUrl) {
+          // GLB model: render inside ErrorBoundary > Suspense with a box fallback
+          const fallback = <GlbFallbackBox obs={obs} isSelected={isSelected} />;
+          return (
+            <group key={obs.id}>
+              <GlbErrorBoundary
+                fallback={fallback}
+                onError={(msg) => appendEvent(msg, 'warning')}
+              >
+                <Suspense fallback={fallback}>
+                  <GlbObstacleInner
+                    obs={obs}
+                    isSelected={isSelected}
+                    onSelect={onSelect}
+                  />
+                </Suspense>
+              </GlbErrorBoundary>
+              {isSelected && (
+                <Box
+                  args={[(obs.size[0] + 0.12) as number, (obs.size[1] + 0.12) as number, (obs.size[2] + 0.12) as number]}
+                  position={obs.position}
+                >
+                  <meshStandardMaterial color="#fbbf24" transparent opacity={0.25} wireframe />
+                </Box>
+              )}
+            </group>
+          );
+        }
+
+        // Built-in box primitive (default)
         return (
           <group key={obs.id}>
             <Box

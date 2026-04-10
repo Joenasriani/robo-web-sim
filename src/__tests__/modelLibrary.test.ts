@@ -65,7 +65,7 @@ describe('CURATED_MODELS definitions', () => {
       expect(typeof model.source).toBe('string');
       expect(typeof model.creator).toBe('string');
       expect(typeof model.license).toBe('string');
-      expect(model.renderType).toBe('builtin');
+      expect(['builtin', 'glb']).toContain(model.renderType);
       expect(typeof model.thumbnail).toBe('string');
     }
   });
@@ -97,6 +97,33 @@ describe('CURATED_MODELS definitions', () => {
   it('getModelsByCategory returns only models for that category', () => {
     const obstacles = getModelsByCategory('obstacle');
     obstacles.forEach((m) => expect(m.category).toBe('obstacle'));
+  });
+
+  it('glb models have glbUrl and no-undefined thumbnail', () => {
+    const glbModels = CURATED_MODELS.filter((m) => m.renderType === 'glb');
+    expect(glbModels.length).toBeGreaterThan(0);
+    for (const model of glbModels) {
+      expect(typeof model.glbUrl).toBe('string');
+      expect(model.glbUrl!.length).toBeGreaterThan(0);
+      expect(model.glbUrl).toMatch(/^\/models\/.+\.glb$/);
+      expect(typeof model.thumbnail).toBe('string');
+    }
+  });
+
+  it('glb models have previewImage pointing to /model-previews/', () => {
+    const glbModels = CURATED_MODELS.filter((m) => m.renderType === 'glb');
+    for (const model of glbModels) {
+      expect(model.previewImage).toBeDefined();
+      expect(model.previewImage).toMatch(/^\/model-previews\//);
+    }
+  });
+
+  it('builtin models do not have glbUrl', () => {
+    const builtinModels = CURATED_MODELS.filter((m) => m.renderType === 'builtin');
+    expect(builtinModels.length).toBeGreaterThan(0);
+    for (const model of builtinModels) {
+      expect(model.glbUrl).toBeUndefined();
+    }
   });
 });
 
@@ -164,5 +191,26 @@ describe('placeModelFromLibrary', () => {
       useSimulatorStore.getState().placeModelFromLibrary(id);
     }
     expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before + ids.length);
+  });
+
+  it('placed GLB obstacle carries glbUrl and modelId', () => {
+    const glbModel = CURATED_MODELS.find((m) => m.renderType === 'glb')!;
+    expect(glbModel).toBeDefined();
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+    useSimulatorStore.getState().placeModelFromLibrary(glbModel.id);
+    const obstacles = useSimulatorStore.getState().arena.obstacles;
+    const placed = obstacles[before];
+    expect(placed.glbUrl).toBe(glbModel.glbUrl);
+    expect(placed.modelId).toBe(glbModel.id);
+  });
+
+  it('placed builtin obstacle does not carry glbUrl', () => {
+    const builtinModel = CURATED_MODELS.find((m) => m.renderType === 'builtin')!;
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+    useSimulatorStore.getState().placeModelFromLibrary(builtinModel.id);
+    const obstacles = useSimulatorStore.getState().arena.obstacles;
+    const placed = obstacles[before];
+    expect(placed.glbUrl).toBeUndefined();
+    expect(placed.modelId).toBe(builtinModel.id);
   });
 });

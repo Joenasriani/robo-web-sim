@@ -936,6 +936,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       position: [x, yOffset, z] as [number, number, number],
       size: model.placementDefaults.size,
       color: model.placementDefaults.color,
+      modelId: model.id,
+      ...(model.glbUrl ? { glbUrl: model.glbUrl } : {}),
     };
     const newArena = { ...arena, obstacles: [...arena.obstacles, newObs] };
     const robot = { ...get().robot, sensors: computeSensors(get().robot, newArena) };

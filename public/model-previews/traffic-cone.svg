@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Traffic cone preview -->
+  <!-- Base -->
+  <ellipse cx="32" cy="54" rx="16" ry="5" fill="#1e293b" stroke="#0f172a" stroke-width="1"/>
+  <!-- Cone body -->
+  <polygon points="32,10 48,54 16,54" fill="#f97316" stroke="#ea580c" stroke-width="1.5"/>
+  <!-- White stripe -->
+  <polygon points="24.5,38 39.5,38 37,44 27,44" fill="white" opacity="0.85"/>
+  <!-- Tip highlight -->
+  <circle cx="32" cy="12" r="2" fill="#fbbf24"/>
+</svg>
