@@ -12,11 +12,36 @@ const BLOCK_COLOURS = {
 };
 
 const BLOCK_DEFINITIONS = [
-  { type: 'robot_forward',    message: '↑ Move Forward',  colour: BLOCK_COLOURS.forward },
-  { type: 'robot_backward',   message: '↓ Move Backward', colour: BLOCK_COLOURS.backward },
-  { type: 'robot_turn_left',  message: '← Turn Left',     colour: BLOCK_COLOURS.turn },
-  { type: 'robot_turn_right', message: '→ Turn Right',    colour: BLOCK_COLOURS.turn },
-  { type: 'robot_wait',       message: '⏸ Wait',          colour: BLOCK_COLOURS.wait },
+  {
+    type: 'robot_forward',
+    message: '↑ Move Forward',
+    colour: BLOCK_COLOURS.forward,
+    tooltip: 'Move the robot forward one step',
+  },
+  {
+    type: 'robot_backward',
+    message: '↓ Move Backward',
+    colour: BLOCK_COLOURS.backward,
+    tooltip: 'Move the robot backward one step',
+  },
+  {
+    type: 'robot_turn_left',
+    message: '← Turn Left',
+    colour: BLOCK_COLOURS.turn,
+    tooltip: 'Rotate the robot 22.5° to the left',
+  },
+  {
+    type: 'robot_turn_right',
+    message: '→ Turn Right',
+    colour: BLOCK_COLOURS.turn,
+    tooltip: 'Rotate the robot 22.5° to the right',
+  },
+  {
+    type: 'robot_wait',
+    message: '⏸ Wait',
+    colour: BLOCK_COLOURS.wait,
+    tooltip: 'Pause the robot for one step',
+  },
 ];
 
 const TOOLBOX = {
@@ -30,15 +55,14 @@ const WORKSPACE_STORAGE_KEY = 'blockly-workspace-state';
 function registerBlocks(Blockly: typeof import('blockly')) {
   for (const def of BLOCK_DEFINITIONS) {
     if (Blockly.Blocks[def.type]) continue;
-    const colour = def.colour;
-    const message = def.message;
+    const { colour, message, tooltip } = def;
     Blockly.Blocks[def.type] = {
       init(this: Block) {
         this.appendDummyInput().appendField(message);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(colour);
-        this.setTooltip(message);
+        this.setTooltip(tooltip);
       },
     };
   }
@@ -88,8 +112,9 @@ export default function BlocklyWorkspace({ onSendToQueue }: BlocklyWorkspaceProp
           const dom = mod.utils.xml.textToDom(saved);
           mod.Xml.domToWorkspace(dom, ws);
         }
-      } catch {
-        // Ignore restoration errors — start with a blank workspace
+      } catch (err) {
+        // Warn on restoration failure — could indicate corrupted or incompatible state
+        console.warn('[BlocklyWorkspace] Failed to restore workspace state:', err);
       }
     })();
 
@@ -101,8 +126,9 @@ export default function BlocklyWorkspace({ onSendToQueue }: BlocklyWorkspaceProp
           const dom = BlocklyMod.Xml.workspaceToDom(ws);
           const text = BlocklyMod.utils.xml.domToText(dom);
           localStorage.setItem(WORKSPACE_STORAGE_KEY, text);
-        } catch {
-          // Ignore persistence errors
+        } catch (err) {
+          // Warn on persistence failure — could indicate storage quota exceeded
+          console.warn('[BlocklyWorkspace] Failed to persist workspace state:', err);
         }
         ws.dispose();
       }
@@ -133,8 +159,8 @@ export default function BlocklyWorkspace({ onSendToQueue }: BlocklyWorkspaceProp
     workspaceRef.current?.clear();
     try {
       localStorage.removeItem(WORKSPACE_STORAGE_KEY);
-    } catch {
-      // Ignore storage errors
+    } catch (err) {
+      console.warn('[BlocklyWorkspace] Failed to clear persisted workspace state:', err);
     }
   }, []);
 
