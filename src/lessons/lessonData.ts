@@ -116,4 +116,124 @@ export const LESSONS: Lesson[] = [
     },
     completionRules: { reachTarget: true, avoidCollision: true },
   },
+  {
+    id: 'lesson-4',
+    title: 'Lesson 4: Queue Your Commands',
+    objective: 'Use the command queue to plan a sequence of forward moves and execute them all at once.',
+    steps: [
+      { instruction: 'Find the Command Queue panel on the right side of the screen.' },
+      { instruction: 'Click "Enqueue" next to the Forward button at least 6 times to add moves to the queue.' },
+      { instruction: 'Click "▶ Run Queue" to execute all your commands at once and drive to the target.' },
+    ],
+    successCondition: 'Robot reaches the target by running the command queue.',
+    hint: 'You need about 6 forward commands to reach the target straight ahead. Build the queue first, then run it!',
+    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
+    arenaOverrides: {
+      obstacles: [
+        { id: 'obs1', position: [-3, 0.5,  2],  size: [1, 1, 1], color: '#ef4444' },
+        { id: 'obs2', position: [ 3, 0.5, -1],  size: [1, 1, 1], color: '#f97316' },
+      ],
+      targets: [
+        { id: 'target1', position: [0, 0.05, 3.5], radius: 0.6, color: '#22c55e' },
+      ],
+    },
+    completionRules: { completeQueue: true, reachTarget: true },
+  },
+  {
+    id: 'lesson-5',
+    title: 'Lesson 5: Watch the Front Distance Sensor',
+    objective: 'Read the front distance sensor in the Telemetry panel to detect a nearby obstacle, then steer safely around it to reach the target.',
+    steps: [
+      { instruction: 'Open the Telemetry panel. Notice "Front Distance" shows about 1.5 — an obstacle is close ahead!' },
+      { instruction: 'Do NOT move forward yet. Turn Right 4 times to face East.' },
+      { instruction: 'Move Forward 5 times, then Turn Left 4 times to face North again.' },
+      { instruction: 'Move Forward until you reach the green target — watch Target Distance shrink!' },
+    ],
+    successCondition: 'Robot reaches the target without hitting the obstacle.',
+    hint: 'When Front Distance is below 2.0, turn before moving forward to avoid a collision.',
+    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
+    arenaOverrides: {
+      obstacles: [
+        { id: 'obs1', position: [ 0,    0.5, 1.5], size: [1, 1, 1], color: '#ef4444' },
+        { id: 'obs2', position: [-2.5,  0.5, 1.5], size: [1, 1, 1], color: '#f97316' },
+      ],
+      targets: [
+        { id: 'target1', position: [2.5, 0.05, 3.5], radius: 0.5, color: '#22c55e' },
+      ],
+    },
+    completionRules: { avoidCollision: true, reachTarget: true },
+  },
+  {
+    id: 'lesson-6',
+    title: 'Lesson 6: Navigate the Bend',
+    objective: 'Navigate around an obstacle by turning left and following a new heading to reach the target without any collisions.',
+    steps: [
+      { instruction: 'Move Forward 2 times toward the obstacle ahead — stop before hitting it.' },
+      { instruction: 'Turn Left 4 times to face West.' },
+      { instruction: 'Move Forward 4 times to clear the obstacle.' },
+      { instruction: 'Turn Right 4 times to face North again, then move Forward to the green target.' },
+    ],
+    successCondition: 'Robot reaches the target without hitting any obstacle.',
+    hint: 'The target is to the left of the blocking obstacle. Turn left to go around, straighten up, then drive forward.',
+    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
+    arenaOverrides: {
+      obstacles: [
+        { id: 'obs1', position: [ 0,   0.5, 2],   size: [1, 1, 1], color: '#ef4444' },
+        { id: 'obs2', position: [ 2,   0.5, 3.5], size: [1, 1, 1], color: '#ef4444' },
+        { id: 'obs3', position: [-3,   0.5, -2],  size: [1, 1, 1], color: '#f97316' },
+      ],
+      targets: [
+        { id: 'target1', position: [-2, 0.05, 3.5], radius: 0.5, color: '#22c55e' },
+      ],
+    },
+    completionRules: { reachTarget: true, avoidCollision: true, makeAtLeastOneTurn: true },
+  },
+  {
+    id: 'lesson-7',
+    title: 'Lesson 7: Navigate Using All Sensors',
+    objective: 'Use the Telemetry panel — front distance, side sensors, and target distance — to navigate a complex arena. No fixed route is given; use your sensors!',
+    steps: [
+      { instruction: 'Open the Telemetry panel and study the sensor readings at your starting position.' },
+      { instruction: 'Rotate until "Front Distance" is large (clear path) and note "Target Distance".' },
+      { instruction: 'Move Forward carefully. Watch "Left Sensor" and "Right Sensor" to avoid walls.' },
+      { instruction: 'Keep adjusting heading and moving forward until Target Distance reaches zero.' },
+    ],
+    successCondition: 'Robot reaches the target using sensor-guided navigation.',
+    hint: 'Face a direction where Front Distance is high, then move. Keep rotating and moving to minimize Target Distance.',
+    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
+    arenaOverrides: {
+      obstacles: [
+        { id: 'obs1', position: [ 1.5, 0.5,  1.5], size: [1, 1, 1], color: '#ef4444' },
+        { id: 'obs2', position: [-1.5, 0.5,  2.5], size: [1, 1, 1], color: '#ef4444' },
+        { id: 'obs3', position: [ 3,   0.5, -1.5], size: [1, 1, 1], color: '#f97316' },
+      ],
+      targets: [
+        { id: 'target1', position: [3, 0.05, 3], radius: 0.6, color: '#22c55e' },
+      ],
+    },
+    completionRules: { reachTarget: true, avoidCollision: true },
+  },
+  {
+    id: 'lesson-8',
+    title: 'Lesson 8: Automate the Full Route',
+    objective: 'Build a complete program in the command queue — including turns — and execute it in one go to navigate the full path to the target.',
+    steps: [
+      { instruction: 'Open the Command Queue panel. The target is to the right and ahead — you cannot go straight.' },
+      { instruction: 'Queue your program: 4 × Turn Right → 4 × Forward → 4 × Turn Left → 4 × Forward.' },
+      { instruction: 'Review the queue list, then click "▶ Run Queue" to run your full program.' },
+    ],
+    successCondition: 'Robot reaches the target by running a queued program that includes at least one turn.',
+    hint: 'Think of the queue like writing code: plan the whole route first, then execute. You need at least one turn in the queue.',
+    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
+    arenaOverrides: {
+      obstacles: [
+        { id: 'obs1', position: [ 0,  0.5, 1.5], size: [1, 1, 1], color: '#ef4444' },
+        { id: 'obs2', position: [-2,  0.5, 2],   size: [1, 1, 1], color: '#f97316' },
+      ],
+      targets: [
+        { id: 'target1', position: [2, 0.05, 2], radius: 0.5, color: '#22c55e' },
+      ],
+    },
+    completionRules: { completeQueue: true, reachTarget: true, makeAtLeastOneTurn: true },
+  },
 ];
