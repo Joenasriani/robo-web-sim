@@ -10,7 +10,7 @@ RoboWebSim is an educational robotics simulation platform that runs entirely in 
 
 ## Webots Inspiration
 
-This project is inspired by [Webots](https://cyberbotics.com/), an open-source desktop robot simulator. Webots is used only as a **conceptual reference** for:
+This project is an open-source desktop robot simulator. Webots is used only as a **conceptual reference** for:
 
 - The separation of robot state, controller, and world (arena) configuration
 - The structure of beginner-friendly simulation workflows
