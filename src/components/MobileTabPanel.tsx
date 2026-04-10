@@ -10,8 +10,9 @@ import CommandQueue from '@/components/CommandQueue';
 import SimSettings from '@/components/SimSettings';
 import TelemetryPanel from '@/components/TelemetryPanel';
 import EventLog from '@/components/EventLog';
+import ModelLibrary from '@/components/ModelLibrary';
 
-type Tab = 'controls' | 'scenarios' | 'queue' | 'info';
+type Tab = 'controls' | 'scenarios' | 'models' | 'queue' | 'info';
 
 interface TabDef {
   id: Tab;
@@ -22,6 +23,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { id: 'controls',  label: 'Controls',  icon: '🎮' },
   { id: 'scenarios', label: 'Scenarios', icon: '🗺️' },
+  { id: 'models',    label: 'Models',    icon: '📦' },
   { id: 'queue',     label: 'Queue',     icon: '⚡' },
   { id: 'info',      label: 'Info',      icon: '📊' },
 ];
@@ -66,6 +68,11 @@ export default function MobileTabPanel() {
               <ScenarioSelector />
               <hr className="border-slate-700" />
               <LessonsSidebar />
+            </div>
+          )}
+          {activeTab === 'models' && (
+            <div className="flex flex-col gap-4">
+              <ModelLibrary />
             </div>
           )}
           {activeTab === 'queue' && (

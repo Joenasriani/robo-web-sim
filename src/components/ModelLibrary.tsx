@@ -1,0 +1,182 @@
+'use client';
+
+import { useState } from 'react';
+import { useSimulatorStore } from '@/sim/robotController';
+import {
+  CURATED_MODELS,
+  MODEL_CATEGORIES,
+  ModelCategory,
+  ModelDefinition,
+} from '@/models/modelLibrary';
+
+const CATEGORY_BADGE: Record<ModelCategory, string> = {
+  obstacle:    'text-red-400   bg-red-900/30   border border-red-800/60',
+  prop:        'text-yellow-400 bg-yellow-900/30 border border-yellow-800/60',
+  target:      'text-green-400 bg-green-900/30  border border-green-800/60',
+  environment: 'text-blue-400  bg-blue-900/30   border border-blue-800/60',
+};
+
+function ModelCard({
+  model,
+  onPlace,
+}: {
+  model: ModelDefinition;
+  onPlace: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-slate-700 bg-slate-800/50">
+      {/* Card header — always visible */}
+      <button
+        className="w-full text-left px-3 py-2 flex items-center gap-2"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        aria-label={`${model.name} — ${expanded ? 'collapse' : 'expand'} details`}
+      >
+        {/* Thumbnail placeholder */}
+        <span
+          className="text-xl leading-none w-7 text-center shrink-0"
+          aria-hidden="true"
+          title={model.name}
+        >
+          {model.thumbnail}
+        </span>
+        <span className="text-xs font-medium text-slate-300 flex-1 leading-snug">
+          {model.name}
+        </span>
+        <span
+          className={`text-[9px] rounded px-1.5 py-0.5 font-semibold uppercase shrink-0 ${CATEGORY_BADGE[model.category]}`}
+        >
+          {model.category}
+        </span>
+        <span aria-hidden="true" className="text-slate-500 text-xs shrink-0">
+          {expanded ? '▲' : '▼'}
+        </span>
+      </button>
+
+      {/* Expanded detail */}
+      {expanded && (
+        <div className="px-3 pb-3 space-y-2">
+          {/* Preview area — thumbnail placeholder */}
+          <div
+            aria-hidden="true"
+            className="w-full h-14 rounded bg-slate-700/60 border border-slate-600 flex items-center justify-center gap-2"
+          >
+            <span className="text-3xl leading-none">{model.thumbnail}</span>
+            <span className="text-slate-500 text-[10px] uppercase tracking-wide">Preview</span>
+          </div>
+
+          {/* Description */}
+          <p className="text-xs text-slate-300 leading-relaxed">{model.description}</p>
+
+          {/* Source metadata */}
+          <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-slate-400">
+            <div>
+              <dt className="inline font-medium text-slate-500">Source: </dt>
+              <dd className="inline text-slate-300">{model.source}</dd>
+            </div>
+            <div>
+              <dt className="inline font-medium text-slate-500">Creator: </dt>
+              <dd className="inline text-slate-300">{model.creator}</dd>
+            </div>
+            <div className="col-span-2">
+              <dt className="inline font-medium text-slate-500">License: </dt>
+              {model.licenseUrl ? (
+                <dd className="inline">
+                  <a
+                    href={model.licenseUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    {model.license}
+                  </a>
+                </dd>
+              ) : (
+                <dd className="inline text-slate-300">{model.license}</dd>
+              )}
+            </div>
+          </dl>
+
+          {/* Place button */}
+          <button
+            onClick={() => { onPlace(model.id); setExpanded(false); }}
+            className="btn-secondary text-xs w-full"
+            aria-label={`Place ${model.name} into the arena`}
+          >
+            📦 Place in Arena
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ModelLibrary() {
+  const activeLesson          = useSimulatorStore((s) => s.activeLesson);
+  const placeModelFromLibrary = useSimulatorStore((s) => s.placeModelFromLibrary);
+
+  const [activeCategory, setActiveCategory] = useState<ModelCategory>('obstacle');
+
+  // Model library is only available in free-play mode
+  if (activeLesson !== null) return null;
+
+  const visibleModels = CURATED_MODELS.filter((m) => m.category === activeCategory);
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Section header */}
+      <div>
+        <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          Model Library
+        </h3>
+        <p className="text-[10px] text-slate-600 leading-snug">
+          Place curated objects into the free-play arena.
+        </p>
+      </div>
+
+      {/* Category filter tabs */}
+      <div className="flex flex-wrap gap-1" role="tablist" aria-label="Model categories">
+        {MODEL_CATEGORIES.map(({ id, label }) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={activeCategory === id}
+            onClick={() => setActiveCategory(id)}
+            className={`text-[10px] rounded px-2 py-0.5 font-medium transition-colors ${
+              activeCategory === id
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Model cards */}
+      <div
+        role="tabpanel"
+        aria-label={`${activeCategory} models`}
+        className="flex flex-col gap-1.5"
+      >
+        {visibleModels.length === 0 ? (
+          <p className="text-xs text-slate-500 italic py-2 text-center">
+            No models in this category yet.
+          </p>
+        ) : (
+          visibleModels.map((model) => (
+            <ModelCard key={model.id} model={model} onPlace={placeModelFromLibrary} />
+          ))
+        )}
+      </div>
+
+      {/* Attribution footer */}
+      <p className="text-[9px] text-slate-600 leading-snug mt-1">
+        v1 · Built-in procedural models · MIT license ·{' '}
+        <span className="italic">GLB/glTF sources planned for v2</span>
+      </p>
+    </div>
+  );
+}

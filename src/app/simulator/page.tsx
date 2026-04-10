@@ -17,6 +17,7 @@ import MobileTabPanel from '@/components/MobileTabPanel';
 import OnboardingStrip from '@/components/OnboardingStrip';
 import ArenaEditor from '@/components/ArenaEditor';
 import EditModeBadge from '@/components/EditModeBadge';
+import ModelLibrary from '@/components/ModelLibrary';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
@@ -77,6 +78,8 @@ export default function SimulatorPage() {
           <QuickActions />
           <hr className="border-slate-700" />
           <ArenaEditor />
+          <hr className="border-slate-700" />
+          <ModelLibrary />
           <hr className="border-slate-700" />
           <CommandQueue />
           <hr className="border-slate-700" />
