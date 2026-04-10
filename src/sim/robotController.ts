@@ -252,6 +252,14 @@ export interface SimulatorStore {
   renameAuthoredLesson: (id: string, title: string) => void;
   /** Permanently delete an authored lesson. */
   deleteAuthoredLesson: (id: string) => void;
+
+  // ---------------------------------------------------------------------------
+  // Teacher / Demo Mode
+  // ---------------------------------------------------------------------------
+  /** True when Demo Mode is active — hides advanced panels and shows a larger lesson context. */
+  demoMode: boolean;
+  /** Toggle Demo Mode on/off. Persists to localStorage. */
+  toggleDemoMode: () => void;
 }
 
 function applyMove(
@@ -286,9 +294,10 @@ const STORAGE_KEY = 'robo-web-sim-completed-lessons';
 // ---------------------------------------------------------------------------
 // Context persistence keys
 // ---------------------------------------------------------------------------
-export const PERSIST_KEY_MODE     = 'robo-web-sim-mode';
-export const PERSIST_KEY_SCENARIO = 'robo-web-sim-active-scenario';
-export const PERSIST_KEY_LESSON   = 'robo-web-sim-active-lesson';
+export const PERSIST_KEY_MODE      = 'robo-web-sim-mode';
+export const PERSIST_KEY_SCENARIO  = 'robo-web-sim-active-scenario';
+export const PERSIST_KEY_LESSON    = 'robo-web-sim-active-lesson';
+export const PERSIST_KEY_DEMO_MODE = 'robo-web-sim-demo-mode';
 
 function safeLocalGet(key: string): string | null {
   if (typeof window === 'undefined') return null;
@@ -434,6 +443,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   savedScenes: loadSavedScenesFromStorage(),
   savedPrograms: loadSavedProgramsFromStorage(),
   authoredLessons: loadAuthoredLessonsFromStorage(),
+  demoMode: false,
 
   moveForward: () =>
     set((s) => {
@@ -831,6 +841,10 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const mode       = safeLocalGet(PERSIST_KEY_MODE);
     const scenarioId = safeLocalGet(PERSIST_KEY_SCENARIO);
     const lessonId   = safeLocalGet(PERSIST_KEY_LESSON);
+
+    // Restore demo mode preference
+    const rawDemo = safeLocalGet(PERSIST_KEY_DEMO_MODE);
+    if (rawDemo === 'true') set({ demoMode: true });
 
     if (mode === 'lesson' && typeof lessonId === 'string' && lessonId.length > 0) {
       if (
@@ -1347,5 +1361,11 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       }
       return nextState;
     });
+  },
+
+  toggleDemoMode: () => {
+    const next = !get().demoMode;
+    set({ demoMode: next });
+    safeLocalSet(PERSIST_KEY_DEMO_MODE, next ? 'true' : 'false');
   },
 }));
