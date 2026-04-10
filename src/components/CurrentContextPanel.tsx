@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSimulatorStore, LessonStatus, SimState } from '@/sim/robotController';
 import { FREE_PLAY_SCENARIOS } from '@/scenarios';
 import { LESSONS } from '@/lessons/lessonData';
@@ -39,6 +40,16 @@ export default function CurrentContextPanel() {
   const activeScenarioId = useSimulatorStore((s) => s.activeScenarioId);
   const lessonStatus     = useSimulatorStore((s) => s.lessonStatus);
   const simState         = useSimulatorStore((s) => s.simState);
+  const isHydrated       = useSimulatorStore((s) => s.isHydrated);
+
+  // Show a transient "context restored" badge for 3 s after hydration completes
+  const [showRestored, setShowRestored] = useState(false);
+  useEffect(() => {
+    if (!isHydrated) return;
+    setShowRestored(true);
+    const t = setTimeout(() => setShowRestored(false), 3000);
+    return () => clearTimeout(t);
+  }, [isHydrated]);
 
   const isFreePlay = activeLesson === null;
 
@@ -68,6 +79,12 @@ export default function CurrentContextPanel() {
               className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${LESSON_STATUS_BADGE[lessonStatus]}`}
             >
               {LESSON_STATUS_LABEL[lessonStatus]}
+            </span>
+          )}
+          {/* Subtle transient indicator shown for 3 s after hydration */}
+          {showRestored && (
+            <span className="text-[10px] text-slate-500 italic animate-pulse">
+              ↺ context restored
             </span>
           )}
         </div>
