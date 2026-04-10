@@ -13,6 +13,7 @@ import { checkCollisions, computeSensors } from './collisionHelpers';
 import { Command, CommandType, createCommand } from './commandExecution';
 import { LESSONS, Lesson, CompletionRules } from '@/lessons/lessonData';
 import { arenaForLesson } from '@/scenarios/arenaLoader';
+import { FREE_PLAY_SCENARIOS, ScenarioExample } from '@/scenarios';
 
 // Explicit simulator state enum
 export type SimState = 'idle' | 'running' | 'paused' | 'completed' | 'blocked';
@@ -101,6 +102,9 @@ export interface SimulatorStore {
   // Active lesson
   activeLesson: string | null;
 
+  // Active free-play scenario (null when a lesson is active)
+  activeScenarioId: string | null;
+
   // Lesson-level status
   lessonStatus: LessonStatus;
 
@@ -127,6 +131,9 @@ export interface SimulatorStore {
   // Lessons
   completeLesson: (lessonId: string) => void;
   resetLessonProgress: () => void;
+
+  // Scenarios
+  loadScenario: (id: string) => void;
 
   // Settings setters
   setSimSpeed: (speed: number) => void;
@@ -213,6 +220,16 @@ function makeRobotForLesson(lesson: Lesson | undefined, arena: ArenaConfig): Rob
   };
 }
 
+// Build a robot placed at the scenario's start pose.
+function makeRobotForScenario(scenario: ScenarioExample): RobotState {
+  const base: RobotState = {
+    ...INITIAL_ROBOT_STATE,
+    position: scenario.startPose.position,
+    rotation: scenario.startPose.rotation,
+  };
+  return { ...base, sensors: computeSensors(base, scenario.arena) };
+}
+
 /**
  * Compute the new lessonStatus and completedLessons list after a robot action.
  * Pass `turnedThisStep = true` when a turn was just executed.
@@ -267,6 +284,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   eventLog: [],
 
   activeLesson: null,
+  activeScenarioId: 'default-arena',
   lessonStatus: 'not_started',
   hasTurned: false,
   queueEverCompleted: false,
@@ -522,6 +540,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const robot = makeRobotForLesson(lesson, arena);
     set((s) => ({
       activeLesson: id,
+      activeScenarioId: null,   // clear free-play scenario when a lesson is loaded
       arena,
       robot,
       commandQueue: [],
@@ -572,5 +591,28 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     }));
     // Kick off the new run; isRunningQueue is now false so runQueue will proceed
     get().runQueue();
+  },
+
+  loadScenario: (id) => {
+    const scenario = FREE_PLAY_SCENARIOS.find((s) => s.id === id);
+    if (!scenario) return;
+    // Cancel any in-flight queue loop
+    ++_currentRunId;
+    const robot = makeRobotForScenario(scenario);
+    set((s) => ({
+      activeScenarioId: id,
+      activeLesson: null,
+      arena: scenario.arena,
+      robot,
+      commandQueue: [],
+      currentCommandIndex: null,
+      simState: 'idle',
+      feedbackMessage: '',
+      feedbackPriority: 'low',
+      hasTurned: false,
+      queueEverCompleted: false,
+      lessonStatus: 'not_started',
+      eventLog: [...s.eventLog, makeEvent(`🎮 Scenario: ${scenario.title}`, 'info')].slice(-MAX_EVENT_LOG),
+    }));
   },
 }));

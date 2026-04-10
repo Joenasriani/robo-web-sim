@@ -12,6 +12,7 @@ export const mazeLiteScenario: ScenarioExample = {
   title: 'Maze-Lite Navigation',
   description:
     'Thread through three offset obstacles to reach the target. Plan your route carefully!',
+  difficulty: 'intermediate',
   startPose: {
     position: { x: -3, y: 0.25, z: -3 },
     rotation: 0,

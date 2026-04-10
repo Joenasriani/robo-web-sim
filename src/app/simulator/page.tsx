@@ -5,6 +5,7 @@ import Link from 'next/link';
 import RobotControls from '@/components/RobotControls';
 import CommandQueue from '@/components/CommandQueue';
 import LessonsSidebar from '@/components/LessonsSidebar';
+import ScenarioSelector from '@/components/ScenarioSelector';
 import SimFeedback from '@/components/SimFeedback';
 import TelemetryPanel from '@/components/TelemetryPanel';
 import SimSettings from '@/components/SimSettings';
@@ -29,9 +30,13 @@ export default function SimulatorPage() {
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar: lessons */}
+        {/* Left sidebar: scenario selector + lessons */}
         <aside className="w-64 bg-slate-800 border-r border-slate-700 overflow-y-auto p-3 shrink-0 hidden lg:block">
-          <LessonsSidebar />
+          <div className="flex flex-col gap-4">
+            <ScenarioSelector />
+            <hr className="border-slate-700" />
+            <LessonsSidebar />
+          </div>
         </aside>
 
         {/* 3D Canvas */}
