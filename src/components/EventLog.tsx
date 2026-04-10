@@ -24,7 +24,10 @@ export default function EventLog() {
       <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Event Log</h3>
       <div className="bg-slate-900 rounded-lg p-2 min-h-[60px] max-h-[160px] overflow-y-auto flex flex-col gap-1">
         {eventLog.length === 0 ? (
-          <p className="text-xs text-slate-500 text-center mt-3">No events yet</p>
+          <div className="flex flex-col items-center justify-center py-3">
+            <p className="text-xs text-slate-500">No events yet</p>
+            <p className="text-[11px] text-slate-600 text-center mt-0.5">Events will appear here as you run the simulator.</p>
+          </div>
         ) : (
           [...eventLog].reverse().map((entry) => (
             <div key={entry.id} className="flex items-start gap-2 text-xs">

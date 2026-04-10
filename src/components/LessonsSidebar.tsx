@@ -37,6 +37,11 @@ export default function LessonsSidebar() {
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Lessons</h3>
+      {!activeLesson && (
+        <p className="text-xs text-slate-500 italic leading-relaxed">
+          Select a lesson below to begin guided practice.
+        </p>
+      )}
       {LESSONS.map((lesson, lessonIndex) => {
         const isComplete = completedLessons.includes(lesson.id);
         const isActive = activeLesson === lesson.id;

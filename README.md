@@ -43,6 +43,33 @@ This project is inspired by [Webots](https://cyberbotics.com/), an open-source d
 | 💾 Session Persistence | Restores last free-play scenario or lesson on reload (safe fallback to default arena) |
 | 🛡 Runtime Validation | Scenario/lesson IDs and arena shapes validated before loading |
 | 📱 Responsive Layout | Works on desktop, tablet, and mobile via adaptive bottom-tab panel |
+| 💡 Onboarding Strip | Dismissible quick-start guide shown at the top of the simulator |
+
+---
+
+## Demo Guide
+
+To quickly show off RoboWebSim to a new visitor or reviewer:
+
+### Option A — Guided lesson demo
+1. Open `/lessons` and walk through the lesson list
+2. Click **Practice in Simulator** on any lesson
+3. In the simulator, the lesson loads and the context bar shows **Lesson** mode
+4. Add a few commands (e.g. Forward → Left → Forward) via the Command Builder
+5. Click **▶ Run Queue** and watch the robot navigate
+6. Observe telemetry and event log update in real time
+
+### Option B — Free-play scenario demo
+1. Open `/simulator` directly
+2. The **Quick Start** strip at the top explains the 4 steps
+3. In the left panel (desktop) or **Scenarios** tab (mobile), expand a scenario card and click **▶ Load Scenario**
+4. Add commands and run the queue
+5. Try **🔄 Reset** or **↩ Replay** from Quick Actions to demonstrate deterministic replay
+
+### Option C — Responsive layout demo
+1. Open the simulator on a desktop and note the three-column layout
+2. Resize to tablet/mobile width; the canvas fills the screen and controls move to the bottom tab bar
+3. Tap the **Controls**, **Queue**, and **Info** tabs to explore panels
 
 ---
 
@@ -158,7 +185,8 @@ robo-web-sim/
 - No undo for individual command queue items (only remove-last or clear-all)
 - Robot movement is grid-step-based (not continuous physics)
 - No save/load for command sequences
-- On very small phones (< 360px wide) the canvas hint text may overlap arena edge
+- OrbitControls pinch-zoom uses Three.js defaults; multi-touch may feel slightly different from native apps
+- Keyboard arrow key shortcuts work on mobile only with an external keyboard connected
 
 ---
 
@@ -190,12 +218,12 @@ RoboWebSim adapts across screen sizes using a breakpoint-based layout strategy:
 Priority order for future upgrades:
 
 1. ~~**Responsive / mobile controls** — Touch-friendly D-pad, better layout on small screens~~ ✅ Done in PR #9
-2. **Editable arena** — Drag-and-drop obstacles and target placement
-3. **Save/load command sequences** — Export and import command programs as JSON
-4. **More lessons** — Sensor simulation, grid navigation, pathfinding
-5. **Physics engine** — Rapier.js integration for realistic collisions and dynamics
-6. **Blockly integration** — Visual programming for command sequences
-7. **Telemetry panel** — Live robot position, rotation, and speed display
+2. ~~**UX polish and demo readiness** — Onboarding strip, empty states, disabled states, microcopy~~ ✅ Done in PR #10
+3. **Editable arena** — Drag-and-drop obstacles and target placement
+4. **Save/load command sequences** — Export and import command programs as JSON
+5. **More lessons** — Sensor simulation, grid navigation, pathfinding
+6. **Physics engine** — Rapier.js integration for realistic collisions and dynamics
+7. **Blockly integration** — Visual programming for command sequences
 8. **Multiple robot types** — Different shapes, sizes, and movement capabilities
 9. **Lesson authoring** — User-created lessons with custom objectives
 10. **Multiplayer / collaborative mode** — Two robots, cooperative challenges

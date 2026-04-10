@@ -14,6 +14,7 @@ import StoreHydrator from '@/components/StoreHydrator';
 import CurrentContextPanel from '@/components/CurrentContextPanel';
 import QuickActions from '@/components/QuickActions';
 import MobileTabPanel from '@/components/MobileTabPanel';
+import OnboardingStrip from '@/components/OnboardingStrip';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
@@ -40,6 +41,9 @@ export default function SimulatorPage() {
         <CurrentContextPanel />
       </div>
 
+      {/* Dismissible beginner onboarding strip */}
+      <OnboardingStrip />
+
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar: scenario selector + lessons */}
@@ -55,7 +59,7 @@ export default function SimulatorPage() {
         <main className="flex-1 relative">
           <Arena3D />
           <SimFeedback />
-          <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none">
+          <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
             Drag to orbit • Scroll to zoom • Right-drag to pan
           </div>
         </main>
