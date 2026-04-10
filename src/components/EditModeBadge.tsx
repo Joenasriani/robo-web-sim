@@ -19,7 +19,7 @@ export default function EditModeBadge() {
       aria-live="polite"
     >
       <span aria-hidden="true">✏️</span>
-      Edit Mode — click obstacles or target to select
+      Edit Mode — tap or click objects to select
     </div>
   );
 }

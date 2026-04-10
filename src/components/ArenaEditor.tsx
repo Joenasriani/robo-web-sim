@@ -78,7 +78,7 @@ export default function ArenaEditor() {
 
       {/* Edit mode hint */}
       <p className="text-[10px] text-slate-500 leading-snug">
-        Click an obstacle or target in the 3D view to select it, then use the controls below.
+        Tap or click an obstacle or target in the 3D view to select it, then use the controls below.
       </p>
 
       {/* Selection indicator */}

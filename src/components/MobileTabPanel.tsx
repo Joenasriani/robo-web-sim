@@ -33,7 +33,8 @@ const TABS: TabDef[] = [
 ];
 
 export default function MobileTabPanel() {
-  const [activeTab, setActiveTab] = useState<Tab | null>(null);
+  // Default to 'controls' so users see robot controls immediately on first load.
+  const [activeTab, setActiveTab] = useState<Tab | null>('controls');
 
   const toggle = (tab: Tab) => {
     setActiveTab((prev) => (prev === tab ? null : tab));
@@ -106,7 +107,7 @@ export default function MobileTabPanel() {
       )}
 
       {/* Bottom tab bar */}
-      <nav className="bg-slate-800 border-t border-slate-700 flex shrink-0">
+      <nav className="bg-slate-800 border-t border-slate-700 flex shrink-0" aria-label="Simulator panels">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -127,3 +128,5 @@ export default function MobileTabPanel() {
     </div>
   );
 }
+
+
