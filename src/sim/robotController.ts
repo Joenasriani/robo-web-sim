@@ -769,7 +769,11 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   // ---------------------------------------------------------------------------
 
   setEditMode: (active) => {
-    set({ isEditMode: active, selectedEditObject: active ? get().selectedEditObject : null });
+    if (active) {
+      set({ isEditMode: true });
+    } else {
+      set({ isEditMode: false, selectedEditObject: null });
+    }
   },
 
   selectEditObject: (type, id) => {
@@ -844,13 +848,14 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
   addObstacle: () => {
     const { arena } = get();
-    // Pick a position near the center that avoids the robot start pose
+    // Pick a position near the center-north that avoids the robot start pose (0,0,0).
+    // We cycle through a small grid of x offsets (0..3) to avoid stacking new obstacles.
+    const POSITION_CYCLE_RANGE = 4; // number of x positions to cycle through
     let x = 0, z = -3;
-    // Avoid stacking exactly on top of existing obstacles by offsetting
     const existingPositions = arena.obstacles.map((o) => `${o.position[0]},${o.position[2]}`);
     let attempt = 0;
     while (existingPositions.includes(`${x},${z}`) && attempt < 8) {
-      x = Math.round((x + 1) % 4);
+      x = Math.round((x + 1) % POSITION_CYCLE_RANGE);
       attempt++;
     }
     const newId = `obs-edit-${Date.now()}`;

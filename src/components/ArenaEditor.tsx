@@ -37,10 +37,14 @@ export default function ArenaEditor() {
   if (selectedEditObject) {
     if (selectedEditObject.type === 'obstacle') {
       const obs = arena.obstacles.find((o) => o.id === selectedEditObject.id);
-      selectionLabel = obs ? `Obstacle (${obs.position[0].toFixed(1)}, ${obs.position[2].toFixed(1)})` : 'Obstacle';
+      selectionLabel = obs
+        ? `Obstacle (${obs.position[0].toFixed(1)}, ${obs.position[2].toFixed(1)})`
+        : 'Obstacle (not found)';
     } else {
       const tgt = arena.targets.find((t) => t.id === selectedEditObject.id);
-      selectionLabel = tgt ? `Target (${tgt.position[0].toFixed(1)}, ${tgt.position[2].toFixed(1)})` : 'Target';
+      selectionLabel = tgt
+        ? `Target (${tgt.position[0].toFixed(1)}, ${tgt.position[2].toFixed(1)})`
+        : 'Target (not found)';
     }
   }
 
