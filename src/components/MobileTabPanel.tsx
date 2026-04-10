@@ -11,8 +11,9 @@ import SimSettings from '@/components/SimSettings';
 import TelemetryPanel from '@/components/TelemetryPanel';
 import EventLog from '@/components/EventLog';
 import ModelLibrary from '@/components/ModelLibrary';
+import SavedScenes from '@/components/SavedScenes';
 
-type Tab = 'controls' | 'scenarios' | 'models' | 'queue' | 'info';
+type Tab = 'controls' | 'scenarios' | 'models' | 'scenes' | 'queue' | 'info';
 
 interface TabDef {
   id: Tab;
@@ -24,6 +25,7 @@ const TABS: TabDef[] = [
   { id: 'controls',  label: 'Controls',  icon: '🎮' },
   { id: 'scenarios', label: 'Scenarios', icon: '🗺️' },
   { id: 'models',    label: 'Models',    icon: '📦' },
+  { id: 'scenes',    label: 'Scenes',    icon: '💾' },
   { id: 'queue',     label: 'Queue',     icon: '⚡' },
   { id: 'info',      label: 'Info',      icon: '📊' },
 ];
@@ -73,6 +75,11 @@ export default function MobileTabPanel() {
           {activeTab === 'models' && (
             <div className="flex flex-col gap-4">
               <ModelLibrary />
+            </div>
+          )}
+          {activeTab === 'scenes' && (
+            <div className="flex flex-col gap-4">
+              <SavedScenes />
             </div>
           )}
           {activeTab === 'queue' && (

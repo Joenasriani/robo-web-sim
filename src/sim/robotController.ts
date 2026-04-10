@@ -16,6 +16,14 @@ import { arenaForLesson } from '@/scenarios/arenaLoader';
 import { FREE_PLAY_SCENARIOS, ScenarioExample } from '@/scenarios';
 import { isValidScenarioId, isValidLessonId, isValidArena } from './validation';
 import { getModelById } from '@/models/modelLibrary';
+import {
+  SavedScene,
+  loadSavedScenesFromStorage,
+  persistSavedScenes,
+  isValidSavedScene,
+} from './savedScenes';
+
+export { PERSIST_KEY_SAVED_SCENES } from './savedScenes';
 
 // Explicit simulator state enum
 export type SimState = 'idle' | 'running' | 'paused' | 'completed' | 'blocked';
@@ -185,6 +193,20 @@ export interface SimulatorStore {
   // Model library (free-play only)
   /** Place a curated model from the library into the current free-play arena. */
   placeModelFromLibrary: (modelId: string) => void;
+
+  // ---------------------------------------------------------------------------
+  // Saved scenes (free-play only, local-only)
+  // ---------------------------------------------------------------------------
+  /** All user-saved free-play scenes, ordered newest first. */
+  savedScenes: SavedScene[];
+  /** Save the current free-play arena under `name`. No-op in lesson mode. */
+  saveCurrentScene: (name: string) => void;
+  /** Load a previously saved scene into free-play. Replaces current arena state. */
+  loadSavedScene: (id: string) => void;
+  /** Rename a saved scene. */
+  renameSavedScene: (id: string, name: string) => void;
+  /** Permanently delete a saved scene. */
+  deleteSavedScene: (id: string) => void;
 }
 
 function applyMove(
@@ -360,6 +382,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   isEditMode: false,
   selectedEditObject: null,
   defaultArenaSnapshot: DEFAULT_ARENA,
+
+  savedScenes: loadSavedScenesFromStorage(),
 
   moveForward: () =>
     set((s) => {
@@ -995,5 +1019,99 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         makeEvent(`📦 Placed: ${model.name}`, 'success'),
       ].slice(-MAX_EVENT_LOG),
     }));
+  },
+
+  saveCurrentScene: (name) => {
+    const { activeLesson, activeScenarioId, arena } = get();
+    // Saved scenes are free-play only
+    if (activeLesson !== null) return;
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+
+    const newScene: SavedScene = {
+      id: `scene-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: trimmedName,
+      savedAt: Date.now(),
+      scenarioBase: activeScenarioId,
+      arena,
+    };
+
+    set((s) => {
+      const updated = [newScene, ...s.savedScenes];
+      persistSavedScenes(updated);
+      return {
+        savedScenes: updated,
+        eventLog: [...s.eventLog, makeEvent(`💾 Scene saved: "${trimmedName}"`, 'success')].slice(-MAX_EVENT_LOG),
+      };
+    });
+  },
+
+  loadSavedScene: (id) => {
+    const { activeLesson, savedScenes } = get();
+    // Only usable in free-play mode
+    if (activeLesson !== null) return;
+
+    const scene = savedScenes.find((s) => s.id === id);
+    if (!scene) {
+      set((s) => ({
+        eventLog: [...s.eventLog, makeEvent('⚠️ Saved scene not found', 'warning')].slice(-MAX_EVENT_LOG),
+      }));
+      return;
+    }
+
+    // Validate before applying
+    if (!isValidSavedScene(scene)) {
+      set((s) => ({
+        eventLog: [...s.eventLog, makeEvent('⚠️ Saved scene data is invalid — load aborted', 'error')].slice(-MAX_EVENT_LOG),
+      }));
+      return;
+    }
+
+    // Cancel any in-flight queue loop
+    ++_currentRunId;
+    const robot = { ...get().robot, sensors: computeSensors(get().robot, scene.arena) };
+    set((s) => ({
+      activeScenarioId: scene.scenarioBase ?? s.activeScenarioId,
+      activeLesson: null,
+      arena: scene.arena,
+      robot,
+      commandQueue: [],
+      currentCommandIndex: null,
+      simState: 'idle',
+      feedbackMessage: '',
+      feedbackPriority: 'low',
+      hasTurned: false,
+      queueEverCompleted: false,
+      lessonStatus: 'not_started',
+      isEditMode: false,
+      selectedEditObject: null,
+      // Snapshot the loaded scene's arena so "Reset Arena" restores to the saved state
+      defaultArenaSnapshot: scene.arena,
+      eventLog: [...s.eventLog, makeEvent(`📂 Scene loaded: "${scene.name}"`, 'info')].slice(-MAX_EVENT_LOG),
+    }));
+    if (scene.scenarioBase) persistFreePlay(scene.scenarioBase);
+  },
+
+  renameSavedScene: (id, name) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    set((s) => {
+      const updated = s.savedScenes.map((sc) =>
+        sc.id === id ? { ...sc, name: trimmedName } : sc
+      );
+      persistSavedScenes(updated);
+      return { savedScenes: updated };
+    });
+  },
+
+  deleteSavedScene: (id) => {
+    set((s) => {
+      const updated = s.savedScenes.filter((sc) => sc.id !== id);
+      persistSavedScenes(updated);
+      return {
+        savedScenes: updated,
+        eventLog: [...s.eventLog, makeEvent('🗑️ Saved scene deleted', 'warning')].slice(-MAX_EVENT_LOG),
+      };
+    });
   },
 }));

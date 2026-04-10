@@ -10,6 +10,9 @@ import type { ArenaConfig } from './arenaConfig';
 import { FREE_PLAY_SCENARIOS } from '@/scenarios';
 import { LESSONS } from '@/lessons/lessonData';
 
+// Re-export saved-scene validator so callers only need one import
+export { isValidSavedScene } from './savedScenes';
+
 /**
  * Returns true if `value` is a structurally valid ArenaConfig.
  * Checks for: numeric size > 0, obstacles array, targets array.
