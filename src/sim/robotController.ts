@@ -28,9 +28,17 @@ import {
   persistSavedPrograms,
   isValidSavedProgram,
 } from './savedPrograms';
+import {
+  AuthoredLesson,
+  loadAuthoredLessonsFromStorage,
+  persistAuthoredLessons,
+  isValidAuthoredLesson,
+} from './authoredLessons';
 
 export { PERSIST_KEY_SAVED_SCENES } from './savedScenes';
 export { PERSIST_KEY_SAVED_PROGRAMS } from './savedPrograms';
+export { PERSIST_KEY_AUTHORED_LESSONS } from './authoredLessons';
+export type { AuthoredLesson } from './authoredLessons';
 
 // Explicit simulator state enum
 export type SimState = 'idle' | 'running' | 'paused' | 'completed' | 'blocked';
@@ -230,6 +238,20 @@ export interface SimulatorStore {
   deleteSavedProgram: (id: string) => void;
   /** Import a validated program (e.g. from a JSON file) and add it to the saved programs list. */
   importProgram: (program: Pick<SavedProgram, 'name' | 'commands' | 'createdAt'>) => void;
+
+  // ---------------------------------------------------------------------------
+  // Authored lessons (local-only, user-created)
+  // ---------------------------------------------------------------------------
+  /** All user-authored lessons, ordered newest first. */
+  authoredLessons: AuthoredLesson[];
+  /** Save a new authored lesson. */
+  saveAuthoredLesson: (lesson: Omit<AuthoredLesson, 'id' | 'createdAt'>) => void;
+  /** Load an authored lesson as the active lesson. */
+  loadAuthoredLesson: (id: string) => void;
+  /** Rename an authored lesson. */
+  renameAuthoredLesson: (id: string, title: string) => void;
+  /** Permanently delete an authored lesson. */
+  deleteAuthoredLesson: (id: string) => void;
 }
 
 function applyMove(
@@ -354,13 +376,16 @@ function applyLessonStatusUpdate(
   robotHealth: RobotState['health'],
   hasTurned: boolean,
   queueEverCompleted: boolean,
+  authoredLessons: AuthoredLesson[] = [],
 ): { lessonStatus: LessonStatus; completedLessons: string[] } {
   // Once completed, stay completed
   if (prevLessonStatus === 'completed') {
     return { lessonStatus: 'completed', completedLessons: prevCompletedLessons };
   }
 
-  const activeLessonObj = LESSONS.find((l) => l.id === activeLesson);
+  const activeLessonObj =
+    LESSONS.find((l) => l.id === activeLesson) ??
+    authoredLessons.find((l) => l.id === activeLesson);
   const { completed, failed } = evaluateCompletion(activeLessonObj, robotHealth, hasTurned, queueEverCompleted);
 
   const lessonStatus: LessonStatus =
@@ -408,6 +433,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
   savedScenes: loadSavedScenesFromStorage(),
   savedPrograms: loadSavedProgramsFromStorage(),
+  authoredLessons: loadAuthoredLessonsFromStorage(),
 
   moveForward: () =>
     set((s) => {
@@ -423,7 +449,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         : makeEvent('Moved forward', 'info');
 
       const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
-        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, s.hasTurned, s.queueEverCompleted,
+        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, s.hasTurned, s.queueEverCompleted, s.authoredLessons,
       );
 
       return { robot, ...healthFeedback, simState: newSimState, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG), lessonStatus: newLessonStatus, completedLessons };
@@ -443,7 +469,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         : makeEvent('Moved backward', 'info');
 
       const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
-        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, s.hasTurned, s.queueEverCompleted,
+        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, s.hasTurned, s.queueEverCompleted, s.authoredLessons,
       );
 
       return { robot, ...healthFeedback, simState: newSimState, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG), lessonStatus: newLessonStatus, completedLessons };
@@ -464,7 +490,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
       const hasTurned = true;
       const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
-        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, hasTurned, s.queueEverCompleted,
+        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, hasTurned, s.queueEverCompleted, s.authoredLessons,
       );
 
       return { robot, ...healthFeedback, simState: newSimState, hasTurned, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG), lessonStatus: newLessonStatus, completedLessons };
@@ -485,7 +511,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
       const hasTurned = true;
       const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
-        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, hasTurned, s.queueEverCompleted,
+        s.activeLesson, s.lessonStatus, s.completedLessons, robot.health, hasTurned, s.queueEverCompleted, s.authoredLessons,
       );
 
       return { robot, ...healthFeedback, simState: newSimState, hasTurned, eventLog: [...s.eventLog, entry].slice(-MAX_EVENT_LOG), lessonStatus: newLessonStatus, completedLessons };
@@ -597,7 +623,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
     set((s) => {
       const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
-        s.activeLesson, s.lessonStatus, s.completedLessons, finalHealth, s.hasTurned, queueEverCompleted,
+        s.activeLesson, s.lessonStatus, s.completedLessons, finalHealth, s.hasTurned, queueEverCompleted, s.authoredLessons,
       );
       return {
         robot: { ...s.robot, isRunningQueue: false, isMoving: false },
@@ -656,11 +682,11 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
   setActiveLesson: (id) => {
     // Validate lesson ID — fall back to default-arena if unknown
-    if (id !== null && !isValidLessonId(id)) {
+    if (id !== null && !isValidLessonId(id) && !get().authoredLessons.some((l) => l.id === id)) {
       get().loadScenario('default-arena');
       return;
     }
-    const lesson = LESSONS.find((l) => l.id === id);
+    const lesson = LESSONS.find((l) => l.id === id) ?? get().authoredLessons.find((l) => l.id === id);
     const arena = arenaForLesson(lesson);
     // Defensive arena shape check
     if (!isValidArena(arena)) {
@@ -692,7 +718,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     // Increment runId to cancel any in-flight queue loop
     ++_currentRunId;
     const activeId = get().activeLesson;
-    const lesson = LESSONS.find((l) => l.id === activeId);
+    const lesson = LESSONS.find((l) => l.id === activeId) ?? get().authoredLessons.find((l) => l.id === activeId);
     const arena = arenaForLesson(lesson);
     set((s) => ({
       robot: makeRobotForLesson(lesson, arena),
@@ -768,7 +794,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const { activeLesson, activeScenarioId } = get();
     if (activeLesson) {
       // Lesson mode: reset to lesson start pose, keep queue, re-run
-      const lesson = LESSONS.find((l) => l.id === activeLesson);
+      const lesson = LESSONS.find((l) => l.id === activeLesson) ?? get().authoredLessons.find((l) => l.id === activeLesson);
       const arena = arenaForLesson(lesson);
       set((s) => ({
         robot: makeRobotForLesson(lesson, arena),
@@ -806,10 +832,15 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const scenarioId = safeLocalGet(PERSIST_KEY_SCENARIO);
     const lessonId   = safeLocalGet(PERSIST_KEY_LESSON);
 
-    if (mode === 'lesson' && isValidLessonId(lessonId)) {
-      get().setActiveLesson(lessonId);
-      set({ isHydrated: true });
-      return;
+    if (mode === 'lesson' && typeof lessonId === 'string' && lessonId.length > 0) {
+      if (
+        isValidLessonId(lessonId) ||
+        get().authoredLessons.some((l) => l.id === lessonId)
+      ) {
+        get().setActiveLesson(lessonId);
+        set({ isHydrated: true });
+        return;
+      }
     }
     if (mode === 'free_play' && isValidScenarioId(scenarioId)) {
       get().loadScenario(scenarioId);
@@ -1239,6 +1270,82 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         savedPrograms: updated,
         eventLog: [...s.eventLog, makeEvent(`📥 Program imported: "${imported.name}"`, 'success')].slice(-MAX_EVENT_LOG),
       };
+    });
+  },
+
+  // ---------------------------------------------------------------------------
+  // Authored lesson actions
+  // ---------------------------------------------------------------------------
+
+  saveAuthoredLesson: (lessonData) => {
+    const now = Date.now();
+    const newLesson: AuthoredLesson = {
+      ...lessonData,
+      id: `authored-${now}-${Math.random().toString(36).slice(2, 7)}`,
+      createdAt: now,
+    };
+
+    // Validate before saving
+    if (!isValidAuthoredLesson(newLesson)) {
+      set((s) => ({
+        eventLog: [...s.eventLog, makeEvent('⚠️ Invalid authored lesson — save aborted', 'error')].slice(-MAX_EVENT_LOG),
+      }));
+      return;
+    }
+
+    set((s) => {
+      const updated = [newLesson, ...s.authoredLessons];
+      persistAuthoredLessons(updated);
+      return {
+        authoredLessons: updated,
+        eventLog: [...s.eventLog, makeEvent(`✏️ Lesson authored: "${newLesson.title}"`, 'success')].slice(-MAX_EVENT_LOG),
+      };
+    });
+  },
+
+  loadAuthoredLesson: (id) => {
+    const lesson = get().authoredLessons.find((l) => l.id === id);
+    if (!lesson) {
+      set((s) => ({
+        eventLog: [...s.eventLog, makeEvent('⚠️ Authored lesson not found', 'warning')].slice(-MAX_EVENT_LOG),
+      }));
+      return;
+    }
+    if (!isValidAuthoredLesson(lesson)) {
+      set((s) => ({
+        eventLog: [...s.eventLog, makeEvent('⚠️ Authored lesson data is invalid — load aborted', 'error')].slice(-MAX_EVENT_LOG),
+      }));
+      return;
+    }
+    get().setActiveLesson(id);
+  },
+
+  renameAuthoredLesson: (id, title) => {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) return;
+    set((s) => {
+      const updated = s.authoredLessons.map((l) =>
+        l.id === id ? { ...l, title: trimmedTitle } : l
+      );
+      persistAuthoredLessons(updated);
+      return { authoredLessons: updated };
+    });
+  },
+
+  deleteAuthoredLesson: (id) => {
+    set((s) => {
+      const updated = s.authoredLessons.filter((l) => l.id !== id);
+      persistAuthoredLessons(updated);
+      const nextState: Partial<typeof s> = {
+        authoredLessons: updated,
+        eventLog: [...s.eventLog, makeEvent('🗑️ Authored lesson deleted', 'warning')].slice(-MAX_EVENT_LOG),
+      };
+      // If the deleted lesson was active, clear it
+      if (s.activeLesson === id) {
+        nextState.activeLesson = null;
+        nextState.lessonStatus = 'not_started';
+      }
+      return nextState;
     });
   },
 }));

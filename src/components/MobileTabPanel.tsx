@@ -14,6 +14,7 @@ import ModelLibrary from '@/components/ModelLibrary';
 import SavedScenes from '@/components/SavedScenes';
 import SavedPrograms from '@/components/SavedPrograms';
 import BlocklyPanel from '@/components/BlocklyPanel';
+import LessonAuthor from '@/components/LessonAuthor';
 
 type Tab = 'controls' | 'scenarios' | 'models' | 'scenes' | 'queue' | 'info';
 
@@ -73,6 +74,8 @@ export default function MobileTabPanel() {
               <ScenarioSelector />
               <hr className="border-slate-700" />
               <LessonsSidebar />
+              <hr className="border-slate-700" />
+              <LessonAuthor />
             </div>
           )}
           {activeTab === 'models' && (
