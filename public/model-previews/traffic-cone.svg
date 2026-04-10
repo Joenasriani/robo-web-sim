@@ -1,11 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Traffic cone preview -->
-  <!-- Base -->
-  <ellipse cx="32" cy="54" rx="16" ry="5" fill="#1e293b" stroke="#0f172a" stroke-width="1"/>
+  <!-- Traffic cone — orange safety cone with white stripe and base -->
+  <!-- Shadow -->
+  <ellipse cx="32" cy="57" rx="18" ry="4" fill="#0f172a" opacity="0.3"/>
+  <!-- Black rubber base -->
+  <rect x="12" y="50" width="40" height="7" rx="2" fill="#1e293b" stroke="#0f172a" stroke-width="1"/>
   <!-- Cone body -->
-  <polygon points="32,10 48,54 16,54" fill="#f97316" stroke="#ea580c" stroke-width="1.5"/>
-  <!-- White stripe -->
-  <polygon points="24.5,38 39.5,38 37,44 27,44" fill="white" opacity="0.85"/>
+  <polygon points="32,8 49,50 15,50" fill="#f97316" stroke="#ea580c" stroke-width="1"/>
+  <!-- Left shading edge -->
+  <polygon points="32,8 15,50 22,50" fill="#c2530f" opacity="0.4"/>
+  <!-- White reflective stripe -->
+  <polygon points="25,36 39,36 37.5,43 26.5,43" fill="white" opacity="0.9" stroke="#f0f0f0" stroke-width="0.5"/>
   <!-- Tip highlight -->
-  <circle cx="32" cy="12" r="2" fill="#fbbf24"/>
+  <circle cx="32" cy="9" r="1.5" fill="#fde68a" opacity="0.9"/>
 </svg>

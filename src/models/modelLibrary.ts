@@ -12,7 +12,7 @@
  *   - Do not mutate lesson content.
  */
 
-export type ModelCategory = 'obstacle' | 'prop' | 'target' | 'environment';
+export type ModelCategory = 'obstacle' | 'prop' | 'target' | 'environment' | 'robot';
 
 export interface ModelDefinition {
   /** Stable unique identifier for this model. */
@@ -126,33 +126,31 @@ export const CURATED_MODELS: ModelDefinition[] = [
     id: 'ml-glb-crate',
     name: 'Crate (GLB)',
     category: 'obstacle',
-    description: 'A solid storage crate loaded from a local GLB asset (Kenney-style).',
-    source: 'Local GLB asset — /public/models/crate-box.glb',
-    creator: 'robo-web-sim',
+    description: 'A solid wooden storage crate with a real 3D mesh.',
+    source: 'Procedural geometry — robo-web-sim',
+    creator: 'robo-web-sim contributors',
     license: 'CC0 1.0',
     licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
-    sourceUrl: 'https://kenney.nl/assets',
     renderType: 'glb',
     thumbnail: '📦',
     previewImage: '/model-previews/crate-box.svg',
     glbUrl: '/models/crate-box.glb',
-    placementDefaults: { size: [1, 1, 1], color: '#ef4444' },
+    placementDefaults: { size: [1, 1, 1], color: '#a16a30' },
   },
   {
     id: 'ml-glb-barrel',
     name: 'Barrel (GLB)',
     category: 'obstacle',
-    description: 'A GLB barrel asset loaded from a local file.',
-    source: 'Local GLB asset — /public/models/barrel.glb',
-    creator: 'robo-web-sim',
+    description: 'A steel drum barrel with cylindrical mesh geometry.',
+    source: 'Procedural geometry — robo-web-sim',
+    creator: 'robo-web-sim contributors',
     license: 'CC0 1.0',
     licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
-    sourceUrl: 'https://kenney.nl/assets',
     renderType: 'glb',
     thumbnail: '🛢️',
     previewImage: '/model-previews/barrel.svg',
     glbUrl: '/models/barrel.glb',
-    placementDefaults: { size: [0.8, 1.2, 0.8], color: '#3b82f6' },
+    placementDefaults: { size: [0.8, 1.2, 0.8], color: '#2563eb' },
   },
 
   // ── Props ─────────────────────────────────────────────────────────────────
@@ -196,17 +194,33 @@ export const CURATED_MODELS: ModelDefinition[] = [
     id: 'ml-glb-cone',
     name: 'Traffic Cone (GLB)',
     category: 'prop',
-    description: 'An orange traffic cone loaded from a local GLB asset.',
-    source: 'Local GLB asset — /public/models/traffic-cone.glb',
-    creator: 'robo-web-sim',
+    description: 'An orange traffic cone with a real cone-shaped 3D mesh.',
+    source: 'Procedural geometry — robo-web-sim',
+    creator: 'robo-web-sim contributors',
     license: 'CC0 1.0',
     licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
-    sourceUrl: 'https://kenney.nl/assets',
     renderType: 'glb',
     thumbnail: '🚧',
     previewImage: '/model-previews/traffic-cone.svg',
     glbUrl: '/models/traffic-cone.glb',
     placementDefaults: { size: [0.4, 0.8, 0.4], color: '#f97316' },
+  },
+
+  // ── Robots ────────────────────────────────────────────────────────────────
+  {
+    id: 'ml-glb-robot-scout',
+    name: 'Scout Robot (GLB)',
+    category: 'robot',
+    description: 'A simple low-poly scout robot with body, head, arms, and wheels.',
+    source: 'Procedural geometry — robo-web-sim',
+    creator: 'robo-web-sim contributors',
+    license: 'CC0 1.0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    renderType: 'glb',
+    thumbnail: '🤖',
+    previewImage: '/model-previews/robot-scout.svg',
+    glbUrl: '/models/robot-scout.glb',
+    placementDefaults: { size: [0.7, 1.2, 0.7], color: '#64748b' },
   },
 
   // ── Targets ───────────────────────────────────────────────────────────────
@@ -268,6 +282,7 @@ export const MODEL_CATEGORIES: { id: ModelCategory; label: string }[] = [
   { id: 'prop',        label: 'Props' },
   { id: 'target',      label: 'Targets' },
   { id: 'environment', label: 'Environment' },
+  { id: 'robot',       label: 'Robots' },
 ];
 
 // ---------------------------------------------------------------------------
