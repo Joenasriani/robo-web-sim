@@ -14,6 +14,7 @@ const CATEGORY_BADGE: Record<ModelCategory, string> = {
   prop:        'text-yellow-400 bg-yellow-900/30 border border-yellow-800/60',
   target:      'text-green-400 bg-green-900/30  border border-green-800/60',
   environment: 'text-blue-400  bg-blue-900/30   border border-blue-800/60',
+  robot:       'text-teal-400  bg-teal-900/30   border border-teal-800/60',
 };
 
 function ModelCard({

@@ -1,12 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Barrel preview -->
+  <!-- Barrel — steel-blue drum with rings and shading -->
+  <!-- Shadow -->
+  <ellipse cx="32" cy="57" rx="15" ry="4" fill="#0f172a" opacity="0.3"/>
   <!-- Body -->
-  <rect x="18" y="16" width="28" height="38" rx="6" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
+  <rect x="17" y="14" width="30" height="40" rx="5" fill="#2563eb" stroke="#1e40af" stroke-width="1.5"/>
+  <!-- Left shading strip -->
+  <rect x="17" y="14" width="7" height="40" rx="4" fill="#1e40af" opacity="0.5"/>
+  <!-- Right highlight strip -->
+  <rect x="42" y="14" width="5" height="40" rx="4" fill="#93c5fd" opacity="0.3"/>
   <!-- Top ellipse -->
-  <ellipse cx="32" cy="16" rx="14" ry="5" fill="#60a5fa" stroke="#1d4ed8" stroke-width="1.5"/>
+  <ellipse cx="32" cy="14" rx="15" ry="5" fill="#60a5fa" stroke="#1e40af" stroke-width="1.5"/>
   <!-- Bottom ellipse -->
-  <ellipse cx="32" cy="54" rx="14" ry="5" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5"/>
-  <!-- Rings -->
-  <line x1="18" y1="26" x2="46" y2="26" stroke="#1d4ed8" stroke-width="2"/>
-  <line x1="18" y1="44" x2="46" y2="44" stroke="#1d4ed8" stroke-width="2"/>
+  <ellipse cx="32" cy="54" rx="15" ry="5" fill="#1d4ed8" stroke="#1e40af" stroke-width="1.5"/>
+  <!-- Metal bands -->
+  <path d="M17,24 Q32,28 47,24" stroke="#93c5fd" stroke-width="2" fill="none" opacity="0.8"/>
+  <path d="M17,34 Q32,38 47,34" stroke="#93c5fd" stroke-width="2" fill="none" opacity="0.8"/>
+  <path d="M17,44 Q32,48 47,44" stroke="#93c5fd" stroke-width="2" fill="none" opacity="0.8"/>
 </svg>
