@@ -113,6 +113,16 @@ export interface SimulatorStore {
   hasTurned: boolean;
   queueEverCompleted: boolean;
 
+  // ---------------------------------------------------------------------------
+  // Arena editor (free-play only)
+  // ---------------------------------------------------------------------------
+  /** True when the user has the arena editor open (free-play mode only). */
+  isEditMode: boolean;
+  /** Currently selected obstacle or target in edit mode. */
+  selectedEditObject: { type: 'obstacle' | 'target'; id: string } | null;
+  /** Snapshot of the active scenario's default arena used to power "Reset Arena". */
+  defaultArenaSnapshot: ArenaConfig | null;
+
   // Robot controls
   moveForward: () => void;
   moveBackward: () => void;
@@ -157,6 +167,15 @@ export interface SimulatorStore {
 
   // Hydration guard — false until hydrateFromStorage completes on the client
   isHydrated: boolean;
+
+  // Arena editor actions
+  setEditMode: (active: boolean) => void;
+  selectEditObject: (type: 'obstacle' | 'target', id: string) => void;
+  deselectEditObject: () => void;
+  moveSelectedObject: (direction: 'north' | 'south' | 'east' | 'west') => void;
+  deleteSelectedObstacle: () => void;
+  addObstacle: () => void;
+  resetArenaToDefault: () => void;
 }
 
 function applyMove(
@@ -329,6 +348,9 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   hasTurned: false,
   queueEverCompleted: false,
   isHydrated: false,
+  isEditMode: false,
+  selectedEditObject: null,
+  defaultArenaSnapshot: DEFAULT_ARENA,
 
   moveForward: () =>
     set((s) => {
@@ -676,6 +698,9 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       hasTurned: false,
       queueEverCompleted: false,
       lessonStatus: 'not_started',
+      isEditMode: false,
+      selectedEditObject: null,
+      defaultArenaSnapshot: scenario.arena,
       eventLog: [...s.eventLog, makeEvent(`🎮 Scenario: ${scenario.title}`, 'info')].slice(-MAX_EVENT_LOG),
     }));
     persistFreePlay(id);
@@ -737,5 +762,126 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     // Fallback: load default arena
     get().loadScenario('default-arena');
     set({ isHydrated: true });
+  },
+
+  // ---------------------------------------------------------------------------
+  // Arena editor actions (free-play only)
+  // ---------------------------------------------------------------------------
+
+  setEditMode: (active) => {
+    set({ isEditMode: active, selectedEditObject: active ? get().selectedEditObject : null });
+  },
+
+  selectEditObject: (type, id) => {
+    set({ selectedEditObject: { type, id } });
+  },
+
+  deselectEditObject: () => {
+    set({ selectedEditObject: null });
+  },
+
+  moveSelectedObject: (direction) => {
+    const { selectedEditObject, arena } = get();
+    if (!selectedEditObject) return;
+
+    const STEP = 0.5;
+    const half = arena.size / 2 - 0.6; // margin so objects stay visibly inside walls
+
+    const applyDelta = (pos: [number, number, number]): [number, number, number] => {
+      let [x, y, z] = pos;
+      if (direction === 'north') z -= STEP;
+      else if (direction === 'south') z += STEP;
+      else if (direction === 'east')  x += STEP;
+      else if (direction === 'west')  x -= STEP;
+      // Clamp to arena bounds
+      x = Math.max(-half, Math.min(half, x));
+      z = Math.max(-half, Math.min(half, z));
+      return [x, y, z];
+    };
+
+    if (selectedEditObject.type === 'obstacle') {
+      const obstacles = arena.obstacles.map((obs) =>
+        obs.id === selectedEditObject.id
+          ? { ...obs, position: applyDelta(obs.position) }
+          : obs
+      );
+      const newArena = { ...arena, obstacles };
+      const robot = { ...get().robot, sensors: computeSensors(get().robot, newArena) };
+      set((s) => ({
+        arena: newArena,
+        robot,
+        eventLog: [...s.eventLog, makeEvent('✏️ Obstacle moved', 'info')].slice(-MAX_EVENT_LOG),
+      }));
+    } else if (selectedEditObject.type === 'target') {
+      const targets = arena.targets.map((t) =>
+        t.id === selectedEditObject.id
+          ? { ...t, position: applyDelta(t.position) }
+          : t
+      );
+      const newArena = { ...arena, targets };
+      const robot = { ...get().robot, sensors: computeSensors(get().robot, newArena) };
+      set((s) => ({
+        arena: newArena,
+        robot,
+        eventLog: [...s.eventLog, makeEvent('✏️ Target moved', 'info')].slice(-MAX_EVENT_LOG),
+      }));
+    }
+  },
+
+  deleteSelectedObstacle: () => {
+    const { selectedEditObject, arena } = get();
+    if (!selectedEditObject || selectedEditObject.type !== 'obstacle') return;
+    const obstacles = arena.obstacles.filter((obs) => obs.id !== selectedEditObject.id);
+    const newArena = { ...arena, obstacles };
+    const robot = { ...get().robot, sensors: computeSensors(get().robot, newArena) };
+    set((s) => ({
+      arena: newArena,
+      robot,
+      selectedEditObject: null,
+      eventLog: [...s.eventLog, makeEvent('🗑️ Obstacle removed', 'warning')].slice(-MAX_EVENT_LOG),
+    }));
+  },
+
+  addObstacle: () => {
+    const { arena } = get();
+    // Pick a position near the center that avoids the robot start pose
+    let x = 0, z = -3;
+    // Avoid stacking exactly on top of existing obstacles by offsetting
+    const existingPositions = arena.obstacles.map((o) => `${o.position[0]},${o.position[2]}`);
+    let attempt = 0;
+    while (existingPositions.includes(`${x},${z}`) && attempt < 8) {
+      x = Math.round((x + 1) % 4);
+      attempt++;
+    }
+    const newId = `obs-edit-${Date.now()}`;
+    const newObs = {
+      id: newId,
+      position: [x, 0.5, z] as [number, number, number],
+      size: [1, 1, 1] as [number, number, number],
+      color: '#a855f7',
+    };
+    const newArena = { ...arena, obstacles: [...arena.obstacles, newObs] };
+    set((s) => ({
+      arena: newArena,
+      selectedEditObject: { type: 'obstacle', id: newId },
+      eventLog: [...s.eventLog, makeEvent('➕ Obstacle added', 'success')].slice(-MAX_EVENT_LOG),
+    }));
+  },
+
+  resetArenaToDefault: () => {
+    const { defaultArenaSnapshot, activeScenarioId } = get();
+    if (!defaultArenaSnapshot) return;
+    // Restore the arena snapshot and reset robot sensors
+    const robot = { ...get().robot, sensors: computeSensors(get().robot, defaultArenaSnapshot) };
+    set((s) => ({
+      arena: defaultArenaSnapshot,
+      robot,
+      selectedEditObject: null,
+      isEditMode: false,
+      eventLog: [
+        ...s.eventLog,
+        makeEvent(`🔁 Arena reset to ${activeScenarioId ?? 'default'}`, 'info'),
+      ].slice(-MAX_EVENT_LOG),
+    }));
   },
 }));

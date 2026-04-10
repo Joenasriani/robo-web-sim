@@ -15,6 +15,8 @@ import CurrentContextPanel from '@/components/CurrentContextPanel';
 import QuickActions from '@/components/QuickActions';
 import MobileTabPanel from '@/components/MobileTabPanel';
 import OnboardingStrip from '@/components/OnboardingStrip';
+import ArenaEditor from '@/components/ArenaEditor';
+import EditModeBadge from '@/components/EditModeBadge';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
@@ -59,6 +61,7 @@ export default function SimulatorPage() {
         <main className="flex-1 relative">
           <Arena3D />
           <SimFeedback />
+          <EditModeBadge />
           <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
             Drag to orbit • Scroll to zoom • Right-drag to pan
           </div>
@@ -72,6 +75,8 @@ export default function SimulatorPage() {
           </div>
           <hr className="border-slate-700" />
           <QuickActions />
+          <hr className="border-slate-700" />
+          <ArenaEditor />
           <hr className="border-slate-700" />
           <CommandQueue />
           <hr className="border-slate-700" />
