@@ -78,7 +78,7 @@ export default function CurrentContextPanel() {
               {scenario?.title ?? 'No Scenario'}
             </span>
             {scenario?.description && (
-              <span className="text-slate-400 truncate" style={{ maxWidth: '22ch' }}>
+              <span className="text-slate-400 truncate max-w-[22ch]">
                 {scenario.description}
               </span>
             )}

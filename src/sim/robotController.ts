@@ -574,7 +574,6 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const lesson = LESSONS.find((l) => l.id === id);
     const arena = arenaForLesson(lesson);
     const robot = makeRobotForLesson(lesson, arena);
-    if (id) persistLesson(id);
     set((s) => ({
       activeLesson: id,
       activeScenarioId: null,   // clear free-play scenario when a lesson is loaded
@@ -592,6 +591,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         ? [...s.eventLog, makeEvent(`📖 Lesson started: ${lesson?.title ?? id}`, 'info')].slice(-MAX_EVENT_LOG)
         : s.eventLog,
     }));
+    if (id) persistLesson(id);
   },
 
   restartLesson: () => {
@@ -635,7 +635,6 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     if (!scenario) return;
     // Cancel any in-flight queue loop
     ++_currentRunId;
-    persistFreePlay(id);
     const robot = makeRobotForScenario(scenario);
     set((s) => ({
       activeScenarioId: id,
@@ -652,6 +651,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       lessonStatus: 'not_started',
       eventLog: [...s.eventLog, makeEvent(`🎮 Scenario: ${scenario.title}`, 'info')].slice(-MAX_EVENT_LOG),
     }));
+    persistFreePlay(id);
   },
 
   replayFromStart: () => {
