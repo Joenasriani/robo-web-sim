@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
+import { isValidSavedScene } from '@/sim/savedScenes';
 import type { SavedScene } from '@/sim/savedScenes';
 
 function formatDate(ts: number): string {
@@ -17,16 +18,33 @@ function formatDate(ts: number): string {
   }
 }
 
+/** Trigger a browser file download with the given JSON content. */
+function downloadJson(filename: string, data: unknown): void {
+  try {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    /* silently ignore download failures */
+  }
+}
+
 function SceneRow({
   scene,
   onLoad,
   onRename,
   onDelete,
+  onExport,
 }: {
   scene: SavedScene;
   onLoad: (id: string) => void;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
+  onExport: (scene: SavedScene) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -125,6 +143,14 @@ function SceneRow({
                 📂 Load
               </button>
               <button
+                onClick={() => onExport(scene)}
+                className="btn-small text-xs shrink-0"
+                aria-label={`Export scene: ${scene.name}`}
+                title="Export as JSON"
+              >
+                ⬇️
+              </button>
+              <button
                 onClick={() => { setRenameValue(scene.name); setRenaming(true); }}
                 className="btn-small text-xs shrink-0"
                 aria-label={`Rename scene: ${scene.name}`}
@@ -156,6 +182,7 @@ export default function SavedScenes() {
   const loadSavedScene    = useSimulatorStore((s) => s.loadSavedScene);
   const renameSavedScene  = useSimulatorStore((s) => s.renameSavedScene);
   const deleteSavedScene  = useSimulatorStore((s) => s.deleteSavedScene);
+  const importScene       = useSimulatorStore((s) => s.importScene);
 
   const [saveName, setSaveName] = useState('');
   const [showSaveForm, setShowSaveForm] = useState(false);
@@ -163,6 +190,9 @@ export default function SavedScenes() {
   const [pendingLoadId, setPendingLoadId] = useState<string | null>(null);
   // id of scene pending delete confirmation
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  // error message for import failures
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Saved scenes panel is free-play only
   if (activeLesson !== null) return null;
@@ -197,6 +227,49 @@ export default function SavedScenes() {
   function handleConfirmDelete() {
     if (pendingDeleteId) deleteSavedScene(pendingDeleteId);
     setPendingDeleteId(null);
+  }
+
+  function handleExport(scene: SavedScene) {
+    const safeName = scene.name.replace(/[^a-z0-9_\- ]/gi, '_').trim() || 'scene';
+    downloadJson(`${safeName}.json`, scene);
+  }
+
+  function handleImportClick() {
+    setImportError(null);
+    fileInputRef.current?.click();
+  }
+
+  function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    setImportError(null);
+    const file = e.target.files?.[0];
+    // Reset the file input so the same file can be re-imported if needed
+    e.target.value = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result;
+      if (typeof text !== 'string' || text.trim() === '') {
+        setImportError('File is empty.');
+        return;
+      }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        setImportError('Invalid JSON — could not parse file.');
+        return;
+      }
+      if (!isValidSavedScene(parsed)) {
+        setImportError('File does not contain a valid saved scene.');
+        return;
+      }
+      importScene(parsed);
+    };
+    reader.onerror = () => {
+      setImportError('Failed to read file.');
+    };
+    reader.readAsText(file);
   }
 
   const pendingDeleteScene = savedScenes.find((s) => s.id === pendingDeleteId);
@@ -313,13 +386,40 @@ export default function SavedScenes() {
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setShowSaveForm(true)}
-            className="btn-small w-full text-left"
-            aria-label="Save current scene"
-          >
-            💾 Save Current Scene
-          </button>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setShowSaveForm(true)}
+              className="btn-small flex-1 text-left"
+              aria-label="Save current scene"
+            >
+              💾 Save Current Scene
+            </button>
+            <button
+              onClick={handleImportClick}
+              className="btn-small shrink-0"
+              aria-label="Import scene from JSON file"
+              title="Import from JSON"
+            >
+              📥 Import
+            </button>
+          </div>
+        )}
+
+        {/* Hidden file input for import */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          aria-hidden="true"
+          onChange={handleImportFile}
+        />
+
+        {/* Import error */}
+        {importError && (
+          <p className="text-[10px] text-red-400 leading-snug" role="alert">
+            ⚠️ {importError}
+          </p>
         )}
 
         {/* Saved scene list */}
@@ -336,6 +436,7 @@ export default function SavedScenes() {
                 onLoad={handleRequestLoad}
                 onRename={renameSavedScene}
                 onDelete={handleRequestDelete}
+                onExport={handleExport}
               />
             ))}
           </div>

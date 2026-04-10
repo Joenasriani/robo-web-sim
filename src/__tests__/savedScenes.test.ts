@@ -361,3 +361,61 @@ describe('deleteSavedScene', () => {
     expect(useSimulatorStore.getState().savedScenes).toHaveLength(2);
   });
 });
+
+// ---------------------------------------------------------------------------
+// importScene
+// ---------------------------------------------------------------------------
+describe('importScene', () => {
+  const importedScene = {
+    id: 'scene-original-id',
+    name: 'Imported Scene',
+    savedAt: 1700000000000,
+    scenarioBase: 'default-arena',
+    arena: {
+      size: 10,
+      obstacles: [],
+      targets: [],
+      wallColor: '#fff',
+      floorColor: '#000',
+    },
+  };
+
+  it('adds the imported scene to savedScenes', () => {
+    useSimulatorStore.getState().importScene(importedScene);
+    expect(useSimulatorStore.getState().savedScenes).toHaveLength(1);
+    expect(useSimulatorStore.getState().savedScenes[0].name).toBe('Imported Scene');
+  });
+
+  it('assigns a new id to the imported scene', () => {
+    useSimulatorStore.getState().importScene(importedScene);
+    const saved = useSimulatorStore.getState().savedScenes[0];
+    expect(saved.id).not.toBe('scene-original-id');
+    expect(saved.id).toMatch(/^scene-import-/);
+  });
+
+  it('preserves scene data (arena, scenarioBase, name)', () => {
+    useSimulatorStore.getState().importScene(importedScene);
+    const saved = useSimulatorStore.getState().savedScenes[0];
+    expect(saved.name).toBe('Imported Scene');
+    expect(saved.scenarioBase).toBe('default-arena');
+    expect(saved.arena.size).toBe(10);
+  });
+
+  it('persists imported scene to localStorage', () => {
+    useSimulatorStore.getState().importScene(importedScene);
+    const raw = localStorage.getItem(PERSIST_KEY_SAVED_SCENES);
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw!);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].name).toBe('Imported Scene');
+  });
+
+  it('prepends to existing scenes (newest first)', () => {
+    useSimulatorStore.getState().saveCurrentScene('Existing Scene');
+    useSimulatorStore.getState().importScene(importedScene);
+    const scenes = useSimulatorStore.getState().savedScenes;
+    expect(scenes).toHaveLength(2);
+    expect(scenes[0].name).toBe('Imported Scene');
+    expect(scenes[1].name).toBe('Existing Scene');
+  });
+});

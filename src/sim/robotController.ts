@@ -214,6 +214,8 @@ export interface SimulatorStore {
   renameSavedScene: (id: string, name: string) => void;
   /** Permanently delete a saved scene. */
   deleteSavedScene: (id: string) => void;
+  /** Import a validated scene (e.g. from a JSON file) and add it to the saved scenes list. */
+  importScene: (scene: SavedScene) => void;
 
   // ---------------------------------------------------------------------------
   // Saved programs (command sequences, local-only)
@@ -1135,6 +1137,23 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       return {
         savedScenes: updated,
         eventLog: [...s.eventLog, makeEvent('🗑️ Saved scene deleted', 'warning')].slice(-MAX_EVENT_LOG),
+      };
+    });
+  },
+
+  importScene: (scene) => {
+    const now = Date.now();
+    const imported: SavedScene = {
+      ...scene,
+      id: `scene-import-${now}-${Math.random().toString(36).slice(2, 7)}`,
+      savedAt: scene.savedAt ?? now,
+    };
+    set((s) => {
+      const updated = [imported, ...s.savedScenes];
+      persistSavedScenes(updated);
+      return {
+        savedScenes: updated,
+        eventLog: [...s.eventLog, makeEvent(`📥 Scene imported: "${imported.name}"`, 'success')].slice(-MAX_EVENT_LOG),
       };
     });
   },
