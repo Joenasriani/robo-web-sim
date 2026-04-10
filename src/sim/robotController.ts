@@ -476,9 +476,10 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       if (myRunId !== _currentRunId) break;
       if (!get().robot.isRunningQueue) break;
 
-      // Pause loop — wait until resumed or stopped
+      // Pause loop — wait until resumed or stopped. 50 ms poll is responsive
+      // enough for immediate-feel pause/resume without burning CPU.
       while (get().robot.isPaused) {
-        await new Promise((r) => setTimeout(r, 100));
+        await new Promise((r) => setTimeout(r, 50));
         if (myRunId !== _currentRunId) break;
         if (!get().robot.isRunningQueue) break;
       }

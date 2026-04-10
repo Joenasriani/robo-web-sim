@@ -18,7 +18,8 @@ export default function SimFeedback() {
 
   return (
     <div
-      className={`absolute top-3 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-lg border text-sm font-semibold flex items-center gap-3 shadow-lg pointer-events-auto ${TYPE_STYLES[feedbackType]}`}
+      key={feedbackMessage}
+      className={`absolute top-3 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-lg border text-sm font-semibold flex items-center gap-3 shadow-lg pointer-events-auto sim-feedback-enter ${TYPE_STYLES[feedbackType]}`}
     >
       <span>{feedbackMessage}</span>
       <button

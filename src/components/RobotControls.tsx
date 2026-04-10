@@ -1,26 +1,42 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
 
 export default function RobotControls() {
-  const store = useSimulatorStore();
-  const robot = useSimulatorStore((s) => s.robot);
+  // Select only the individual pieces we need so this component does not
+  // rerender on unrelated store changes (e.g. robot position updates while
+  // the queue is running).
+  const moveForward  = useSimulatorStore((s) => s.moveForward);
+  const moveBackward = useSimulatorStore((s) => s.moveBackward);
+  const turnLeft     = useSimulatorStore((s) => s.turnLeft);
+  const turnRight    = useSimulatorStore((s) => s.turnRight);
+  const resetRobot   = useSimulatorStore((s) => s.resetRobot);
+  const pauseRobot   = useSimulatorStore((s) => s.pauseRobot);
+  const stopRobot    = useSimulatorStore((s) => s.stopRobot);
+  const runQueue     = useSimulatorStore((s) => s.runQueue);
+  const robot        = useSimulatorStore((s) => s.robot);
   const commandQueue = useSimulatorStore((s) => s.commandQueue);
+
+  // gateRef lets the keyboard handler read the latest guard values without
+  // needing to re-register the event listener on every state change.
+  const gateRef = useRef({ isRunningQueue: robot.isRunningQueue, isPaused: robot.isPaused });
+  gateRef.current = { isRunningQueue: robot.isRunningQueue, isPaused: robot.isPaused };
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (robot.isRunningQueue && !robot.isPaused) return;
+      if (gateRef.current.isRunningQueue && !gateRef.current.isPaused) return;
       switch (e.key) {
-        case 'ArrowUp': store.moveForward(); break;
-        case 'ArrowDown': store.moveBackward(); break;
-        case 'ArrowLeft': store.turnLeft(); break;
-        case 'ArrowRight': store.turnRight(); break;
+        case 'ArrowUp':    moveForward();  break;
+        case 'ArrowDown':  moveBackward(); break;
+        case 'ArrowLeft':  turnLeft();     break;
+        case 'ArrowRight': turnRight();    break;
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [store, robot.isRunningQueue, robot.isPaused]);
+  // Zustand action refs are stable — this effect runs once and never re-runs.
+  }, [moveForward, moveBackward, turnLeft, turnRight]);
 
   const statusText = robot.health === 'reached_target'
     ? '🎯 Target reached!'
@@ -45,7 +61,7 @@ export default function RobotControls() {
       <div className="grid grid-cols-3 gap-2">
         <div />
         <button
-          onClick={store.moveForward}
+          onClick={moveForward}
           disabled={robot.isRunningQueue && !robot.isPaused}
           className="btn-control"
           title="Move Forward (↑)"
@@ -55,7 +71,7 @@ export default function RobotControls() {
         <div />
 
         <button
-          onClick={store.turnLeft}
+          onClick={turnLeft}
           disabled={robot.isRunningQueue && !robot.isPaused}
           className="btn-control"
           title="Turn Left (←)"
@@ -63,14 +79,14 @@ export default function RobotControls() {
           ← Left
         </button>
         <button
-          onClick={store.resetRobot}
+          onClick={resetRobot}
           className="btn-secondary"
           title="Reset"
         >
           ⟳ Reset
         </button>
         <button
-          onClick={store.turnRight}
+          onClick={turnRight}
           disabled={robot.isRunningQueue && !robot.isPaused}
           className="btn-control"
           title="Turn Right (→)"
@@ -80,7 +96,7 @@ export default function RobotControls() {
 
         <div />
         <button
-          onClick={store.moveBackward}
+          onClick={moveBackward}
           disabled={robot.isRunningQueue && !robot.isPaused}
           className="btn-control"
           title="Move Backward (↓)"
@@ -93,21 +109,21 @@ export default function RobotControls() {
       {/* Play/Pause/Stop row */}
       <div className="flex gap-2">
         <button
-          onClick={() => store.runQueue()}
+          onClick={() => runQueue()}
           disabled={robot.isRunningQueue || commandQueue.length === 0}
           className="btn-green flex-1"
         >
           ▶ Play Queue
         </button>
         <button
-          onClick={store.pauseRobot}
+          onClick={pauseRobot}
           disabled={!robot.isRunningQueue}
           className="btn-yellow flex-1"
         >
           {robot.isPaused ? '▶ Resume' : '⏸ Pause'}
         </button>
         <button
-          onClick={store.stopRobot}
+          onClick={stopRobot}
           disabled={!robot.isRunningQueue}
           className="btn-red flex-1"
         >

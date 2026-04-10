@@ -13,21 +13,30 @@ body {
 
 @layer components {
   .btn-control {
-    @apply bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors duration-150;
   }
   .btn-secondary {
-    @apply bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors duration-150;
   }
   .btn-green {
-    @apply bg-green-700 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-green-700 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors duration-150;
   }
   .btn-yellow {
-    @apply bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors duration-150;
   }
   .btn-red {
-    @apply bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors duration-150;
   }
   .btn-small {
-    @apply bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-2 py-1 rounded transition-colors;
+    @apply bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-2 py-1 rounded transition-colors duration-150;
   }
+}
+
+/* Feedback toast fade-in to avoid abrupt pop-in */
+@keyframes sim-fade-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.sim-feedback-enter {
+  animation: sim-fade-in 150ms ease-out both;
 }

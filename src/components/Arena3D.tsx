@@ -1,21 +1,40 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, Box, Cylinder, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { useSimulatorStore } from '@/sim/robotController';
 
+// Exponential-decay lerp factor — keeps animation speed framerate-independent.
+const LERP_SPEED = 10;
+
 function Robot() {
   const meshRef = useRef<THREE.Group>(null);
   const robot = useSimulatorStore((s) => s.robot);
 
-  useFrame(() => {
+  // targetRef mirrors the store state and is updated on every render so the
+  // useFrame callback always has access to the latest target without needing
+  // to be recreated (avoids stale-closure issues between re-renders).
+  const targetRef = useRef({ x: robot.position.x, y: robot.position.y, z: robot.position.z, rot: robot.rotation });
+  targetRef.current = { x: robot.position.x, y: robot.position.y, z: robot.position.z, rot: robot.rotation };
+
+  useFrame((_, delta) => {
     if (!meshRef.current) return;
-    meshRef.current.position.x = robot.position.x;
-    meshRef.current.position.y = robot.position.y;
-    meshRef.current.position.z = robot.position.z;
-    meshRef.current.rotation.y = robot.rotation;
+    const { x, y, z, rot } = targetRef.current;
+    const alpha = 1 - Math.exp(-LERP_SPEED * delta);
+
+    // Smooth position interpolation
+    meshRef.current.position.x = THREE.MathUtils.lerp(meshRef.current.position.x, x, alpha);
+    meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, y, alpha);
+    meshRef.current.position.z = THREE.MathUtils.lerp(meshRef.current.position.z, z, alpha);
+
+    // Short-path rotation lerp — handles angle wrap-around so turns always go
+    // the short way and feel visually clear.
+    let rotDiff = rot - meshRef.current.rotation.y;
+    while (rotDiff > Math.PI) rotDiff -= 2 * Math.PI;
+    while (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
+    meshRef.current.rotation.y += rotDiff * alpha;
   });
 
   const bodyColor = robot.health === 'hit_obstacle' ? '#ef4444' : robot.health === 'reached_target' ? '#22c55e' : '#3b82f6';
@@ -48,7 +67,9 @@ function Robot() {
   );
 }
 
-function Obstacles() {
+// Obstacles only change on scenario/lesson switch, not during robot movement.
+// Wrapping in memo avoids redundant reconciliation when parent canvas rerenders.
+const Obstacles = memo(function Obstacles() {
   const arena = useSimulatorStore((s) => s.arena);
   return (
     <>
@@ -59,7 +80,7 @@ function Obstacles() {
       ))}
     </>
   );
-}
+});
 
 
 function PulsingRing({ radius, color }: { radius: number; color: string }) {
@@ -80,7 +101,8 @@ function PulsingRing({ radius, color }: { radius: number; color: string }) {
   );
 }
 
-function Targets() {
+// Targets only change color on health change and positions on scenario switch.
+const Targets = memo(function Targets() {
   const arena = useSimulatorStore((s) => s.arena);
   const health = useSimulatorStore((s) => s.robot.health);
   return (
@@ -99,7 +121,7 @@ function Targets() {
       ))}
     </>
   );
-}
+});
 
 function SensorRays() {
   const robot = useSimulatorStore((s) => s.robot);
@@ -164,7 +186,9 @@ function SensorRays() {
   );
 }
 
-function Walls({ size }: { size: number }) {
+// Walls are purely static — memo ensures they are never reconciled unless size
+// prop changes (it doesn't; it's always 10).
+const Walls = memo(function Walls({ size }: { size: number }) {
   const half = size / 2;
   const wallColor = '#334155';
   const wallHeight = 0.5;
@@ -189,7 +213,7 @@ function Walls({ size }: { size: number }) {
       </Box>
     </>
   );
-}
+});
 
 export default function Arena3D() {
   return (
@@ -225,7 +249,13 @@ export default function Arena3D() {
       <Robot />
       <SensorRays />
 
-      <OrbitControls makeDefault minPolarAngle={0.1} maxPolarAngle={Math.PI / 2.1} />
+      <OrbitControls
+        makeDefault
+        minPolarAngle={0.1}
+        maxPolarAngle={Math.PI / 2.1}
+        enableDamping
+        dampingFactor={0.08}
+      />
     </Canvas>
   );
 }
