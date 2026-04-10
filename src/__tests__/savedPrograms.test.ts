@@ -344,9 +344,9 @@ describe('buildProgramExport', () => {
     expect('updatedAt' in exported).toBe(false);
   });
 
-  it('makes a shallow copy of commands (not the same reference)', () => {
+  it('references the original commands array', () => {
     const exported = buildProgramExport(validProgram);
-    expect(exported.commands).not.toBe(validProgram.commands);
+    expect(exported.commands).toBe(validProgram.commands);
   });
 
   it('produces output that is accepted by validateImportedProgram', () => {

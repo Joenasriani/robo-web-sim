@@ -59,6 +59,9 @@ const VALID_COMMAND_TYPES: ReadonlySet<string> = new Set<CommandType>([
   'wait',
 ]);
 
+/** Human-readable list of valid command types, used in error messages. */
+const VALID_COMMAND_TYPES_LIST = [...VALID_COMMAND_TYPES].join(', ');
+
 /** Load all saved programs from localStorage. Returns [] on error or missing key. */
 export function loadSavedProgramsFromStorage(): SavedProgram[] {
   if (typeof window === 'undefined') return [];
@@ -118,7 +121,7 @@ export function buildProgramExport(program: SavedProgram): ProgramExport {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     name: program.name,
-    commands: program.commands.map((cmd) => ({ ...cmd })),
+    commands: program.commands,
     createdAt: program.createdAt,
   };
 }
@@ -188,7 +191,7 @@ export function validateImportedProgram(value: unknown): ImportValidationResult 
     if (typeof c.type !== 'string' || !VALID_COMMAND_TYPES.has(c.type)) {
       return {
         ok: false,
-        error: `Command at index ${i} has unsupported type "${c.type ?? ''}". Supported types: ${[...VALID_COMMAND_TYPES].join(', ')}.`,
+        error: `Command at index ${i} has unsupported type "${c.type ?? ''}". Supported types: ${VALID_COMMAND_TYPES_LIST}.`,
       };
     }
     if (typeof c.label !== 'string') {
