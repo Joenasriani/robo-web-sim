@@ -151,6 +151,8 @@ export interface SimulatorStore {
   setActiveLesson: (id: string | null) => void;
   restartLesson: () => void;
   restartQueue: () => void;
+  replayFromStart: () => void;
+  hydrateFromStorage: () => void;
 }
 
 function applyMove(
@@ -182,6 +184,26 @@ function feedbackForHealth(
 
 const STORAGE_KEY = 'robo-web-sim-completed-lessons';
 
+// ---------------------------------------------------------------------------
+// Context persistence keys
+// ---------------------------------------------------------------------------
+export const PERSIST_KEY_MODE     = 'robo-web-sim-mode';
+export const PERSIST_KEY_SCENARIO = 'robo-web-sim-active-scenario';
+export const PERSIST_KEY_LESSON   = 'robo-web-sim-active-lesson';
+
+function safeLocalGet(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function safeLocalSet(key: string, value: string | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch { /* ignore */ }
+}
+
 function loadCompletedLessons(): string[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -195,6 +217,20 @@ function loadCompletedLessons(): string[] {
 function saveCompletedLessons(lessons: string[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(lessons));
+}
+
+/** Persist free-play context to localStorage. */
+function persistFreePlay(scenarioId: string) {
+  safeLocalSet(PERSIST_KEY_MODE, 'free_play');
+  safeLocalSet(PERSIST_KEY_SCENARIO, scenarioId);
+  safeLocalSet(PERSIST_KEY_LESSON, null);
+}
+
+/** Persist lesson context to localStorage. */
+function persistLesson(lessonId: string) {
+  safeLocalSet(PERSIST_KEY_MODE, 'lesson');
+  safeLocalSet(PERSIST_KEY_LESSON, lessonId);
+  safeLocalSet(PERSIST_KEY_SCENARIO, null);
 }
 
 function makeInitialRobot(): RobotState {
@@ -555,6 +591,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         ? [...s.eventLog, makeEvent(`📖 Lesson started: ${lesson?.title ?? id}`, 'info')].slice(-MAX_EVENT_LOG)
         : s.eventLog,
     }));
+    if (id) persistLesson(id);
   },
 
   restartLesson: () => {
@@ -614,5 +651,67 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       lessonStatus: 'not_started',
       eventLog: [...s.eventLog, makeEvent(`🎮 Scenario: ${scenario.title}`, 'info')].slice(-MAX_EVENT_LOG),
     }));
+    persistFreePlay(id);
+  },
+
+  replayFromStart: () => {
+    ++_currentRunId;
+    const { activeLesson, activeScenarioId } = get();
+    if (activeLesson) {
+      // Lesson mode: reset to lesson start pose, keep queue, re-run
+      const lesson = LESSONS.find((l) => l.id === activeLesson);
+      const arena = arenaForLesson(lesson);
+      set((s) => ({
+        robot: makeRobotForLesson(lesson, arena),
+        arena,
+        currentCommandIndex: null,
+        simState: 'idle',
+        feedbackMessage: '',
+        feedbackPriority: 'low',
+        hasTurned: false,
+        queueEverCompleted: false,
+        lessonStatus: s.completedLessons.includes(activeLesson) ? 'completed' : 'not_started',
+        eventLog: [...s.eventLog, makeEvent('↩ Replay from lesson start', 'info')].slice(-MAX_EVENT_LOG),
+      }));
+    } else if (activeScenarioId) {
+      // Free-play mode: reset to scenario start pose, keep queue, re-run
+      const scenario = FREE_PLAY_SCENARIOS.find((s) => s.id === activeScenarioId);
+      if (!scenario) return;
+      set((s) => ({
+        robot: makeRobotForScenario(scenario),
+        currentCommandIndex: null,
+        simState: 'idle',
+        feedbackMessage: '',
+        feedbackPriority: 'low',
+        hasTurned: false,
+        queueEverCompleted: false,
+        eventLog: [...s.eventLog, makeEvent('↩ Replay from start', 'info')].slice(-MAX_EVENT_LOG),
+      }));
+    }
+    // Re-run the queue from the start
+    get().runQueue();
+  },
+
+  hydrateFromStorage: () => {
+    const mode       = safeLocalGet(PERSIST_KEY_MODE);
+    const scenarioId = safeLocalGet(PERSIST_KEY_SCENARIO);
+    const lessonId   = safeLocalGet(PERSIST_KEY_LESSON);
+
+    if (mode === 'lesson' && lessonId) {
+      const lesson = LESSONS.find((l) => l.id === lessonId);
+      if (lesson) {
+        get().setActiveLesson(lessonId);
+        return;
+      }
+    }
+    if (mode === 'free_play' && scenarioId) {
+      const scenario = FREE_PLAY_SCENARIOS.find((s) => s.id === scenarioId);
+      if (scenario) {
+        get().loadScenario(scenarioId);
+        return;
+      }
+    }
+    // Fallback: load default arena
+    get().loadScenario('default-arena');
   },
 }));
