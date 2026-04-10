@@ -13,6 +13,7 @@ import EventLog from '@/components/EventLog';
 import StoreHydrator from '@/components/StoreHydrator';
 import CurrentContextPanel from '@/components/CurrentContextPanel';
 import QuickActions from '@/components/QuickActions';
+import MobileTabPanel from '@/components/MobileTabPanel';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
@@ -59,8 +60,8 @@ export default function SimulatorPage() {
           </div>
         </main>
 
-        {/* Right sidebar: controls + queue + settings + telemetry + event log */}
-        <aside className="w-64 bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex flex-col gap-4">
+        {/* Right sidebar: controls + queue + settings + telemetry + event log (desktop only) */}
+        <aside className="hidden lg:flex w-64 bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex-col gap-4">
           <div>
             <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Movement Controls</h3>
             <RobotControls />
@@ -77,6 +78,9 @@ export default function SimulatorPage() {
           <EventLog />
         </aside>
       </div>
+
+      {/* Mobile / tablet bottom tab panel (hidden on desktop) */}
+      <MobileTabPanel />
     </div>
   );
 }

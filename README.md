@@ -42,6 +42,7 @@ This project is inspired by [Webots](https://cyberbotics.com/), an open-source d
 | 🔄 Pause/Resume/Stop | Full queue execution control |
 | 💾 Session Persistence | Restores last free-play scenario or lesson on reload (safe fallback to default arena) |
 | 🛡 Runtime Validation | Scenario/lesson IDs and arena shapes validated before loading |
+| 📱 Responsive Layout | Works on desktop, tablet, and mobile via adaptive bottom-tab panel |
 
 ---
 
@@ -157,8 +158,30 @@ robo-web-sim/
 - No undo for individual command queue items (only remove-last or clear-all)
 - Robot movement is grid-step-based (not continuous physics)
 - No save/load for command sequences
-- Lessons sidebar is hidden on screens narrower than `lg` breakpoint (1024px)
-- No touch/mobile controls yet
+- On very small phones (< 360px wide) the canvas hint text may overlap arena edge
+
+---
+
+## Responsive Layout
+
+RoboWebSim adapts across screen sizes using a breakpoint-based layout strategy:
+
+| Breakpoint | Layout |
+|------------|--------|
+| **Large desktop** (`lg` / 1024px+) | Full three-column layout: left sidebar (Scenarios + Lessons) · 3D canvas · right sidebar (Controls + Queue + Telemetry + Event Log) |
+| **Tablet / small laptop** (`md`–`lg`) | Canvas fills full width. All panels accessible via a bottom tab bar: **Controls**, **Scenarios**, **Queue**, **Info** |
+| **Mobile** (< `md`) | Same bottom-tab approach, canvas fills available height above the tab bar |
+
+### What works everywhere
+- Scenario selector, Lessons, Quick Actions, Command Queue, Telemetry, Event Log — all reachable via the bottom tab panel on smaller screens
+- Canvas resizes automatically to fill the available space
+- No horizontal scrolling on any supported width
+- Touch-friendly tap targets (`touch-manipulation`, `min-h-[52px]` tab buttons, `active:` states on all buttons)
+- Current Context panel always visible above the canvas at all sizes
+
+### Remaining layout limitations
+- OrbitControls touch-pan/pinch-zoom uses Three.js defaults; multi-touch may feel slightly different from native apps
+- Keyboard arrow key shortcuts still work on mobile but are only useful when an external keyboard is connected
 
 ---
 
@@ -166,7 +189,7 @@ robo-web-sim/
 
 Priority order for future upgrades:
 
-1. **Responsive / mobile controls** — Touch-friendly D-pad, better layout on small screens
+1. ~~**Responsive / mobile controls** — Touch-friendly D-pad, better layout on small screens~~ ✅ Done in PR #9
 2. **Editable arena** — Drag-and-drop obstacles and target placement
 3. **Save/load command sequences** — Export and import command programs as JSON
 4. **More lessons** — Sensor simulation, grid navigation, pathfinding

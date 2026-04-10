@@ -13,21 +13,21 @@ body {
 
 @layer components {
   .btn-control {
-    @apply bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-slate-700 hover:bg-slate-600 active:bg-slate-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors touch-manipulation;
   }
   .btn-secondary {
-    @apply bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-slate-700 hover:bg-slate-600 active:bg-slate-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors touch-manipulation;
   }
   .btn-green {
-    @apply bg-green-700 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-green-700 hover:bg-green-600 active:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors touch-manipulation;
   }
   .btn-yellow {
-    @apply bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-yellow-600 hover:bg-yellow-500 active:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors touch-manipulation;
   }
   .btn-red {
-    @apply bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors;
+    @apply bg-red-700 hover:bg-red-600 active:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors touch-manipulation;
   }
   .btn-small {
-    @apply bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-2 py-1 rounded transition-colors;
+    @apply bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white text-xs font-semibold px-2 py-1 rounded transition-colors touch-manipulation;
   }
 }
