@@ -50,6 +50,11 @@ function ModelCard({
         >
           {model.category}
         </span>
+        {model.renderType === 'glb' && (
+          <span className="text-[9px] rounded px-1.5 py-0.5 font-semibold uppercase shrink-0 text-purple-300 bg-purple-900/30 border border-purple-800/60">
+            GLB
+          </span>
+        )}
         <span aria-hidden="true" className="text-slate-500 text-xs shrink-0">
           {expanded ? '▲' : '▼'}
         </span>
@@ -58,13 +63,33 @@ function ModelCard({
       {/* Expanded detail */}
       {expanded && (
         <div className="px-3 pb-3 space-y-2">
-          {/* Preview area — thumbnail placeholder */}
+      {/* Thumbnail/Preview area */}
           <div
             aria-hidden="true"
-            className="w-full h-14 rounded bg-slate-700/60 border border-slate-600 flex items-center justify-center gap-2"
+            className="w-full h-14 rounded bg-slate-700/60 border border-slate-600 flex items-center justify-center gap-2 overflow-hidden"
           >
-            <span className="text-3xl leading-none">{model.thumbnail}</span>
-            <span className="text-slate-500 text-[10px] uppercase tracking-wide">Preview</span>
+            {model.previewImage ? (
+              <img
+                src={model.previewImage}
+                alt={model.name}
+                className="h-12 w-12 object-contain"
+                onError={(e) => {
+                  // If image fails to load, hide it and fall back to emoji
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  const next = e.currentTarget.nextElementSibling as HTMLElement | null;
+                  if (next) next.style.display = '';
+                }}
+              />
+            ) : null}
+            <span
+              className="text-3xl leading-none"
+              style={model.previewImage ? { display: 'none' } : {}}
+            >
+              {model.thumbnail}
+            </span>
+            <span className="text-slate-500 text-[10px] uppercase tracking-wide">
+              {model.previewImage ? '' : 'Preview'}
+            </span>
           </div>
 
           {/* Description */}
@@ -174,8 +199,15 @@ export default function ModelLibrary() {
 
       {/* Attribution footer */}
       <p className="text-[9px] text-slate-600 leading-snug mt-1">
-        v1 · Built-in procedural models · MIT license ·{' '}
-        <span className="italic">GLB/glTF sources planned for v2</span>
+        v2 · Built-in primitives + local GLB assets · MIT / CC0 ·{' '}
+        <a
+          href="/models/README.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-500 hover:underline"
+        >
+          asset credits
+        </a>
       </p>
     </div>
   );

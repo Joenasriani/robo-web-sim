@@ -3,6 +3,10 @@ export interface Obstacle {
   position: [number, number, number];
   size: [number, number, number];
   color: string;
+  /** The library model id this obstacle was placed from, if any. */
+  modelId?: string;
+  /** Local GLB path (e.g. '/models/crate-box.glb') for renderType:'glb' obstacles. */
+  glbUrl?: string;
 }
 
 export interface Target {
