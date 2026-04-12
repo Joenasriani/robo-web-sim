@@ -7,10 +7,10 @@ export default function HomePage() {
       <section className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center">
         <div className="mb-6 text-6xl">🤖</div>
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-          RoboWebSim
+          Robot Simulator
         </h1>
         <p className="text-xl text-slate-300 max-w-2xl mb-3">
-          A beginner-friendly, browser-based robotics simulator.
+          A free learning tool by RoboMarket.ae
         </p>
         <p className="text-slate-400 max-w-xl mb-10">
           Control a robot in a 3D arena, complete guided lessons, and learn the fundamentals of autonomous navigation — all directly in your browser, no installation required.
@@ -21,13 +21,13 @@ export default function HomePage() {
             href="/simulator"
             className="bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold px-8 py-4 rounded-xl transition-colors shadow-lg"
           >
-            🚀 Launch Simulator
+            Launch Simulator
           </Link>
           <Link
             href="/lessons"
             className="bg-slate-700 hover:bg-slate-600 text-white text-lg font-bold px-8 py-4 rounded-xl transition-colors shadow-lg"
           >
-            📚 Open Lessons
+            View Lessons
           </Link>
         </div>
       </section>
@@ -100,8 +100,7 @@ export default function HomePage() {
       </section>
 
       <footer className="bg-slate-800 py-6 text-center text-slate-500 text-sm border-t border-slate-700">
-        <p>RoboWebSim — Browser-based robotics learning. Inspired by robotics simulation concepts.</p>
-        <p className="mt-1">Built with Next.js, Three.js, and React Three Fiber.</p>
+        <p>Free educational tool by RoboMarket.ae</p>
       </footer>
     </main>
   );
