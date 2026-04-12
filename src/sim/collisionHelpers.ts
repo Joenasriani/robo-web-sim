@@ -2,11 +2,28 @@ import { RobotState, SensorData } from './robotState';
 import { ArenaConfig, Obstacle, Target } from './arenaConfig';
 
 export function checkObstacleCollision(robot: RobotState, obstacle: Obstacle): boolean {
+  const rotation = obstacle.rotation ?? 0;
+  if (Math.abs(rotation % (Math.PI / 2)) > 0.01) {
+    return checkRotatedObstacleCollision(robot, obstacle);
+  }
   const [ox, , oz] = obstacle.position;
   const [sw, , sd] = obstacle.size;
   const dx = Math.abs(robot.position.x - ox);
   const dz = Math.abs(robot.position.z - oz);
   return dx < (sw / 2 + 0.3) && dz < (sd / 2 + 0.3);
+}
+
+function checkRotatedObstacleCollision(robot: RobotState, obstacle: Obstacle): boolean {
+  const [ox, , oz] = obstacle.position;
+  const [sw, , sd] = obstacle.size;
+  const rotation = obstacle.rotation ?? 0;
+  const rx = robot.position.x - ox;
+  const rz = robot.position.z - oz;
+  const cosA = Math.cos(-rotation);
+  const sinA = Math.sin(-rotation);
+  const localX = rx * cosA - rz * sinA;
+  const localZ = rx * sinA + rz * cosA;
+  return Math.abs(localX) < (sw / 2 + 0.3) && Math.abs(localZ) < (sd / 2 + 0.3);
 }
 
 export function checkTargetReached(robot: RobotState, target: Target): boolean {

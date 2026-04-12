@@ -11,6 +11,7 @@ export default function RobotControls() {
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (robot.isRunningQueue && !robot.isPaused) return;
+      if (robot.health === 'hit_obstacle') return;
       switch (e.key) {
         case 'ArrowUp': store.moveForward(); break;
         case 'ArrowDown': store.moveBackward(); break;
@@ -20,7 +21,7 @@ export default function RobotControls() {
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [store, robot.isRunningQueue, robot.isPaused]);
+  }, [store, robot.isRunningQueue, robot.isPaused, robot.health]);
 
   const statusText = robot.health === 'reached_target'
     ? '🎯 Target reached!'

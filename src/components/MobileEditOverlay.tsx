@@ -43,7 +43,7 @@ export default function MobileEditOverlay() {
       role="region"
       aria-label={`Edit controls for selected ${label}`}
     >
-      <div className="bg-slate-900/97 border-t-2 border-amber-500/70 px-3 pt-2 pb-3 flex flex-col gap-2">
+      <div className="bg-slate-900/97 border-t-2 border-amber-500/70 px-3 pt-2 pb-3 flex flex-col gap-2" style={{ maxHeight: '45vh', overflowY: 'auto' }}>
         {/* Header row */}
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-amber-400 flex items-center gap-1">

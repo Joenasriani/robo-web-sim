@@ -14,6 +14,16 @@ export default function SimSettings() {
   const commandQueue = useSimulatorStore((s) => s.commandQueue);
   const isRunning = useSimulatorStore((s) => s.robot.isRunningQueue);
   const activeLesson = useSimulatorStore((s) => s.activeLesson);
+  const loadScenario = useSimulatorStore((s) => s.loadScenario);
+  const activeScenarioId = useSimulatorStore((s) => s.activeScenarioId);
+
+  const handlePrimaryReset = () => {
+    if (activeLesson !== null) {
+      restartLesson();
+    } else if (activeScenarioId) {
+      loadScenario(activeScenarioId);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -66,7 +76,7 @@ export default function SimSettings() {
 
       <div className="flex flex-col gap-1">
         <button
-          onClick={restartLesson}
+          onClick={handlePrimaryReset}
           className="btn-secondary text-xs w-full"
           title={activeLesson ? 'Restart the current lesson' : 'Reset robot pose and clear feedback'}
         >
