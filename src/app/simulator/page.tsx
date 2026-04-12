@@ -2,6 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { Suspense, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import RobotControls from '@/components/RobotControls';
 import CommandQueue from '@/components/CommandQueue';
 import LessonsSidebar from '@/components/LessonsSidebar';
@@ -22,15 +24,44 @@ import SavedScenes from '@/components/SavedScenes';
 import SavedPrograms from '@/components/SavedPrograms';
 import BlocklyPanel from '@/components/BlocklyPanel';
 import MobileEditOverlay from '@/components/MobileEditOverlay';
+import { useSimulatorStore } from '@/sim/robotController';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
+
+const VALID_LESSON_IDS = [
+  'lesson-1', 'lesson-2', 'lesson-3', 'lesson-4',
+  'lesson-5', 'lesson-6', 'lesson-7', 'lesson-8',
+];
+
+function LessonDeepLink() {
+  const searchParams = useSearchParams();
+  const setActiveLesson = useSimulatorStore((s) => s.setActiveLesson);
+  const applied = useRef(false);
+
+  useEffect(() => {
+    if (applied.current) return;
+    applied.current = true;
+    const lessonId = searchParams.get('lesson');
+    if (lessonId && VALID_LESSON_IDS.includes(lessonId)) {
+      setActiveLesson(lessonId);
+    }
+    // intentional: run once on mount only — query param is stable at page load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
+}
 
 export default function SimulatorPage() {
   return (
     <div className="h-screen flex flex-col bg-slate-900 text-white overflow-hidden">
       {/* Hydrate store from localStorage on first client render */}
       <StoreHydrator />
+      {/* Apply lesson from query param (takes priority over localStorage-hydrated state) */}
+      <Suspense fallback={null}>
+        <LessonDeepLink />
+      </Suspense>
 
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 shrink-0">

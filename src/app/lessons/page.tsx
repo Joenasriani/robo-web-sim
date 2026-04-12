@@ -90,7 +90,7 @@ export default function LessonsPage() {
 
                 <div className="mt-4">
                   <Link
-                    href="/simulator"
+                    href={`/simulator?lesson=${lesson.id}`}
                     className="inline-block bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
                   >
                     Practice in Simulator →
