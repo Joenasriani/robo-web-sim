@@ -492,14 +492,27 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     }),
 
   resetRobot: () =>
-    set((s) => ({
-      robot: makeInitialRobot(),
-      currentCommandIndex: null,
-      simState: 'idle',
-      feedbackMessage: '',
-      feedbackPriority: 'low',
-      eventLog: [...s.eventLog, makeEvent('Robot reset', 'info')].slice(-MAX_EVENT_LOG),
-    })),
+    set((s) => {
+      let robot: RobotState;
+      if (s.activeLesson) {
+        const lesson = LESSONS.find((l) => l.id === s.activeLesson);
+        const arena = arenaForLesson(lesson);
+        robot = makeRobotForLesson(lesson, arena);
+      } else if (s.activeScenarioId) {
+        const scenario = FREE_PLAY_SCENARIOS.find((sc) => sc.id === s.activeScenarioId);
+        robot = scenario ? makeRobotForScenario(scenario) : makeInitialRobot();
+      } else {
+        robot = makeInitialRobot();
+      }
+      return {
+        robot,
+        currentCommandIndex: null,
+        simState: 'idle',
+        feedbackMessage: '',
+        feedbackPriority: 'low',
+        eventLog: [...s.eventLog, makeEvent('Robot reset', 'info')].slice(-MAX_EVENT_LOG),
+      };
+    }),
 
   pauseRobot: () =>
     set((s) => {
@@ -540,7 +553,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     if (store.commandQueue.length === 0) return;
     if (store.robot.isRunningQueue) return;
 
-    // Acquire this run's token — any older loop will see its token is stale and exit
+    // Increment before set() so concurrent calls that passed the guard above
+    // will see a stale myRunId when they check after set() completes.
     const myRunId = ++_currentRunId;
 
     set((s) => ({
@@ -549,6 +563,9 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       lessonStatus: s.activeLesson && s.lessonStatus === 'not_started' ? 'in_progress' : s.lessonStatus,
       eventLog: [...s.eventLog, makeEvent('▶ Queue started', 'info')].slice(-MAX_EVENT_LOG),
     }));
+
+    // If another call raced in and took the slot, bail
+    if (myRunId !== _currentRunId) return;
 
     for (let i = 0; i < get().commandQueue.length; i++) {
       // Exit if this run was superseded (restart) or explicitly stopped
@@ -794,6 +811,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         feedbackPriority: 'low',
         hasTurned: false,
         queueEverCompleted: false,
+        lessonStatus: 'not_started',
         eventLog: [...s.eventLog, makeEvent('↩ Replay from start', 'info')].slice(-MAX_EVENT_LOG),
       }));
     }
