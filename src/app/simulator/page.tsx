@@ -46,7 +46,9 @@ function LessonDeepLink() {
     if (lessonId && VALID_LESSON_IDS.includes(lessonId)) {
       setActiveLesson(lessonId);
     }
-  }, [searchParams, setActiveLesson]);
+    // intentional: run once on mount only — query param is stable at page load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return null;
 }
