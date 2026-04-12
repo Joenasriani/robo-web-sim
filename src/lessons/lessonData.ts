@@ -97,11 +97,11 @@ export const LESSONS: Lesson[] = [
     objective: 'Navigate around the red obstacles and reach the green target.',
     steps: [
       { instruction: 'Move forward carefully. Red boxes are obstacles — hitting them counts as a collision.' },
-      { instruction: 'When an obstacle is in your path, turn left or right to go around it.' },
+      { instruction: 'When an obstacle is in your path, turn right to go around it, then turn left to straighten up toward the target.' },
       { instruction: 'After clearing the obstacle, straighten your path and head for the target.' },
     ],
     successCondition: 'Robot reaches the target without hitting any obstacles.',
-    hint: 'Try moving forward a couple steps, turning left to go around the red box, then turning right and heading for the target.',
+    hint: 'Move forward 2 steps toward the obstacle, then turn right twice to face east. Move forward 3 steps to clear it, turn left twice to face north again, then move forward to reach the target.',
     startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
     // Lesson-specific arena: extra obstacle to create a more meaningful avoidance challenge.
     arenaOverrides: {
