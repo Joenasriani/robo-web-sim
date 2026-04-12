@@ -28,9 +28,13 @@ export function moveBackward(state: RobotState, step: number = DEFAULT_MOVE_STEP
 }
 
 export function turnLeft(state: RobotState, step: number = DEFAULT_TURN_STEP): Partial<RobotState> {
-  return { rotation: state.rotation - step };
+  // Positive Y rotation in Three.js is counterclockwise from above, which is a left turn
+  // relative to the robot's own facing direction.
+  return { rotation: state.rotation + step };
 }
 
 export function turnRight(state: RobotState, step: number = DEFAULT_TURN_STEP): Partial<RobotState> {
-  return { rotation: state.rotation + step };
+  // Negative Y rotation in Three.js is clockwise from above, which is a right turn
+  // relative to the robot's own facing direction.
+  return { rotation: state.rotation - step };
 }

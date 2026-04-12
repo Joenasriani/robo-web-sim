@@ -90,7 +90,9 @@ export function computeSensors(robot: RobotState, arena: ArenaConfig): SensorDat
     if (d !== null && d < frontDistance) frontDistance = d;
   }
 
-  const leftAngle = rot - Math.PI / 4;
+  // Positive Y rotation in Three.js is counterclockwise (left) from above.
+  // leftAngle adds π/4 (CCW) → forward-left; rightAngle subtracts π/4 (CW) → forward-right.
+  const leftAngle = rot + Math.PI / 4;
   const ldx = Math.sin(leftAngle), ldz = Math.cos(leftAngle);
   let leftObstacle = rayToWallDistance(ox, oz, ldx, ldz, arena.size) < SIDE_RANGE;
   if (!leftObstacle) {
@@ -100,7 +102,7 @@ export function computeSensors(robot: RobotState, arena: ArenaConfig): SensorDat
     }
   }
 
-  const rightAngle = rot + Math.PI / 4;
+  const rightAngle = rot - Math.PI / 4;
   const rdx = Math.sin(rightAngle), rdz = Math.cos(rightAngle);
   let rightObstacle = rayToWallDistance(ox, oz, rdx, rdz, arena.size) < SIDE_RANGE;
   if (!rightObstacle) {
