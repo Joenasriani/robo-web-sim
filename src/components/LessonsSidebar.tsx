@@ -29,6 +29,7 @@ export default function LessonsSidebar() {
   const activeLesson = useSimulatorStore((s) => s.activeLesson);
   const lessonStatus = useSimulatorStore((s) => s.lessonStatus);
   const hasTurned = useSimulatorStore((s) => s.hasTurned);
+  const queueEverCompleted = useSimulatorStore((s) => s.queueEverCompleted);
   const robot = useSimulatorStore((s) => s.robot);
   const completeLesson = useSimulatorStore((s) => s.completeLesson);
   const setActiveLesson = useSimulatorStore((s) => s.setActiveLesson);
@@ -45,7 +46,8 @@ export default function LessonsSidebar() {
       {LESSONS.map((lesson, lessonIndex) => {
         const isComplete = completedLessons.includes(lesson.id);
         const isActive = activeLesson === lesson.id;
-        const canComplete = robot.health === 'reached_target' && !isComplete;
+        // Only allow manual "Mark Complete" when the store has verified all completion rules are met.
+        const canComplete = isActive && lessonStatus === 'completed' && !isComplete;
         const nextLesson = LESSONS[lessonIndex + 1];
         // Resolve the current status for this lesson card
         const status: LessonStatus = isActive ? lessonStatus : isComplete ? 'completed' : 'not_started';
@@ -125,28 +127,42 @@ export default function LessonsSidebar() {
                     <ul className="space-y-0.5">
                       {lesson.completionRules.reachTarget && (
                         <li className="text-xs text-slate-400 flex items-center gap-1">
-                          <span className={robot.health === 'reached_target' ? 'text-green-400' : 'text-slate-500'}>
+                          <span
+                            className={robot.health === 'reached_target' ? 'text-green-400' : 'text-slate-500'}
+                            aria-label={robot.health === 'reached_target' ? 'Completed' : 'Incomplete'}
+                          >
                             {robot.health === 'reached_target' ? '✓' : '○'}
                           </span> Reach the target
                         </li>
                       )}
                       {lesson.completionRules.avoidCollision && (
                         <li className="text-xs text-slate-400 flex items-center gap-1">
-                          <span className={robot.health === 'hit_obstacle' ? 'text-red-400' : 'text-slate-500'}>
+                          <span
+                            className={robot.health === 'hit_obstacle' ? 'text-red-400' : 'text-slate-500'}
+                            aria-label={robot.health === 'hit_obstacle' ? 'Failed' : 'In progress'}
+                          >
                             {robot.health === 'hit_obstacle' ? '✗' : '○'}
                           </span> Avoid all obstacles
                         </li>
                       )}
                       {lesson.completionRules.makeAtLeastOneTurn && (
                         <li className="text-xs text-slate-400 flex items-center gap-1">
-                          <span className={hasTurned ? 'text-green-400' : 'text-slate-500'}>
+                          <span
+                            className={hasTurned ? 'text-green-400' : 'text-slate-500'}
+                            aria-label={hasTurned ? 'Completed' : 'Incomplete'}
+                          >
                             {hasTurned ? '✓' : '○'}
                           </span> Turn at least once
                         </li>
                       )}
                       {lesson.completionRules.completeQueue && (
                         <li className="text-xs text-slate-400 flex items-center gap-1">
-                          <span className="text-slate-500">○</span> Complete the queue
+                          <span
+                            className={queueEverCompleted ? 'text-green-400' : 'text-slate-500'}
+                            aria-label={queueEverCompleted ? 'Completed' : 'Incomplete'}
+                          >
+                            {queueEverCompleted ? '✓' : '○'}
+                          </span> Complete the queue
                         </li>
                       )}
                     </ul>

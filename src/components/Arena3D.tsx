@@ -312,36 +312,38 @@ function SensorRays() {
   );
 }
 
-function Walls({ size }: { size: number }) {
+function Walls({ size, color }: { size: number; color: string }) {
   const half = size / 2;
-  const wallColor = '#334155';
   const wallHeight = 0.5;
   const wallThickness = 0.2;
   return (
     <>
       {/* North wall */}
       <Box args={[size + wallThickness, wallHeight, wallThickness]} position={[0, wallHeight / 2, -half]} receiveShadow castShadow>
-        <meshStandardMaterial color={wallColor} />
+        <meshStandardMaterial color={color} />
       </Box>
       {/* South wall */}
       <Box args={[size + wallThickness, wallHeight, wallThickness]} position={[0, wallHeight / 2, half]} receiveShadow castShadow>
-        <meshStandardMaterial color={wallColor} />
+        <meshStandardMaterial color={color} />
       </Box>
       {/* East wall */}
       <Box args={[wallThickness, wallHeight, size]} position={[half, wallHeight / 2, 0]} receiveShadow castShadow>
-        <meshStandardMaterial color={wallColor} />
+        <meshStandardMaterial color={color} />
       </Box>
       {/* West wall */}
       <Box args={[wallThickness, wallHeight, size]} position={[-half, wallHeight / 2, 0]} receiveShadow castShadow>
-        <meshStandardMaterial color={wallColor} />
+        <meshStandardMaterial color={color} />
       </Box>
     </>
   );
 }
 
 export default function Arena3D() {
-  const isEditMode        = useSimulatorStore((s) => s.isEditMode);
+  const isEditMode         = useSimulatorStore((s) => s.isEditMode);
   const deselectEditObject = useSimulatorStore((s) => s.deselectEditObject);
+  const arena              = useSimulatorStore((s) => s.arena);
+
+  const { size, wallColor, floorColor } = arena;
 
   return (
     <Canvas
@@ -354,7 +356,7 @@ export default function Arena3D() {
 
       {/* Floor — click on empty floor to deselect when in edit mode */}
       <Grid
-        args={[10, 10]}
+        args={[size, size]}
         cellSize={1}
         cellThickness={0.5}
         cellColor="#1e40af"
@@ -367,15 +369,15 @@ export default function Arena3D() {
         infiniteGrid={false}
       />
       <Box
-        args={[10, 0.1, 10]}
+        args={[size, 0.1, size]}
         position={[0, -0.05, 0]}
         receiveShadow
         onClick={isEditMode ? () => deselectEditObject() : undefined}
       >
-        <meshStandardMaterial color="#0f172a" />
+        <meshStandardMaterial color={floorColor} />
       </Box>
 
-      <Walls size={10} />
+      <Walls size={size} color={wallColor} />
       <Obstacles />
       <Targets />
       <Robot />
