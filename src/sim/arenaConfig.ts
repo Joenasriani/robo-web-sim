@@ -45,5 +45,5 @@ export const DEFAULT_ARENA: ArenaConfig = {
     { id: 'target1', position: [3, 0.05, 3], radius: 0.5, color: '#22c55e' },
   ],
   wallColor: '#94a3b8',
-  floorColor: '#facc15',
+  floorColor: '#1e293b',
 };

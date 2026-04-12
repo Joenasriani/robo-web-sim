@@ -266,14 +266,16 @@ function SensorRays() {
     z + Math.cos(rot) * FRONT_LEN,
   ];
 
-  const leftAngle = rot - Math.PI / 4;
+  // Positive Y rotation in Three.js is counterclockwise (left) from above.
+  // leftAngle adds π/4 (CCW) → forward-left; rightAngle subtracts π/4 (CW) → forward-right.
+  const leftAngle = rot + Math.PI / 4;
   const leftEnd: [number, number, number] = [
     x + Math.sin(leftAngle) * SIDE_LEN,
     y,
     z + Math.cos(leftAngle) * SIDE_LEN,
   ];
 
-  const rightAngle = rot + Math.PI / 4;
+  const rightAngle = rot - Math.PI / 4;
   const rightEnd: [number, number, number] = [
     x + Math.sin(rightAngle) * SIDE_LEN,
     y,

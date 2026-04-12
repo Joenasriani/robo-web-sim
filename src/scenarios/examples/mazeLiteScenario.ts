@@ -28,6 +28,6 @@ export const mazeLiteScenario: ScenarioExample = {
       { id: 'target1', position: [3, 0.05, 4], radius: 0.6, color: '#22c55e' },
     ],
     wallColor: '#475569',
-    floorColor: '#0f172a',
+    floorColor: '#1e293b',
   },
 };
