@@ -793,17 +793,24 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
   replayFromStart: () => {
     ++_currentRunId;
-    const { activeLesson, activeScenarioId } = get();
+    const { activeLesson, activeScenarioId, commandQueue } = get();
     if (activeLesson) {
       // Lesson mode: reset to lesson start pose, keep queue, re-run
       const lesson = LESSONS.find((l) => l.id === activeLesson);
       const arena = arenaForLesson(lesson);
+      const robot = makeRobotForLesson(lesson, arena);
       set((s) => ({
-        robot: makeRobotForLesson(lesson, arena),
+        robot: {
+          ...robot,
+          isRunningQueue: false,
+          isPaused: false,
+          isMoving: false,
+        },
         arena,
         currentCommandIndex: null,
         simState: 'idle',
         feedbackMessage: '',
+        feedbackType: 'info' as const,
         feedbackPriority: 'low',
         hasTurned: false,
         queueEverCompleted: false,
@@ -811,23 +818,43 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         eventLog: [...s.eventLog, makeEvent('↩ Replay from lesson start', 'info')].slice(-MAX_EVENT_LOG),
       }));
     } else if (activeScenarioId) {
-      // Free-play mode: reset to scenario start pose, keep queue, re-run
+      // Free-play mode: reset to scenario start pose using the current (possibly edited) arena,
+      // keep queue, re-run
       const scenario = FREE_PLAY_SCENARIOS.find((s) => s.id === activeScenarioId);
       if (!scenario) return;
+      // Use the store's current arena so sensors are consistent with what the robot will navigate
+      const currentArena = get().arena;
+      const base = {
+        ...INITIAL_ROBOT_STATE,
+        position: scenario.startPose.position,
+        rotation: scenario.startPose.rotation,
+      };
+      const robot = { ...base, sensors: computeSensors(base, currentArena) };
       set((s) => ({
-        robot: makeRobotForScenario(scenario),
+        robot: {
+          ...robot,
+          isRunningQueue: false,
+          isPaused: false,
+          isMoving: false,
+        },
         currentCommandIndex: null,
         simState: 'idle',
         feedbackMessage: '',
+        feedbackType: 'info' as const,
         feedbackPriority: 'low',
         hasTurned: false,
         queueEverCompleted: false,
         lessonStatus: 'not_started',
         eventLog: [...s.eventLog, makeEvent('↩ Replay from start', 'info')].slice(-MAX_EVENT_LOG),
       }));
+    } else {
+      // No active context — nothing to replay
+      return;
     }
-    // Re-run the queue from the start
-    get().runQueue();
+    // Re-run the queue only if it has commands; otherwise the reset above is sufficient
+    if (commandQueue.length > 0) {
+      get().runQueue();
+    }
   },
 
   hydrateFromStorage: () => {

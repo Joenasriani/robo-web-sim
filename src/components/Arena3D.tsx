@@ -8,9 +8,28 @@ import { useSimulatorStore } from '@/sim/robotController';
 import { Obstacle } from '@/sim/arenaConfig';
 
 // ---------------------------------------------------------------------------
-// GLB obstacle — renders a locally-hosted GLB asset via useGLTF.
-// Must be rendered inside a <Suspense> boundary.
+// Color palette helpers — derived from the arena's floorColor so every
+// lesson/scenario uses a visually consistent palette automatically.
 // ---------------------------------------------------------------------------
+
+/** Scale each RGB channel toward black by `factor` (0 = black, 1 = original). */
+function darkenHex(hex: string, factor: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const ch = (n: number) => Math.round(Math.max(0, Math.min(255, n * factor))).toString(16).padStart(2, '0');
+  return `#${ch(r)}${ch(g)}${ch(b)}`;
+}
+
+/** Blend each RGB channel toward white by `factor` (0 = original, 1 = white). */
+function lightenHex(hex: string, factor: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const ch = (n: number) => Math.round(Math.min(255, n + (255 - n) * factor)).toString(16).padStart(2, '0');
+  return `#${ch(r)}${ch(g)}${ch(b)}`;
+}
+
 
 /** React error boundary that catches GLB load failures and renders a fallback. */
 class GlbErrorBoundary extends Component<
@@ -347,11 +366,16 @@ export default function Arena3D() {
 
   const { size, wallColor, floorColor } = arena;
 
+  // Derive palette from floorColor so all lessons/scenarios look consistent
+  const bgColor          = darkenHex(floorColor, 0.25);
+  const gridCellColor    = darkenHex(floorColor, 0.5);
+  const gridSectionColor = lightenHex(floorColor, 0.55);
+
   return (
     <Canvas
       shadows
       camera={{ position: [8, 8, 8], fov: 50 }}
-      style={{ background: '#070d1a' }}
+      style={{ background: bgColor }}
     >
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
@@ -361,10 +385,10 @@ export default function Arena3D() {
         args={[size, size]}
         cellSize={1}
         cellThickness={0.5}
-        cellColor="#0f2458"
+        cellColor={gridCellColor}
         sectionSize={5}
         sectionThickness={1}
-        sectionColor="#1d6ff4"
+        sectionColor={gridSectionColor}
         fadeDistance={30}
         fadeStrength={1}
         followCamera={false}

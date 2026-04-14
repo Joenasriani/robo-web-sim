@@ -6,6 +6,7 @@
  * Useful as a beginner demo or unit-test fixture.
  */
 import type { ArenaConfig } from '@/sim/arenaConfig';
+import { DEFAULT_ARENA } from '@/sim/arenaConfig';
 import type { LessonStartPose } from '@/lessons/lessonData';
 
 export interface ScenarioExample {
@@ -38,6 +39,6 @@ export const straightLineScenario: ScenarioExample = {
       { id: 'target1', position: [0, 0.05, 4], radius: 0.6, color: '#22c55e' },
     ],
     wallColor: '#94a3b8',
-    floorColor: '#1e293b',
+    floorColor: DEFAULT_ARENA.floorColor,
   },
 };

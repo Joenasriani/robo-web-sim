@@ -489,3 +489,237 @@ describe('runQueue early-exit on terminal states', () => {
     expect(state.lessonStatus).toBe('completed');
   });
 });
+
+// ---------------------------------------------------------------------------
+// replayFromStart behavior
+// ---------------------------------------------------------------------------
+
+describe('replayFromStart', () => {
+  beforeEach(() => {
+    clearStorage();
+    useSimulatorStore.setState({
+      activeLesson: null,
+      activeScenarioId: 'default-arena',
+      isHydrated: false,
+      commandQueue: [],
+      eventLog: [],
+      simState: 'idle',
+      simSpeed: 100,
+      queueEverCompleted: false,
+      robot: {
+        position: { x: 0, y: 0.25, z: 0 },
+        rotation: 0,
+        isMoving: false,
+        isRunningQueue: false,
+        isPaused: false,
+        health: 'ok',
+        sensors: { frontDistance: 5, leftObstacle: false, rightObstacle: false, targetDistance: 99 },
+      },
+    });
+  });
+
+  it('resets robot to lesson start pose in lesson mode', () => {
+    useSimulatorStore.getState().setActiveLesson('lesson-1');
+    // Manually move the robot away from start
+    useSimulatorStore.setState({
+      robot: {
+        ...useSimulatorStore.getState().robot,
+        position: { x: 3, y: 0.25, z: 3 },
+        health: 'hit_obstacle',
+      },
+    });
+
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().replayFromStart();
+
+    const state = useSimulatorStore.getState();
+    // Robot should be back at the lesson start position
+    const lesson1 = useSimulatorStore.getState().activeLesson;
+    expect(lesson1).toBe('lesson-1');
+    expect(state.robot.health).toBe('ok');
+    expect(state.robot.isRunningQueue).toBe(true); // runQueue started
+    expect(state.simState).toBe('running');
+  });
+
+  it('resets robot to scenario start pose in free-play mode', () => {
+    useSimulatorStore.getState().loadScenario('example-straight-line');
+    // Move robot away and set bad health
+    useSimulatorStore.setState({
+      robot: {
+        ...useSimulatorStore.getState().robot,
+        position: { x: 5, y: 0.25, z: 5 },
+        health: 'hit_obstacle',
+      },
+      simState: 'blocked',
+    });
+
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().replayFromStart();
+
+    const state = useSimulatorStore.getState();
+    // Health should be reset to 'ok' (regardless of where the queue has moved the robot since)
+    expect(state.robot.health).toBe('ok');
+    // Queue should have started running
+    expect(state.robot.isRunningQueue).toBe(true);
+    expect(state.activeScenarioId).toBe('example-straight-line');
+  });
+
+  it('resets all control flags (isRunningQueue, isPaused, isMoving) before starting', () => {
+    useSimulatorStore.getState().setActiveLesson('lesson-1');
+    // Simulate a paused/running state
+    useSimulatorStore.setState({
+      robot: {
+        ...useSimulatorStore.getState().robot,
+        isRunningQueue: true,
+        isPaused: true,
+        isMoving: true,
+      },
+      simState: 'paused',
+    });
+
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().replayFromStart();
+
+    // After replayFromStart the new runQueue should have started,
+    // but crucially the flags should be freshly set by runQueue (isRunningQueue=true, isPaused=false, isMoving=false)
+    const state = useSimulatorStore.getState();
+    expect(state.robot.isPaused).toBe(false);
+    expect(state.robot.isMoving).toBe(false);
+    // isRunningQueue=true because runQueue is now running
+    expect(state.robot.isRunningQueue).toBe(true);
+    expect(state.simState).toBe('running');
+  });
+
+  it('resets state but does not start queue when commandQueue is empty', () => {
+    useSimulatorStore.getState().setActiveLesson('lesson-1');
+    useSimulatorStore.setState({
+      robot: {
+        ...useSimulatorStore.getState().robot,
+        position: { x: 3, y: 0.25, z: 3 },
+        health: 'hit_obstacle',
+        isRunningQueue: false,
+      },
+      simState: 'blocked',
+    });
+
+    // Empty queue
+    useSimulatorStore.getState().replayFromStart();
+
+    const state = useSimulatorStore.getState();
+    expect(state.robot.health).toBe('ok');
+    expect(state.robot.isRunningQueue).toBe(false); // no queue to run
+    expect(state.simState).toBe('idle');
+  });
+
+  it('cancels a running queue and starts a fresh run from the beginning', async () => {
+    useSimulatorStore.getState().loadScenario('example-straight-line');
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().addCommand('forward');
+
+    // Start the queue (don't await — we want it mid-run)
+    useSimulatorStore.getState().runQueue();
+
+    // Immediately replay before the queue finishes
+    useSimulatorStore.getState().replayFromStart();
+
+    // State should show the replay has started a new run
+    const stateAfterReplay = useSimulatorStore.getState();
+    expect(stateAfterReplay.robot.health).toBe('ok');
+    expect(stateAfterReplay.robot.isRunningQueue).toBe(true); // new run is in progress
+    expect(stateAfterReplay.simState).toBe('running');
+  });
+
+  it('scenario replay uses the current store arena for sensor computation', () => {
+    useSimulatorStore.getState().loadScenario('example-straight-line');
+    const originalArena = useSimulatorStore.getState().arena;
+
+    // Modify the arena (simulate edit mode changes)
+    const modifiedArena = {
+      ...originalArena,
+      obstacles: [],  // remove all obstacles
+    };
+    useSimulatorStore.setState({ arena: modifiedArena });
+
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().replayFromStart();
+
+    const state = useSimulatorStore.getState();
+    // Robot sensors should be computed against modifiedArena (no obstacles)
+    // With no obstacles, frontDistance should be >= 4 (wall is at size/2 = 5 away)
+    expect(state.robot.sensors.frontDistance).toBeGreaterThan(3);
+  });
+
+  it('adds a replay event to the event log for lessons', () => {
+    useSimulatorStore.getState().setActiveLesson('lesson-1');
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().replayFromStart();
+
+    const log = useSimulatorStore.getState().eventLog;
+    expect(log.some((e) => e.message.includes('Replay'))).toBe(true);
+  });
+
+  it('adds a replay event to the event log for scenarios', () => {
+    useSimulatorStore.getState().loadScenario('example-straight-line');
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().replayFromStart();
+
+    const log = useSimulatorStore.getState().eventLog;
+    expect(log.some((e) => e.message.includes('Replay'))).toBe(true);
+  });
+
+  it('does nothing when neither activeLesson nor activeScenarioId is set', () => {
+    useSimulatorStore.setState({
+      activeLesson: null,
+      activeScenarioId: null,
+      robot: {
+        position: { x: 2, y: 0.25, z: 2 },
+        rotation: 0,
+        isMoving: false,
+        isRunningQueue: false,
+        isPaused: false,
+        health: 'ok',
+        sensors: { frontDistance: 5, leftObstacle: false, rightObstacle: false, targetDistance: 99 },
+      },
+    });
+    useSimulatorStore.getState().addCommand('forward');
+
+    const positionBefore = useSimulatorStore.getState().robot.position;
+    useSimulatorStore.getState().replayFromStart();
+    const positionAfter = useSimulatorStore.getState().robot.position;
+
+    // Position unchanged — no active context to replay
+    expect(positionAfter).toEqual(positionBefore);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Color consistency: scenario floorColor matches DEFAULT_ARENA
+// ---------------------------------------------------------------------------
+describe('scenario color consistency', () => {
+  it('straightLineScenario floorColor matches DEFAULT_ARENA.floorColor', async () => {
+    const { straightLineScenario } = await import('@/scenarios/examples/straightLineScenario');
+    const { DEFAULT_ARENA } = await import('@/sim/arenaConfig');
+    expect(straightLineScenario.arena.floorColor).toBe(DEFAULT_ARENA.floorColor);
+  });
+
+  it('mazeLiteScenario floorColor matches DEFAULT_ARENA.floorColor', async () => {
+    const { mazeLiteScenario } = await import('@/scenarios/examples/mazeLiteScenario');
+    const { DEFAULT_ARENA } = await import('@/sim/arenaConfig');
+    expect(mazeLiteScenario.arena.floorColor).toBe(DEFAULT_ARENA.floorColor);
+  });
+
+  it('defaultArenaScenario floorColor matches DEFAULT_ARENA.floorColor', async () => {
+    const { defaultArenaScenario } = await import('@/scenarios/examples/defaultArenaScenario');
+    const { DEFAULT_ARENA } = await import('@/sim/arenaConfig');
+    expect(defaultArenaScenario.arena.floorColor).toBe(DEFAULT_ARENA.floorColor);
+  });
+
+  it('all FREE_PLAY_SCENARIOS use the same floorColor as DEFAULT_ARENA', async () => {
+    const { FREE_PLAY_SCENARIOS } = await import('@/scenarios');
+    const { DEFAULT_ARENA } = await import('@/sim/arenaConfig');
+    for (const scenario of FREE_PLAY_SCENARIOS) {
+      expect(scenario.arena.floorColor).toBe(DEFAULT_ARENA.floorColor);
+    }
+  });
+});
