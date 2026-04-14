@@ -17,7 +17,6 @@ export default function CommandQueue() {
   const clearQueue = useSimulatorStore((s) => s.clearQueue);
   const commandQueue = useSimulatorStore((s) => s.commandQueue);
   const currentIndex = useSimulatorStore((s) => s.currentCommandIndex);
-  const runQueue = useSimulatorStore((s) => s.runQueue);
   const isRunning = useSimulatorStore((s) => s.robot.isRunningQueue);
 
   return (
@@ -50,7 +49,7 @@ export default function CommandQueue() {
           <div className="flex flex-col items-center justify-center gap-1 py-3">
             <p className="text-xs text-slate-500">Queue is empty</p>
             <p className="text-[11px] text-slate-600 text-center leading-relaxed">
-              Add commands above, then click <span className="text-slate-500">▶ Run Queue</span> to execute.
+              Add commands above, then use <span className="text-slate-500">▶ Play Queue</span> in the Controls panel to execute.
             </p>
           </div>
         ) : (
@@ -78,17 +77,9 @@ export default function CommandQueue() {
       {/* Queue controls */}
       <div className="flex gap-2">
         <button
-          onClick={() => runQueue()}
-          disabled={isRunning || commandQueue.length === 0}
-          className="btn-green flex-1 text-xs"
-          title={commandQueue.length === 0 ? 'Add commands first' : isRunning ? 'Queue is running' : 'Run all queued commands'}
-        >
-          ▶ Run Queue
-        </button>
-        <button
           onClick={removeLastCommand}
           disabled={isRunning || commandQueue.length === 0}
-          className="btn-secondary text-xs"
+          className="btn-secondary text-xs flex-1"
           aria-label="Remove last command"
           title={commandQueue.length === 0 ? 'Queue is empty' : 'Remove the last command'}
         >
@@ -97,7 +88,7 @@ export default function CommandQueue() {
         <button
           onClick={clearQueue}
           disabled={isRunning}
-          className="btn-secondary text-xs"
+          className="btn-secondary text-xs flex-1"
           title={isRunning ? 'Stop the queue first' : 'Clear all commands'}
         >
           🗑 Clear
