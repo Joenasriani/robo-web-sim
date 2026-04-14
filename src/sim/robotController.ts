@@ -567,6 +567,9 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     // If another call raced in and took the slot, bail
     if (myRunId !== _currentRunId) return;
 
+    // Track whether the loop exited early due to a collision (not normal completion or target reached)
+    let exitedDueToCollision = false;
+
     for (let i = 0; i < get().commandQueue.length; i++) {
       // Exit if this run was superseded (restart) or explicitly stopped
       if (myRunId !== _currentRunId) break;
@@ -595,6 +598,14 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         }));
       }
 
+      // Stop immediately on terminal robot states — no further commands should run
+      const cmdHealth = get().robot.health;
+      if (cmdHealth === 'hit_obstacle') {
+        exitedDueToCollision = true;
+        break;
+      }
+      if (cmdHealth === 'reached_target') break;
+
       await new Promise((r) => setTimeout(r, Math.round(600 / get().simSpeed)));
     }
 
@@ -609,8 +620,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       : finalHealth === 'reached_target' ? 'completed'
       : 'idle';
 
-    // Mark queue as ever-completed (ran to end without being stopped)
-    const queueEverCompleted = true;
+    // Queue "ever completed" = ran all commands or stopped at target; NOT when cut short by collision
+    const queueEverCompleted = !exitedDueToCollision;
 
     set((s) => {
       const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
