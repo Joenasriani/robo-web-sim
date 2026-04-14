@@ -27,7 +27,7 @@ export default function RobotControls() {
     ? '🎯 Target reached!'
     : robot.health === 'hit_obstacle'
     ? '💥 Hit an obstacle!'
-    : '🤖 Ready';
+    : 'Ready';
 
   const statusColor = robot.health === 'reached_target'
     ? 'text-green-400'

@@ -217,7 +217,7 @@ export const CURATED_MODELS: ModelDefinition[] = [
     license: 'CC0 1.0',
     licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
     renderType: 'glb',
-    thumbnail: '🤖',
+    thumbnail: 'R',
     previewImage: '/model-previews/robot-scout.svg',
     glbUrl: '/models/robot-scout.glb',
     placementDefaults: { size: [0.7, 1.2, 0.7], color: '#64748b' },

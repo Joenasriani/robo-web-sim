@@ -82,7 +82,7 @@ function Robot() {
     meshRef.current.rotation.y = robot.rotation;
   });
 
-  const bodyColor = robot.health === 'hit_obstacle' ? '#ef4444' : robot.health === 'reached_target' ? '#22c55e' : '#3b82f6';
+  const bodyColor = robot.health === 'hit_obstacle' ? '#ef4444' : robot.health === 'reached_target' ? '#22c55e' : '#1d6ff4';
 
   return (
     <group ref={meshRef}>
@@ -287,7 +287,7 @@ function SensorRays() {
       ? '#ef4444'
       : sensors.frontDistance < 2.5
       ? '#f97316'
-      : '#00ff88';
+      : '#00e676';
   const leftColor = sensors.leftObstacle ? '#f97316' : '#facc15';
   const rightColor = sensors.rightObstacle ? '#f97316' : '#facc15';
 
@@ -351,7 +351,7 @@ export default function Arena3D() {
     <Canvas
       shadows
       camera={{ position: [8, 8, 8], fov: 50 }}
-      style={{ background: '#0f172a' }}
+      style={{ background: '#070d1a' }}
     >
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
@@ -361,10 +361,10 @@ export default function Arena3D() {
         args={[size, size]}
         cellSize={1}
         cellThickness={0.5}
-        cellColor="#1e40af"
+        cellColor="#0f2458"
         sectionSize={5}
         sectionThickness={1}
-        sectionColor="#3b82f6"
+        sectionColor="#1d6ff4"
         fadeDistance={30}
         fadeStrength={1}
         followCamera={false}
