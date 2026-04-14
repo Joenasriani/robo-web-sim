@@ -55,7 +55,7 @@ function LessonDeepLink() {
 
 export default function SimulatorPage() {
   return (
-    <div className="h-screen flex flex-col bg-slate-900 text-white overflow-hidden">
+    <div className="h-screen flex flex-col text-white overflow-hidden" style={{ background: 'var(--rm-bg)' }}>
       {/* Hydrate store from localStorage on first client render */}
       <StoreHydrator />
       {/* Apply lesson from query param (takes priority over localStorage-hydrated state) */}
@@ -64,18 +64,18 @@ export default function SimulatorPage() {
       </Suspense>
 
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 shrink-0">
-        <Link href="/" className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1">
+      <header className="flex items-center justify-between px-4 py-2 border-b shrink-0" style={{ background: 'var(--rm-surface)', borderColor: 'var(--rm-border)' }}>
+        <Link href="/" className="text-sm flex items-center gap-1" style={{ color: 'var(--rm-primary)' }}>
           ← Home
         </Link>
-        <h1 className="text-base font-bold text-white">🤖 RoboWebSim — Simulator</h1>
-        <Link href="/lessons" className="text-blue-400 hover:text-blue-300 text-sm">
+        <h1 className="text-base font-bold text-white">RoboWebSim — Simulator</h1>
+        <Link href="/lessons" className="text-sm" style={{ color: 'var(--rm-primary)' }}>
           Lessons →
         </Link>
       </header>
 
       {/* Current context bar — visible above the canvas, full-width */}
-      <div className="px-3 py-1.5 bg-slate-900 border-b border-slate-800 shrink-0">
+      <div className="px-3 py-1.5 border-b shrink-0" style={{ background: 'var(--rm-bg)', borderColor: 'var(--rm-surface)' }}>
         <CurrentContextPanel />
       </div>
 

@@ -1,8 +1,38 @@
 @import "tailwindcss";
 
+/*
+ * RoboMarket.ae brand palette
+ * --rm-bg          #070d1a  – page background (very dark navy)
+ * --rm-surface     #0f1c35  – card / header surface (dark navy)
+ * --rm-surface-2   #162040  – elevated card / hover surface
+ * --rm-primary     #1d6ff4  – primary brand blue
+ * --rm-primary-dk  #1558cc  – primary dark (hover / pressed)
+ * --rm-accent      #f97316  – warm orange accent
+ * --rm-text        #e8edf5  – primary text
+ * --rm-text-muted  #7d94b8  – secondary / muted text
+ * --rm-border      #1e3152  – subtle border
+ */
 :root {
-  --background: #0f172a;
-  --foreground: #f1f5f9;
+  --background: #070d1a;
+  --foreground: #e8edf5;
+
+  --rm-bg:          #070d1a;
+  --rm-surface:     #0f1c35;
+  --rm-surface-2:   #162040;
+  --rm-primary:     #1d6ff4;
+  --rm-primary-dk:  #1558cc;
+  --rm-accent:      #f97316;
+  --rm-text:        #e8edf5;
+  --rm-text-muted:  #7d94b8;
+  --rm-border:      #1e3152;
+
+  /* 3-D scene colours (referenced from Arena3D) */
+  --rm-3d-bg:             #070d1a;
+  --rm-3d-grid-cell:      #0f2458;
+  --rm-3d-grid-section:   #1d6ff4;
+  --rm-3d-robot-normal:   #1d6ff4;
+  --rm-3d-robot-hit:      #ef4444;
+  --rm-3d-robot-target:   #22c55e;
 }
 
 body {
@@ -13,10 +43,43 @@ body {
 
 @layer components {
   .btn-control {
-    @apply bg-slate-700 hover:bg-slate-600 active:bg-slate-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 rounded transition-colors touch-manipulation select-none min-h-[44px] flex items-center justify-center;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 rounded transition-colors touch-manipulation select-none min-h-[44px] flex items-center justify-center;
+    background-color: var(--rm-surface-2);
+  }
+  .btn-control:hover:not(:disabled) {
+    background-color: #1e2d4a; /* fallback for browsers without color-mix() */
+    background-color: color-mix(in srgb, var(--rm-surface-2) 80%, white);
+  }
+  .btn-control:active:not(:disabled) {
+    background-color: #253660; /* fallback for browsers without color-mix() */
+    background-color: color-mix(in srgb, var(--rm-surface-2) 60%, white);
   }
   .btn-secondary {
-    @apply bg-slate-700 hover:bg-slate-600 active:bg-slate-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors touch-manipulation select-none;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors touch-manipulation select-none;
+    background-color: var(--rm-surface-2);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background-color: #1e2d4a;
+    background-color: color-mix(in srgb, var(--rm-surface-2) 80%, white);
+  }
+  .btn-secondary:active:not(:disabled) {
+    background-color: #253660;
+    background-color: color-mix(in srgb, var(--rm-surface-2) 60%, white);
+  }
+  .btn-primary {
+    @apply text-white text-lg font-bold px-8 py-4 rounded-xl transition-colors shadow-lg;
+    background-color: var(--rm-primary);
+  }
+  .btn-primary:hover {
+    background-color: var(--rm-primary-dk);
+  }
+  .btn-outline {
+    @apply text-white text-lg font-bold px-8 py-4 rounded-xl transition-colors shadow-lg;
+    background-color: var(--rm-surface-2);
+    border: 1px solid var(--rm-border);
+  }
+  .btn-outline:hover {
+    background-color: var(--rm-border);
   }
   .btn-green {
     @apply bg-green-700 hover:bg-green-600 active:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors touch-manipulation select-none;
@@ -28,6 +91,15 @@ body {
     @apply bg-red-700 hover:bg-red-600 active:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-2 rounded transition-colors touch-manipulation select-none;
   }
   .btn-small {
-    @apply bg-slate-700 hover:bg-slate-600 active:bg-slate-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-1 rounded transition-colors touch-manipulation select-none;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 py-1 rounded transition-colors touch-manipulation select-none;
+    background-color: var(--rm-surface-2);
+  }
+  .btn-small:hover:not(:disabled) {
+    background-color: #1e2d4a;
+    background-color: color-mix(in srgb, var(--rm-surface-2) 80%, white);
+  }
+  .btn-small:active:not(:disabled) {
+    background-color: #253660;
+    background-color: color-mix(in srgb, var(--rm-surface-2) 60%, white);
   }
 }
