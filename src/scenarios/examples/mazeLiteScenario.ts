@@ -6,6 +6,7 @@
  * Good for demonstrating the avoid-collision completion rule.
  */
 import type { ScenarioExample } from './straightLineScenario';
+import { DEFAULT_ARENA } from '@/sim/arenaConfig';
 
 export const mazeLiteScenario: ScenarioExample = {
   id: 'example-maze-lite',
@@ -28,6 +29,6 @@ export const mazeLiteScenario: ScenarioExample = {
       { id: 'target1', position: [3, 0.05, 4], radius: 0.6, color: '#22c55e' },
     ],
     wallColor: '#475569',
-    floorColor: '#1e293b',
+    floorColor: DEFAULT_ARENA.floorColor,
   },
 };

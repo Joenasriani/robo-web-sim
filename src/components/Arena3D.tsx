@@ -8,9 +8,33 @@ import { useSimulatorStore } from '@/sim/robotController';
 import { Obstacle } from '@/sim/arenaConfig';
 
 // ---------------------------------------------------------------------------
-// GLB obstacle — renders a locally-hosted GLB asset via useGLTF.
-// Must be rendered inside a <Suspense> boundary.
+// Color palette helpers — derived from the arena's floorColor so every
+// lesson/scenario uses a visually consistent palette automatically.
 // ---------------------------------------------------------------------------
+
+/** Scale each RGB channel toward black by `factor` (0 = black, 1 = original). */
+function darkenHex(hex: string, factor: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const scaleChannel = (n: number) => Math.round(Math.max(0, Math.min(255, n * factor))).toString(16).padStart(2, '0');
+  return `#${scaleChannel(r)}${scaleChannel(g)}${scaleChannel(b)}`;
+}
+
+/** Blend each RGB channel toward white by `factor` (0 = original, 1 = white). */
+function lightenHex(hex: string, factor: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const blendChannel = (n: number) => Math.round(Math.min(255, n + (255 - n) * factor)).toString(16).padStart(2, '0');
+  return `#${blendChannel(r)}${blendChannel(g)}${blendChannel(b)}`;
+}
+
+// Derived palette factors — tuned so the background/grid always look good against floorColor
+const BG_DARKEN_FACTOR           = 0.25; // very dark backdrop: ~25 % of floor brightness
+const GRID_CELL_DARKEN_FACTOR    = 0.50; // subtle minor grid lines: ~50 % of floor brightness
+const GRID_SECTION_LIGHTEN_FACTOR = 0.55; // major grid lines blend 55 % toward white for legibility
+
 
 /** React error boundary that catches GLB load failures and renders a fallback. */
 class GlbErrorBoundary extends Component<
@@ -347,11 +371,16 @@ export default function Arena3D() {
 
   const { size, wallColor, floorColor } = arena;
 
+  // Derive palette from floorColor so all lessons/scenarios look consistent
+  const bgColor          = darkenHex(floorColor, BG_DARKEN_FACTOR);
+  const gridCellColor    = darkenHex(floorColor, GRID_CELL_DARKEN_FACTOR);
+  const gridSectionColor = lightenHex(floorColor, GRID_SECTION_LIGHTEN_FACTOR);
+
   return (
     <Canvas
       shadows
       camera={{ position: [8, 8, 8], fov: 50 }}
-      style={{ background: '#070d1a' }}
+      style={{ background: bgColor }}
     >
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
@@ -361,10 +390,10 @@ export default function Arena3D() {
         args={[size, size]}
         cellSize={1}
         cellThickness={0.5}
-        cellColor="#0f2458"
+        cellColor={gridCellColor}
         sectionSize={5}
         sectionThickness={1}
-        sectionColor="#1d6ff4"
+        sectionColor={gridSectionColor}
         fadeDistance={30}
         fadeStrength={1}
         followCamera={false}
