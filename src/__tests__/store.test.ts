@@ -647,7 +647,9 @@ describe('replayFromStart', () => {
     const state = useSimulatorStore.getState();
     // Robot sensors should be computed against modifiedArena (no obstacles)
     // With no obstacles, frontDistance should be >= 4 (wall is at size/2 = 5 away)
-    expect(state.robot.sensors.frontDistance).toBeGreaterThan(3);
+    // The sensor cap is 5.0, so with an empty arena we expect a reading above 3.
+    const MIN_EXPECTED_WALL_DISTANCE = 3; // safely below the wall-distance cap of 5.0
+    expect(state.robot.sensors.frontDistance).toBeGreaterThan(MIN_EXPECTED_WALL_DISTANCE);
   });
 
   it('adds a replay event to the event log for lessons', () => {

@@ -17,8 +17,8 @@ function darkenHex(hex: string, factor: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  const ch = (n: number) => Math.round(Math.max(0, Math.min(255, n * factor))).toString(16).padStart(2, '0');
-  return `#${ch(r)}${ch(g)}${ch(b)}`;
+  const scaleChannel = (n: number) => Math.round(Math.max(0, Math.min(255, n * factor))).toString(16).padStart(2, '0');
+  return `#${scaleChannel(r)}${scaleChannel(g)}${scaleChannel(b)}`;
 }
 
 /** Blend each RGB channel toward white by `factor` (0 = original, 1 = white). */
@@ -26,9 +26,14 @@ function lightenHex(hex: string, factor: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  const ch = (n: number) => Math.round(Math.min(255, n + (255 - n) * factor)).toString(16).padStart(2, '0');
-  return `#${ch(r)}${ch(g)}${ch(b)}`;
+  const blendChannel = (n: number) => Math.round(Math.min(255, n + (255 - n) * factor)).toString(16).padStart(2, '0');
+  return `#${blendChannel(r)}${blendChannel(g)}${blendChannel(b)}`;
 }
+
+// Derived palette factors — tuned so the background/grid always look good against floorColor
+const BG_DARKEN_FACTOR           = 0.25; // very dark backdrop: ~25 % of floor brightness
+const GRID_CELL_DARKEN_FACTOR    = 0.50; // subtle minor grid lines: ~50 % of floor brightness
+const GRID_SECTION_LIGHTEN_FACTOR = 0.55; // major grid lines blend 55 % toward white for legibility
 
 
 /** React error boundary that catches GLB load failures and renders a fallback. */
@@ -367,9 +372,9 @@ export default function Arena3D() {
   const { size, wallColor, floorColor } = arena;
 
   // Derive palette from floorColor so all lessons/scenarios look consistent
-  const bgColor          = darkenHex(floorColor, 0.25);
-  const gridCellColor    = darkenHex(floorColor, 0.5);
-  const gridSectionColor = lightenHex(floorColor, 0.55);
+  const bgColor          = darkenHex(floorColor, BG_DARKEN_FACTOR);
+  const gridCellColor    = darkenHex(floorColor, GRID_CELL_DARKEN_FACTOR);
+  const gridSectionColor = lightenHex(floorColor, GRID_SECTION_LIGHTEN_FACTOR);
 
   return (
     <Canvas
