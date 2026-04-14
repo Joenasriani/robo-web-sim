@@ -7,6 +7,7 @@
  */
 
 import { PERSIST_KEY_MODE, PERSIST_KEY_SCENARIO, PERSIST_KEY_LESSON, useSimulatorStore } from '@/sim/robotController';
+import type { ArenaConfig } from '@/sim/arenaConfig';
 
 // ---------------------------------------------------------------------------
 // localStorage mock (provided by jest-environment-jsdom)
@@ -375,5 +376,116 @@ describe('route modules export a default component', () => {
     jest.mock('next/dynamic', () => () => () => null);
     const mod = await import('@/app/simulator/page');
     expect(typeof mod.default).toBe('function');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// runQueue early-exit behavior (Bug 1 & Bug 3 fixes)
+// ---------------------------------------------------------------------------
+
+/** Arena with a wall obstacle blocking the robot's +Z forward path from (0,0,0). */
+const ARENA_OBSTACLE_AHEAD: ArenaConfig = {
+  size: 10,
+  obstacles: [{ id: 'wall', position: [0, 0.5, 0.5], size: [1, 1, 1], color: '#ff0000' }],
+  targets: [{ id: 'far', position: [0, 0.05, 8], radius: 0.3, color: '#22c55e' }],
+  wallColor: '#94a3b8',
+  floorColor: '#2d4a6e',
+};
+
+const ROBOT_AT_ORIGIN = {
+  position: { x: 0, y: 0.25, z: 0 },
+  rotation: 0,
+  isMoving: false,
+  isRunningQueue: false,
+  isPaused: false,
+  health: 'ok' as const,
+  sensors: { frontDistance: 5, leftObstacle: false, rightObstacle: false, targetDistance: 99 },
+};
+
+describe('runQueue early-exit on terminal states', () => {
+  beforeEach(() => {
+    clearStorage();
+    useSimulatorStore.setState({
+      activeLesson: null,
+      activeScenarioId: 'default-arena',
+      isHydrated: false,
+      commandQueue: [],
+      eventLog: [],
+      simState: 'idle',
+      simSpeed: 100, // fast — 6 ms delay per command
+      queueEverCompleted: false,
+      robot: { ...ROBOT_AT_ORIGIN },
+    });
+  });
+
+  it('stops executing after the first collision — no extra commands run', async () => {
+    useSimulatorStore.setState({ arena: ARENA_OBSTACLE_AHEAD });
+
+    // 3 forward commands; the 1st causes a collision
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().addCommand('forward');
+
+    await useSimulatorStore.getState().runQueue();
+
+    const state = useSimulatorStore.getState();
+    expect(state.robot.health).toBe('hit_obstacle');
+    expect(state.simState).toBe('blocked');
+    expect(state.robot.isRunningQueue).toBe(false);
+
+    // Only one collision event should be in the log
+    const collisionEvents = state.eventLog.filter((e) => e.message.includes('Collision'));
+    expect(collisionEvents).toHaveLength(1);
+  });
+
+  it('sets queueEverCompleted=false when the queue exits due to collision', async () => {
+    useSimulatorStore.setState({ arena: ARENA_OBSTACLE_AHEAD });
+
+    useSimulatorStore.getState().addCommand('forward');
+    useSimulatorStore.getState().addCommand('forward');
+
+    await useSimulatorStore.getState().runQueue();
+
+    expect(useSimulatorStore.getState().queueEverCompleted).toBe(false);
+  });
+
+  it('stops immediately when target is reached mid-queue — no commands after target', async () => {
+    // Lesson 4 arena: target at [0, 0.05, 3.5] radius 0.6; obstacles off to the sides
+    // Robot at origin facing +Z; step 0.5 → target reached at z ≈ 3.0 (step 6)
+    useSimulatorStore.getState().setActiveLesson('lesson-4');
+    useSimulatorStore.setState({ simSpeed: 100 });
+
+    // 8 commands — only ~6 needed to reach target; last 2 should NOT run
+    for (let i = 0; i < 8; i++) {
+      useSimulatorStore.getState().addCommand('forward');
+    }
+
+    await useSimulatorStore.getState().runQueue();
+
+    const state = useSimulatorStore.getState();
+    expect(state.robot.health).toBe('reached_target');
+    expect(state.simState).toBe('completed');
+    expect(state.robot.isRunningQueue).toBe(false);
+
+    // Only one "Target reached" event
+    const targetEvents = state.eventLog.filter((e) => e.message.includes('Target reached'));
+    expect(targetEvents).toHaveLength(1);
+  });
+
+  it('sets queueEverCompleted=true and marks lesson complete when target reached (Lesson 4 regression)', async () => {
+    // Lesson 4 requires completeQueue:true AND reachTarget:true
+    useSimulatorStore.getState().setActiveLesson('lesson-4');
+    useSimulatorStore.setState({ simSpeed: 100 });
+
+    // Exactly 6 commands to reach the target on the last step
+    for (let i = 0; i < 6; i++) {
+      useSimulatorStore.getState().addCommand('forward');
+    }
+
+    await useSimulatorStore.getState().runQueue();
+
+    const state = useSimulatorStore.getState();
+    expect(state.queueEverCompleted).toBe(true);
+    expect(state.lessonStatus).toBe('completed');
   });
 });

@@ -53,7 +53,7 @@ export const LESSONS: Lesson[] = [
       { instruction: 'Watch the status bar — it will tell you when you reach the target.' },
     ],
     successCondition: 'Robot reaches the green target marker.',
-    hint: 'The target is ahead and to the right. Move forward several steps then turn right.',
+    hint: 'Turn left 4 times to face east, then move forward 6 steps. Turn right 4 times to face north again, then move forward 6 more steps to reach the green target.',
     startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
     // Lesson-specific arena: target placed ahead and to the right, one obstacle off to the side.
     arenaOverrides: {
@@ -219,11 +219,11 @@ export const LESSONS: Lesson[] = [
     objective: 'Build a complete program in the command queue — including turns — and execute it in one go to navigate the full path to the target.',
     steps: [
       { instruction: 'Open the Command Queue panel. The target is to the right and ahead — you cannot go straight.' },
-      { instruction: 'Queue your program: 4 × Turn Right → 4 × Forward → 4 × Turn Left → 4 × Forward.' },
+      { instruction: 'Queue your program: 4 × Turn Left → 4 × Forward → 4 × Turn Right → 4 × Forward.' },
       { instruction: 'Review the queue list, then click "▶ Run Queue" to run your full program.' },
     ],
     successCondition: 'Robot reaches the target by running a queued program that includes at least one turn.',
-    hint: 'Think of the queue like writing code: plan the whole route first, then execute. You need at least one turn in the queue.',
+    hint: 'Turn left 4 times to face east, then move forward 4 steps to clear the obstacle. Turn right 4 times to face north, then move forward 4 more steps to reach the target.',
     startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
     arenaOverrides: {
       obstacles: [
