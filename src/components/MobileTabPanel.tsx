@@ -41,10 +41,13 @@ export default function MobileTabPanel() {
   };
 
   return (
-    <div className="lg:hidden flex flex-col shrink-0">
-      {/* Expandable panel — max 50vh so canvas is still visible */}
+    <div className="lg:hidden">
+      {/* Expandable panel — fixed above the tab bar, max 50vh so canvas is still visible */}
       {activeTab && (
-        <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[50vh] p-3">
+        <div
+          className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[50vh] p-3 fixed left-0 right-0 z-40"
+          style={{ bottom: 'calc(52px + env(safe-area-inset-bottom))' }}
+        >
           {/* Panel header with close button */}
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
@@ -106,8 +109,12 @@ export default function MobileTabPanel() {
         </div>
       )}
 
-      {/* Bottom tab bar */}
-      <nav className="bg-slate-800 border-t border-slate-700 flex shrink-0" aria-label="Simulator panels">
+      {/* Bottom tab bar — fixed to viewport bottom on mobile */}
+      <nav
+        className="bg-slate-800 border-t border-slate-700 flex z-50 fixed bottom-0 left-0 right-0"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        aria-label="Simulator panels"
+      >
         {TABS.map((tab) => (
           <button
             key={tab.id}

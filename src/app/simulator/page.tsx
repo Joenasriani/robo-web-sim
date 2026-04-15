@@ -55,7 +55,7 @@ function LessonDeepLink() {
 
 export default function SimulatorPage() {
   return (
-    <div className="h-screen flex flex-col text-white overflow-hidden" style={{ background: 'var(--rm-bg)' }}>
+    <div className="h-screen flex flex-col text-white overflow-hidden pb-[52px] lg:pb-0" style={{ background: 'var(--rm-bg)' }}>
       {/* Hydrate store from localStorage on first client render */}
       <StoreHydrator />
       {/* Apply lesson from query param (takes priority over localStorage-hydrated state) */}
