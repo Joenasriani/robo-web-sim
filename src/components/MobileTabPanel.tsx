@@ -33,81 +33,57 @@ const TABS: TabDef[] = [
 ];
 
 export default function MobileTabPanel() {
-  // Default to 'controls' so users see robot controls immediately on first load.
-  const [activeTab, setActiveTab] = useState<Tab | null>('controls');
-
-  const toggle = (tab: Tab) => {
-    setActiveTab((prev) => (prev === tab ? null : tab));
-  };
+  const [activeTab, setActiveTab] = useState<Tab>('controls');
 
   return (
-    <div className="lg:hidden">
-      {/* Expandable panel — fixed above the tab bar, max 50vh so canvas is still visible */}
-      {activeTab && (
-        <div
-          className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[50vh] p-3 fixed left-0 right-0 z-40"
-          style={{ bottom: 'calc(52px + env(safe-area-inset-bottom))' }}
-        >
-          {/* Panel header with close button */}
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-              {TABS.find((t) => t.id === activeTab)?.label}
-            </span>
-            <button
-              onClick={() => setActiveTab(null)}
-              aria-label="Close panel"
-              className="text-slate-500 hover:text-white text-xs leading-none transition-colors p-1 -mr-1 touch-manipulation"
-            >
-              ✕ Close
-            </button>
+    <div className="lg:hidden flex flex-col shrink-0">
+      {/* Persistent content panel — normal document flow below the 3D canvas */}
+      <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[45vh] p-3">
+        {activeTab === 'controls' && (
+          <div className="flex flex-col gap-4">
+            <RobotControls />
+            <hr className="border-slate-700" />
+            <QuickActions />
+            <hr className="border-slate-700" />
+            <ArenaEditor />
           </div>
-
-          {activeTab === 'controls' && (
-            <div className="flex flex-col gap-4">
-              <RobotControls />
-              <hr className="border-slate-700" />
-              <QuickActions />
-              <hr className="border-slate-700" />
-              <ArenaEditor />
-            </div>
-          )}
-          {activeTab === 'scenarios' && (
-            <div className="flex flex-col gap-4">
-              <ScenarioSelector />
-              <hr className="border-slate-700" />
-              <LessonsSidebar />
-            </div>
-          )}
-          {activeTab === 'models' && (
-            <div className="flex flex-col gap-4">
-              <ModelLibrary />
-            </div>
-          )}
-          {activeTab === 'scenes' && (
-            <div className="flex flex-col gap-4">
-              <SavedScenes />
-            </div>
-          )}
-          {activeTab === 'queue' && (
-            <div className="flex flex-col gap-4">
-              <BlocklyPanel />
-              <hr className="border-slate-700" />
-              <CommandQueue />
-              <hr className="border-slate-700" />
-              <SavedPrograms />
-              <hr className="border-slate-700" />
-              <SimSettings />
-            </div>
-          )}
-          {activeTab === 'info' && (
-            <div className="flex flex-col gap-4">
-              <TelemetryPanel />
-              <hr className="border-slate-700" />
-              <EventLog />
-            </div>
-          )}
-        </div>
-      )}
+        )}
+        {activeTab === 'scenarios' && (
+          <div className="flex flex-col gap-4">
+            <ScenarioSelector />
+            <hr className="border-slate-700" />
+            <LessonsSidebar />
+          </div>
+        )}
+        {activeTab === 'models' && (
+          <div className="flex flex-col gap-4">
+            <ModelLibrary />
+          </div>
+        )}
+        {activeTab === 'scenes' && (
+          <div className="flex flex-col gap-4">
+            <SavedScenes />
+          </div>
+        )}
+        {activeTab === 'queue' && (
+          <div className="flex flex-col gap-4">
+            <BlocklyPanel />
+            <hr className="border-slate-700" />
+            <CommandQueue />
+            <hr className="border-slate-700" />
+            <SavedPrograms />
+            <hr className="border-slate-700" />
+            <SimSettings />
+          </div>
+        )}
+        {activeTab === 'info' && (
+          <div className="flex flex-col gap-4">
+            <TelemetryPanel />
+            <hr className="border-slate-700" />
+            <EventLog />
+          </div>
+        )}
+      </div>
 
       {/* Bottom tab bar — fixed to viewport bottom on mobile */}
       <nav
@@ -118,7 +94,7 @@ export default function MobileTabPanel() {
         {TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => toggle(tab.id)}
+            onClick={() => setActiveTab(tab.id)}
             aria-pressed={activeTab === tab.id}
             aria-label={tab.label}
             className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-xs font-medium transition-colors min-h-[52px] touch-manipulation ${
