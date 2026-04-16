@@ -516,8 +516,10 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
   pauseRobot: () =>
     set((s) => {
+      // Guard: pause/resume only makes sense while the queue is running
+      if (!s.robot.isRunningQueue) return {};
       const isPaused = !s.robot.isPaused;
-      const newSimState: SimState = s.robot.isRunningQueue ? (isPaused ? 'paused' : 'running') : s.simState;
+      const newSimState: SimState = isPaused ? 'paused' : 'running';
       const entry = makeEvent(isPaused ? '⏸ Queue paused' : '▶ Queue resumed', 'info');
       return {
         robot: { ...s.robot, isPaused },
@@ -558,7 +560,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const myRunId = ++_currentRunId;
 
     set((s) => ({
-      robot: { ...s.robot, isRunningQueue: true, isPaused: false },
+      robot: { ...s.robot, isRunningQueue: true, isPaused: false, health: 'ok' },
       simState: 'running',
       lessonStatus: s.activeLesson && s.lessonStatus === 'not_started' ? 'in_progress' : s.lessonStatus,
       eventLog: [...s.eventLog, makeEvent('▶ Queue started', 'info')].slice(-MAX_EVENT_LOG),
@@ -569,6 +571,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
     // Track whether the loop exited early due to a collision (not normal completion or target reached)
     let exitedDueToCollision = false;
+    // Track whether target was reached before all commands ran (early exit — queue not fully executed)
+    let exitedEarlyDueToTarget = false;
 
     for (let i = 0; i < get().commandQueue.length; i++) {
       // Exit if this run was superseded (restart) or explicitly stopped
@@ -604,7 +608,13 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         exitedDueToCollision = true;
         break;
       }
-      if (cmdHealth === 'reached_target') break;
+      if (cmdHealth === 'reached_target') {
+        // Only an early exit when there are still commands remaining
+        if (i < get().commandQueue.length - 1) {
+          exitedEarlyDueToTarget = true;
+        }
+        break;
+      }
 
       await new Promise((r) => setTimeout(r, Math.round(600 / get().simSpeed)));
     }
@@ -620,8 +630,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       : finalHealth === 'reached_target' ? 'completed'
       : 'idle';
 
-    // Queue "ever completed" = ran all commands or stopped at target; NOT when cut short by collision
-    const queueEverCompleted = !exitedDueToCollision;
+    // Queue "ever completed" = ran all commands without a collision or early target exit
+    const queueEverCompleted = !exitedDueToCollision && !exitedEarlyDueToTarget;
 
     set((s) => {
       const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(

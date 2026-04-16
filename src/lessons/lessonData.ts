@@ -53,7 +53,7 @@ export const LESSONS: Lesson[] = [
       { instruction: 'Watch the status bar — it will tell you when you reach the target.' },
     ],
     successCondition: 'Robot reaches the green target marker.',
-    hint: 'Turn left 4 times to face east, then move forward 6 steps. Turn right 4 times to face north again, then move forward 6 more steps to reach the green target.',
+    hint: 'Turn right 4 times to face east, then move forward 6 steps. Turn left 4 times to face north again, then move forward 6 more steps to reach the green target.',
     startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
     // Lesson-specific arena: target placed ahead and to the right, one obstacle off to the side.
     arenaOverrides: {
@@ -122,7 +122,7 @@ export const LESSONS: Lesson[] = [
     objective: 'Use the command queue to plan a sequence of forward moves and execute them all at once.',
     steps: [
       { instruction: 'Find the Command Queue panel on the right side of the screen.' },
-      { instruction: 'Click "Enqueue" next to the Forward button at least 6 times to add moves to the queue.' },
+      { instruction: 'In the Command Builder panel, click "↑ Forward" at least 6 times to add forward moves to the queue.' },
       { instruction: 'Click "▶ Run Queue" to execute all your commands at once and drive to the target.' },
     ],
     successCondition: 'Robot reaches the target by running the command queue.',
