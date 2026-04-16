@@ -7,6 +7,7 @@ export default function RobotControls() {
   const store = useSimulatorStore();
   const robot = useSimulatorStore((s) => s.robot);
   const commandQueue = useSimulatorStore((s) => s.commandQueue);
+  const simState = useSimulatorStore((s) => s.simState);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -95,10 +96,10 @@ export default function RobotControls() {
       <div className="flex gap-2">
         <button
           onClick={() => store.runQueue()}
-          disabled={robot.isRunningQueue || commandQueue.length === 0}
+          disabled={robot.isRunningQueue || commandQueue.length === 0 || simState === 'blocked' || simState === 'completed'}
           className="btn-green flex-1"
         >
-          ▶ Play Queue
+          ▶ Run Queue
         </button>
         <button
           onClick={store.pauseRobot}

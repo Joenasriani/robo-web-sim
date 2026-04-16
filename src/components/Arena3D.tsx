@@ -31,9 +31,9 @@ function lightenHex(hex: string, factor: number): string {
 }
 
 // Derived palette factors — tuned so the background/grid always look good against floorColor
-const BG_DARKEN_FACTOR           = 0.25; // very dark backdrop: ~25 % of floor brightness
-const GRID_CELL_DARKEN_FACTOR    = 0.50; // subtle minor grid lines: ~50 % of floor brightness
-const GRID_SECTION_LIGHTEN_FACTOR = 0.55; // major grid lines blend 55 % toward white for legibility
+const BG_DARKEN_FACTOR           = 0.20; // dark backdrop: ~20 % of floor brightness
+const GRID_CELL_DARKEN_FACTOR    = 0.40; // minor grid lines: ~40 % of floor brightness for clear contrast
+const GRID_SECTION_LIGHTEN_FACTOR = 0.70; // major grid lines blend 70 % toward white for strong legibility
 
 
 /** React error boundary that catches GLB load failures and renders a fallback. */
