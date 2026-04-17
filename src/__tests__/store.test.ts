@@ -504,6 +504,38 @@ describe('runQueue early-exit on terminal states', () => {
     expect(state.queueEverCompleted).toBe(true);
     expect(state.lessonStatus).toBe('completed');
   });
+
+  it('pauseRobot toggles paused/running while queue is active', () => {
+    useSimulatorStore.getState().addCommand('wait');
+    useSimulatorStore.getState().runQueue();
+
+    useSimulatorStore.getState().pauseRobot();
+    expect(useSimulatorStore.getState().robot.isPaused).toBe(true);
+    expect(useSimulatorStore.getState().simState).toBe('paused');
+
+    useSimulatorStore.getState().pauseRobot();
+    expect(useSimulatorStore.getState().robot.isPaused).toBe(false);
+    expect(useSimulatorStore.getState().simState).toBe('running');
+
+    useSimulatorStore.getState().stopRobot();
+  });
+
+  it('stopRobot keeps simState idle even if in-flight run had terminal health', async () => {
+    useSimulatorStore.getState().addCommand('wait');
+    useSimulatorStore.getState().runQueue();
+
+    useSimulatorStore.setState((s) => ({
+      robot: { ...s.robot, health: 'hit_obstacle' },
+    }));
+    useSimulatorStore.getState().stopRobot();
+
+    await new Promise((r) => setTimeout(r, 120));
+
+    const state = useSimulatorStore.getState();
+    expect(state.simState).toBe('idle');
+    expect(state.robot.isRunningQueue).toBe(false);
+    expect(state.robot.isPaused).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
