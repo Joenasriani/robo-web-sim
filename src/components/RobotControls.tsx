@@ -24,23 +24,31 @@ export default function RobotControls() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [store, robot.isRunningQueue, robot.isPaused, robot.health]);
 
-  const statusText = robot.health === 'reached_target'
-    ? '🎯 Target reached!'
-    : robot.health === 'hit_obstacle'
-    ? '💥 Hit an obstacle!'
-    : 'Ready';
+  const canPlay = simState === 'idle' && commandQueue.length > 0;
+  const canPause = simState === 'running';
+  const canResume = simState === 'paused';
+  const canStop = simState === 'running' || simState === 'paused';
 
-  const statusColor = robot.health === 'reached_target'
-    ? 'text-green-400'
-    : robot.health === 'hit_obstacle'
-    ? 'text-red-400'
-    : 'text-slate-300';
+  const stateLabel: Record<string, string> = {
+    idle: 'Ready',
+    running: '▶ Running…',
+    paused: '⏸ Paused',
+    completed: '🎯 Target reached!',
+    blocked: '💥 Hit an obstacle!',
+  };
+  const stateColor: Record<string, string> = {
+    idle: 'text-slate-300',
+    running: 'text-blue-400',
+    paused: 'text-yellow-400',
+    completed: 'text-green-400',
+    blocked: 'text-red-400',
+  };
 
   return (
     <div className="flex flex-col gap-3">
       {/* Status */}
-      <div className={`text-sm font-semibold ${statusColor} bg-slate-800 rounded px-3 py-2`}>
-        {statusText}
+      <div className={`text-sm font-semibold ${stateColor[simState] ?? 'text-slate-300'} bg-slate-800 rounded px-3 py-2`}>
+        {stateLabel[simState] ?? 'Ready'}
       </div>
 
       {/* Movement controls */}
@@ -96,28 +104,76 @@ export default function RobotControls() {
       <div className="flex gap-2">
         <button
           onClick={() => store.runQueue()}
-          disabled={robot.isRunningQueue || commandQueue.length === 0 || simState === 'blocked' || simState === 'completed'}
+          disabled={!canPlay}
           className="btn-green flex-1"
+          title={
+            commandQueue.length === 0
+              ? 'Add commands to the queue first'
+              : simState === 'blocked'
+              ? 'Robot hit an obstacle — click ⟳ Reset first'
+              : simState === 'completed'
+              ? 'Target reached — click ⟳ Reset to run again'
+              : 'Run the command queue'
+          }
         >
-          ▶ Run Queue
+          ▶ Play Queue
         </button>
-        <button
-          onClick={store.pauseRobot}
-          disabled={!robot.isRunningQueue}
-          className="btn-yellow flex-1"
-        >
-          {robot.isPaused ? '▶ Resume' : '⏸ Pause'}
-        </button>
+
+        {canResume ? (
+          <button
+            onClick={store.pauseRobot}
+            className="btn-yellow flex-1"
+            title="Resume queue execution"
+          >
+            ▶ Resume
+          </button>
+        ) : (
+          <button
+            onClick={store.pauseRobot}
+            disabled={!canPause}
+            className="btn-yellow flex-1"
+            title={canPause ? 'Pause queue execution' : 'Queue is not running'}
+          >
+            ⏸ Pause
+          </button>
+        )}
+
         <button
           onClick={store.stopRobot}
-          disabled={!robot.isRunningQueue}
+          disabled={!canStop}
           className="btn-red flex-1"
+          title={canStop ? 'Stop and cancel the queue' : 'Queue is not running'}
         >
           ■ Stop
         </button>
       </div>
 
+      {simState === 'blocked' && (
+        <p className="text-xs text-red-400 text-center">
+          💥 Hit an obstacle. Click ⟳ Reset to try again.
+        </p>
+      )}
+      {simState === 'completed' && (
+        <p className="text-xs text-green-400 text-center">
+          🎯 Target reached! Click ⟳ Reset to run again.
+        </p>
+      )}
+
       <p className="text-xs text-slate-500">Keyboard: ↑↓←→ arrow keys</p>
+
+      <details className="text-xs text-slate-500 mt-1">
+        <summary className="cursor-pointer text-slate-400 hover:text-slate-300">
+          ℹ️ Button guide
+        </summary>
+        <ul className="mt-1 space-y-0.5 text-slate-500 pl-2">
+          <li><span className="text-green-400">▶ Play Queue</span> — runs all queued commands in order</li>
+          <li><span className="text-yellow-400">⏸ Pause</span> — freezes the queue mid-run (resume it after)</li>
+          <li><span className="text-yellow-400">▶ Resume</span> — continues from where it paused</li>
+          <li><span className="text-red-400">■ Stop</span> — cancels the queue entirely; robot stays where it stopped</li>
+          <li><span className="text-slate-300">⟳ Reset</span> — returns robot to start position; keeps your queue</li>
+          <li><span className="text-slate-300">↩ Replay</span> — resets robot then immediately re-runs queue (in Quick Actions)</li>
+        </ul>
+      </details>
     </div>
   );
 }

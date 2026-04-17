@@ -571,8 +571,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
 
     // Track whether the loop exited early due to a collision (not normal completion or target reached)
     let exitedDueToCollision = false;
-    // Track whether target was reached before all commands ran (early exit — queue not fully executed)
-    let exitedEarlyDueToTarget = false;
+    let exitedEarlyAtTarget = false;
 
     for (let i = 0; i < get().commandQueue.length; i++) {
       // Exit if this run was superseded (restart) or explicitly stopped
@@ -609,9 +608,9 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         break;
       }
       if (cmdHealth === 'reached_target') {
-        // Only an early exit when there are still commands remaining
+        // Check if there are commands remaining
         if (i < get().commandQueue.length - 1) {
-          exitedEarlyDueToTarget = true;
+          exitedEarlyAtTarget = true;
         }
         break;
       }
@@ -631,7 +630,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       : 'idle';
 
     // Queue "ever completed" = ran all commands without a collision or early target exit
-    const queueEverCompleted = !exitedDueToCollision && !exitedEarlyDueToTarget;
+    const queueEverCompleted = !exitedDueToCollision && !exitedEarlyAtTarget;
 
     set((s) => {
       const { lessonStatus: newLessonStatus, completedLessons } = applyLessonStatusUpdate(
