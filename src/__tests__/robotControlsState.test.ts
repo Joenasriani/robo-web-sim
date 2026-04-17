@@ -52,4 +52,3 @@ describe('RobotControls queue UI state', () => {
     expect(pausedUi.canStop).toBe(true);
   });
 });
-

@@ -3,17 +3,24 @@
 import { useEffect } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
 
+/** Derived UI state for queue controls (Play/Pause/Stop). */
 export interface QueueControlUiState {
   canPlay: boolean;
   canPauseToggle: boolean;
   canStop: boolean;
+  /** Toggle label: Pause while running, Resume while paused. */
   pauseLabel: '⏸ Pause' | '▶ Resume';
+  /** Tooltip text for Play Queue button. */
   playTitle: string;
+  /** Tooltip text for Pause/Resume button. */
   pauseTitle: string;
+  /** Tooltip text for Stop button. */
   stopTitle: string;
+  /** Inline status text shown beneath queue controls. */
   helperText: string;
 }
 
+/** Compute queue-control enable/disable state and user-facing helper copy. */
 export function getQueueControlUiState(args: {
   simState: string;
   queueLength: number;
@@ -43,12 +50,17 @@ export function getQueueControlUiState(args: {
 
   const stopTitle = canStop ? 'Stop and reset queue to idle' : 'Queue is not running';
 
-  let helperText = '1) Add items to queue 2) Play Queue 3) Pause/Resume 4) Stop to reset.';
-  if (!hasQueue) helperText = 'Queue is empty — add actions first.';
-  else if (isQueueRunning) helperText = 'Queue is running — use Pause or Stop.';
-  else if (isQueuePaused) helperText = 'Queue is paused — click Resume or Stop.';
-  else if (simState === 'blocked') helperText = 'Blocked by obstacle. Press Play to retry or Reset to reposition.';
-  else if (simState === 'completed') helperText = 'Target reached. Press Play to run again, or Reset to start over.';
+  const helperText = !hasQueue
+    ? 'Queue is empty — add actions first.'
+    : isQueueRunning
+    ? 'Queue is running — use Pause or Stop.'
+    : isQueuePaused
+    ? 'Queue is paused — click Resume or Stop.'
+    : simState === 'blocked'
+    ? 'Blocked by obstacle. Press Play to retry or Reset to reposition.'
+    : simState === 'completed'
+    ? 'Target reached. Press Play to run again, or Reset to start over.'
+    : '1) Add items to queue 2) Play Queue 3) Pause/Resume 4) Stop to reset.';
 
   return {
     canPlay,
@@ -205,7 +217,9 @@ export default function RobotControls() {
           ■ Stop
         </button>
       </div>
-      <p className="text-xs text-slate-500">{queueUi.helperText}</p>
+      <div role="status" aria-live="polite" className="text-xs text-slate-500">
+        {queueUi.helperText}
+      </div>
 
       {simState === 'blocked' && (
         <p className="text-xs text-red-400 text-center">
