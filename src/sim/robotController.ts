@@ -528,13 +528,16 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       };
     }),
 
-  stopRobot: () =>
+  stopRobot: () => {
+    // Invalidate any in-flight async queue loop so it cannot overwrite the stopped/idle state.
+    ++_currentRunId;
     set((s) => ({
       robot: { ...s.robot, isRunningQueue: false, isPaused: false, isMoving: false },
       currentCommandIndex: null,
       simState: 'idle',
       eventLog: [...s.eventLog, makeEvent('■ Queue stopped', 'warning')].slice(-MAX_EVENT_LOG),
-    })),
+    }));
+  },
 
   addCommand: (type) =>
     set((s) => ({
