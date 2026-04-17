@@ -449,6 +449,21 @@ describe('runQueue early-exit on terminal states', () => {
     expect(useSimulatorStore.getState().queueEverCompleted).toBe(false);
   });
 
+  it('resets robot health to ok when starting a queue run', async () => {
+    useSimulatorStore.setState({
+      robot: { ...useSimulatorStore.getState().robot, health: 'hit_obstacle' },
+      simState: 'blocked',
+    });
+
+    useSimulatorStore.getState().addCommand('wait');
+    await useSimulatorStore.getState().runQueue();
+
+    const state = useSimulatorStore.getState();
+    expect(state.robot.health).toBe('ok');
+    expect(state.simState).toBe('idle');
+    expect(state.queueEverCompleted).toBe(true);
+  });
+
   it('stops immediately when target is reached mid-queue — no commands after target', async () => {
     // Lesson 4 arena: target at [0, 0.05, 3.5] radius 0.6; obstacles off to the sides
     // Robot at origin facing +Z; step 0.5 → target reached at z ≈ 3.0 (step 6)
@@ -470,6 +485,7 @@ describe('runQueue early-exit on terminal states', () => {
     // Only one "Target reached" event
     const targetEvents = state.eventLog.filter((e) => e.message.includes('Target reached'));
     expect(targetEvents).toHaveLength(1);
+    expect(state.queueEverCompleted).toBe(false);
   });
 
   it('sets queueEverCompleted=true and marks lesson complete when target reached (Lesson 4 regression)', async () => {
