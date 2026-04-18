@@ -111,12 +111,27 @@ export default function SimulatorPage() {
 
         {/* Right sidebar: controls + queue + settings + telemetry + event log (desktop only) */}
         <aside className="hidden lg:flex w-64 bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex-col gap-4">
+          <BlocklyPanel />
+          <hr className="border-slate-700" />
+          <CommandQueue />
+          <hr className="border-slate-700" />
+          <SimSettings />
+          <hr className="border-slate-700" />
           <div>
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Movement Controls</h3>
-            <RobotControls />
+            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Play, Pause, Stop</h3>
+            <RobotControls showMovementControls={false} />
           </div>
           <hr className="border-slate-700" />
           <QuickActions />
+          <hr className="border-slate-700" />
+          <TelemetryPanel />
+          <hr className="border-slate-700" />
+          <EventLog />
+          <hr className="border-slate-700" />
+          <div>
+            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Movement Controls</h3>
+            <RobotControls showQueueControls={false} />
+          </div>
           <hr className="border-slate-700" />
           <ArenaEditor />
           <hr className="border-slate-700" />
@@ -125,16 +140,6 @@ export default function SimulatorPage() {
           <SavedScenes />
           <hr className="border-slate-700" />
           <SavedPrograms />
-          <hr className="border-slate-700" />
-          <BlocklyPanel />
-          <hr className="border-slate-700" />
-          <CommandQueue />
-          <hr className="border-slate-700" />
-          <SimSettings />
-          <hr className="border-slate-700" />
-          <TelemetryPanel />
-          <hr className="border-slate-700" />
-          <EventLog />
         </aside>
       </div>
 

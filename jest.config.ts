@@ -20,7 +20,7 @@ const config: Config = {
       },
     }],
   },
-  testMatch: ['<rootDir>/src/__tests__/**/*.test.ts'],
+  testMatch: ['<rootDir>/src/__tests__/**/*.test.ts?(x)'],
 };
 
 export default config;
