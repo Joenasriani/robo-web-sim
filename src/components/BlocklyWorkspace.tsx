@@ -49,7 +49,7 @@ const TOOLBOX = {
   kind: 'flyoutToolbox',
   contents: BLOCK_DEFINITIONS.map((def) => ({ kind: 'block', type: def.type })),
 };
-const TOOLBOX_SOURCE = 'inline BlocklyWorkspace TOOLBOX constant';
+const TOOLBOX_SOURCE = 'BlocklyWorkspace TOOLBOX constant';
 
 const WORKSPACE_STORAGE_KEY = 'blockly-workspace-state';
 const STARTER_BLOCK_TYPE = (() => {
@@ -271,6 +271,7 @@ export default function BlocklyWorkspace({
         workspaceRef.current = ws;
         let toolboxLoaded = false;
         try {
+          // `updateToolbox` is not available in every Blockly workspace-like mock/runtime.
           if (typeof ws.updateToolbox === 'function') {
             ws.updateToolbox(TOOLBOX);
           }
