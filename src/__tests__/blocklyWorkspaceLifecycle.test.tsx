@@ -14,6 +14,7 @@ const mockWorkspace = {
   dispose: jest.fn(),
   resizeContents: jest.fn(),
   render: jest.fn(),
+  addChangeListener: jest.fn(),
   getTopBlocks: jest.fn(() => []),
   getAllBlocks: jest.fn(() => []),
   clear: jest.fn(),
@@ -206,5 +207,26 @@ describe('BlocklyWorkspace lifecycle', () => {
     });
     expect(mockWorkspace.dispose).toHaveBeenCalledTimes(1);
     root = createRoot(container);
+  });
+
+  it('initializes only when container is visible', async () => {
+    act(() => {
+      root.render(<BlocklyWorkspace />);
+    });
+
+    const workspaceContainer = container.querySelector('[aria-label="Block programming workspace"]');
+    expect(workspaceContainer).not.toBeNull();
+
+    const element = workspaceContainer as HTMLElement;
+    element.style.display = 'none';
+    setSize(element, 420, 300);
+    triggerResizeObservers();
+    await flushMicrotasks();
+    expect(mockBlocklyModule.inject).not.toHaveBeenCalled();
+
+    element.style.display = 'block';
+    triggerResizeObservers();
+    await flushMicrotasks();
+    expect(mockBlocklyModule.inject).toHaveBeenCalledTimes(1);
   });
 });
