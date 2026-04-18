@@ -154,7 +154,7 @@ describe('BlocklyWorkspace lifecycle', () => {
     const onReady = jest.fn();
 
     act(() => {
-      root.render(<BlocklyWorkspace onWorkspaceReadyChange={onReady} />);
+      root.render(<BlocklyWorkspace onWorkspaceReadyChange={onReady} showDebugPanel />);
     });
     await flushMicrotasks();
 
@@ -191,7 +191,7 @@ describe('BlocklyWorkspace lifecycle', () => {
 
   it('keeps a single workspace instance and disposes on unmount', async () => {
     act(() => {
-      root.render(<BlocklyWorkspace />);
+      root.render(<BlocklyWorkspace showDebugPanel />);
     });
 
     const workspaceContainer = container.querySelector('[aria-label="Block programming workspace"]');
@@ -210,5 +210,13 @@ describe('BlocklyWorkspace lifecycle', () => {
     });
     expect(mockWorkspace.dispose).toHaveBeenCalledTimes(1);
     root = createRoot(container);
+  });
+
+  it('hides debug panel by default', async () => {
+    act(() => {
+      root.render(<BlocklyWorkspace />);
+    });
+    await flushMicrotasks();
+    expect(container.textContent).not.toContain('Blockly Debug State');
   });
 });

@@ -20,6 +20,7 @@ import ModelLibrary from '@/components/ModelLibrary';
 import BlocklyPanel from '@/components/BlocklyPanel';
 import MobileEditOverlay from '@/components/MobileEditOverlay';
 import CollapsibleSection from '@/components/CollapsibleSection';
+import CommandQueue from '@/components/CommandQueue';
 import { useSimulatorStore } from '@/sim/robotController';
 
 // Dynamic import to avoid SSR issues with Three.js
@@ -216,6 +217,9 @@ export default function SimulatorPage() {
                 {workspaceMode === 'build' && (
                   <>
                     <BlocklyPanel className="h-full min-h-0 flex-1 overflow-hidden" prioritizeWorkspace />
+                    <div>
+                      <CommandQueue />
+                    </div>
                     <div>
                       <RobotControls showMovementControls={false} />
                     </div>

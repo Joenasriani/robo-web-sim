@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
 import { convertBlockTypesToCommands } from '@/sim/blocklyConverter';
 import { CommandType } from '@/sim/commandExecution';
-import BlocklyWorkspace, { type BlocklyWorkspaceApi } from './BlocklyWorkspace';
+import BlocklyWorkspace, { ROBOT_BLOCK_PALETTE, type BlocklyWorkspaceApi } from './BlocklyWorkspace';
 
 interface BlocklyPanelProps {
   showHeader?: boolean;
@@ -86,6 +86,15 @@ export default function BlocklyPanel({
     return () => clearTimeout(timeout);
   }, [feedback]);
 
+  const workspaceInitializing = !isWorkspaceReady && !isRunning;
+  const showDebugPanel = useMemo(() => {
+    if (process.env.NODE_ENV === 'production' || typeof window === 'undefined') {
+      return false;
+    }
+    const debugParam = new URLSearchParams(window.location.search).get('blocklyDebug');
+    return debugParam === '1' || debugParam === 'true';
+  }, []);
+
   return (
     <div className={`flex h-full min-h-0 flex-col rounded-lg border border-slate-700 bg-slate-900/40 ${prioritizeWorkspace ? 'p-2.5' : 'p-4'} ${className}`}>
       <div className="flex items-center justify-between">
@@ -118,6 +127,36 @@ export default function BlocklyPanel({
             </button>
           ))}
         </div>
+        {workspaceInitializing && (
+          <p className="rounded border border-slate-700 bg-slate-900/70 px-2 py-1.5 text-xs text-slate-300">
+            Quick Add is disabled until the block editor finishes initializing.
+          </p>
+        )}
+
+        <div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Block Palette
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {ROBOT_BLOCK_PALETTE.map((block) => (
+              <button
+                key={block.type}
+                onClick={() => workspaceApi?.appendBlockType(block.type)}
+                disabled={isRunning || !isWorkspaceReady}
+                className="btn-small"
+                title={
+                  !isWorkspaceReady
+                    ? 'Block editor is initializing'
+                    : isRunning
+                      ? 'Stop the queue before editing blocks'
+                      : `Add ${block.label} block`
+                }
+              >
+                {block.icon} {block.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {isRunning ? (
           <p className="rounded bg-yellow-950/40 px-2 py-1.5 text-xs text-yellow-400">
@@ -134,6 +173,7 @@ export default function BlocklyPanel({
               onWorkspaceApi={setWorkspaceApi}
               onWorkspaceReadyChange={setIsWorkspaceReady}
               className={prioritizeWorkspace ? 'rounded border border-slate-700 bg-slate-900' : ''}
+              showDebugPanel={showDebugPanel}
             />
           </div>
         )}
