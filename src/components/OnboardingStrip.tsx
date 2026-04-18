@@ -70,7 +70,7 @@ export default function OnboardingStrip() {
 
       {/* Tablet + mobile (unchanged) */}
       <span className="text-blue-300 font-semibold whitespace-nowrap shrink-0 lg:hidden">💡 Quick start:</span>
-      <ol className="hidden sm:flex lg:hidden items-center gap-3 min-w-0" aria-label="Steps to use the simulator">
+      <ol className="hidden sm:flex lg:hidden items-center gap-3 min-w-0" aria-label="Steps to use the simulator on tablet">
         {STEPS.map((step, i) => (
           <li key={i} className="flex items-center gap-1 whitespace-nowrap text-blue-200/80">
             <span aria-hidden="true" className="text-base leading-none">{step.icon}</span>
@@ -81,7 +81,7 @@ export default function OnboardingStrip() {
           </li>
         ))}
       </ol>
-      <ol className="flex sm:hidden lg:hidden items-center gap-3 min-w-0" aria-label="Steps to use the simulator on mobile">
+      <ol className="flex sm:hidden items-center gap-3 min-w-0" aria-label="Steps to use the simulator on mobile">
         {MOBILE_STEPS.map((step, i) => (
           <li key={i} className="flex items-center gap-1 whitespace-nowrap text-blue-200/80">
             <span aria-hidden="true" className="text-base leading-none">{step.icon}</span>
