@@ -68,8 +68,9 @@ function registerBlocks(Blockly: typeof import('blockly')) {
   }
 }
 
-interface BlocklyWorkspaceProps {
+export interface BlocklyWorkspaceProps {
   onSendToQueue: (blockTypes: string[]) => void;
+  workspaceHeight?: number;
 }
 
 /**
@@ -79,7 +80,7 @@ interface BlocklyWorkspaceProps {
  *
  * Must only be rendered on the client (use dynamic import with ssr: false).
  */
-export default function BlocklyWorkspace({ onSendToQueue }: BlocklyWorkspaceProps) {
+export default function BlocklyWorkspace({ onSendToQueue, workspaceHeight = 280 }: BlocklyWorkspaceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<WorkspaceSvg | null>(null);
 
@@ -170,7 +171,7 @@ export default function BlocklyWorkspace({ onSendToQueue }: BlocklyWorkspaceProp
       <div
         ref={containerRef}
         className="w-full rounded border border-slate-600 overflow-hidden"
-        style={{ height: '280px' }}
+        style={{ height: `${workspaceHeight}px` }}
         aria-label="Block programming workspace"
       />
 

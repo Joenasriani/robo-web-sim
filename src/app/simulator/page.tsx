@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RobotControls from '@/components/RobotControls';
 import CommandQueue from '@/components/CommandQueue';
@@ -54,6 +54,8 @@ function LessonDeepLink() {
 }
 
 export default function SimulatorPage() {
+  const [isBlockPanelExpanded, setIsBlockPanelExpanded] = useState(false);
+
   return (
     <div className="h-screen flex flex-col text-white overflow-hidden pb-[52px] lg:pb-0" style={{ background: 'var(--rm-bg)' }}>
       {/* Hydrate store from localStorage on first client render */}
@@ -109,10 +111,21 @@ export default function SimulatorPage() {
           </div>
         </main>
 
+        {/* Dedicated block programming workspace (desktop only) */}
+        <aside
+          data-testid="desktop-block-programming-panel"
+          className={`hidden lg:flex bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex-col transition-[width] duration-300 ${
+            isBlockPanelExpanded ? 'w-[34rem]' : 'w-72'
+          }`}
+        >
+          <BlocklyPanel onExpandedChange={setIsBlockPanelExpanded} workspaceHeight={isBlockPanelExpanded ? 420 : 280} />
+        </aside>
+
         {/* Right sidebar: controls + queue + settings + telemetry + event log (desktop only) */}
-        <aside className="hidden lg:flex w-64 bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex-col gap-4">
-          <BlocklyPanel />
-          <hr className="border-slate-700" />
+        <aside
+          data-testid="desktop-right-panel"
+          className="hidden lg:flex w-80 bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex-col gap-4"
+        >
           <CommandQueue />
           <hr className="border-slate-700" />
           <SimSettings />

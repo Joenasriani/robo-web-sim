@@ -132,4 +132,19 @@ describe('Desktop right panel layout', () => {
     });
   });
 
+  it('renders block programming in a dedicated desktop panel and widens the right panel', async () => {
+    const { default: SimulatorPage } = await import('@/app/simulator/page');
+    const html = renderToStaticMarkup(<SimulatorPage />);
+
+    expect(html).toContain('data-testid="desktop-block-programming-panel"');
+    expect(html).toContain('data-testid="desktop-right-panel"');
+    expect(html).toContain('w-80');
+
+    const blockPanelPos = html.indexOf('data-testid="desktop-block-programming-panel"');
+    const rightPanelPos = html.indexOf('data-testid="desktop-right-panel"');
+
+    expect(blockPanelPos).toBeGreaterThanOrEqual(0);
+    expect(rightPanelPos).toBeGreaterThan(blockPanelPos);
+  });
+
 });
