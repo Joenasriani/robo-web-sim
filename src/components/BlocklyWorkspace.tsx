@@ -148,6 +148,7 @@ export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: Bloc
                 tail.nextConnection.connect(newBlock.previousConnection);
                 connected = true;
               } catch {
+                // Connection can fail if block types are incompatible; fall back to free placement below.
                 connected = false;
               }
             }
