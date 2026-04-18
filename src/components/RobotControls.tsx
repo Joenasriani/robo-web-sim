@@ -82,7 +82,7 @@ interface RobotControlsProps {
 export default function RobotControls({
   showMovementControls = true,
   showQueueControls = true,
-}: RobotControlsProps = {}) {
+}: RobotControlsProps) {
   const moveForward = useSimulatorStore((s) => s.moveForward);
   const moveBackward = useSimulatorStore((s) => s.moveBackward);
   const turnLeft = useSimulatorStore((s) => s.turnLeft);
