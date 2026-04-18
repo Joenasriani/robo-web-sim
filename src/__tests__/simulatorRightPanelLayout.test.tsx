@@ -112,14 +112,15 @@ describe('Desktop right panel layout', () => {
     expect(html).toContain('data-testid="desktop-right-panel-content"');
 
     const orderedMarkers = [
-      'RIGHT_COMMAND_QUEUE',
+      'Simulation Setup',
+      'RIGHT_SIM_SETTINGS',
       'Play, Pause, Stop',
       'RIGHT_PLAY_PAUSE_STOP_CONTENT',
       'RIGHT_QUICK_ACTIONS',
       'RIGHT_BLOCK_PROGRAMMING',
-      'RIGHT_SIM_SETTINGS',
       'RIGHT_TELEMETRY',
       'RIGHT_EVENT_LOG',
+      'RIGHT_COMMAND_QUEUE',
       'Movement Controls',
       'RIGHT_MOVEMENT_CONTROLS_CONTENT',
     ];
@@ -142,6 +143,15 @@ describe('Desktop right panel layout', () => {
     expect(html).toContain('lg:grid-cols-[280px_minmax(0,1fr)_400px]');
     expect(html).toContain('data-testid="desktop-right-panel"');
     expect(html).not.toContain('data-testid="desktop-block-programming-panel"');
+  });
+
+  it('keeps setup and playback controls sticky within the right panel scroll area', async () => {
+    const { default: SimulatorPage } = await import('@/app/simulator/page');
+    const html = renderToStaticMarkup(<SimulatorPage />);
+
+    expect(html).toContain('sticky top-0');
+    expect(html).toContain('Simulation Setup');
+    expect(html).toContain('Play, Pause, Stop');
   });
 
 });

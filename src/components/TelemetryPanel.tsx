@@ -42,7 +42,11 @@ const LESSON_STATUS_COLORS: Record<LessonStatus, string> = {
   failed:      'text-red-400',
 };
 
-export default function TelemetryPanel() {
+interface TelemetryPanelProps {
+  showHeader?: boolean;
+}
+
+export default function TelemetryPanel({ showHeader = true }: TelemetryPanelProps) {
   const robot = useSimulatorStore((s) => s.robot);
   const commandQueue = useSimulatorStore((s) => s.commandQueue);
   const currentCommandIndex = useSimulatorStore((s) => s.currentCommandIndex);
@@ -66,7 +70,7 @@ export default function TelemetryPanel() {
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Telemetry</h3>
+      {showHeader && <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Telemetry</h3>}
       <div className="bg-slate-900 rounded-lg p-2 text-xs space-y-1">
         <TelRow label="X" value={robot.position.x.toFixed(2)} />
         <TelRow label="Z" value={robot.position.z.toFixed(2)} />

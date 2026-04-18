@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useMemo, Suspense, Component, ReactNode } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, Box, Cylinder, Line, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { useSimulatorStore } from '@/sim/robotController';
@@ -59,11 +59,9 @@ class GlbErrorBoundary extends Component<
 
 function GlbObstacleInner({
   obs,
-  isSelected,
   onSelect,
 }: {
   obs: Obstacle;
-  isSelected: boolean;
   onSelect?: () => void;
 }) {
   const { scene } = useGLTF(obs.glbUrl!);
@@ -139,6 +137,7 @@ function Robot() {
 function Obstacles() {
   const arena              = useSimulatorStore((s) => s.arena);
   const isEditMode         = useSimulatorStore((s) => s.isEditMode);
+  const placementTool      = useSimulatorStore((s) => s.placementTool);
   const selectedEditObject = useSimulatorStore((s) => s.selectedEditObject);
   const selectEditObject   = useSimulatorStore((s) => s.selectEditObject);
   const appendEvent        = useSimulatorStore((s) => s.appendEvent);
@@ -148,7 +147,7 @@ function Obstacles() {
       {arena.obstacles.map((obs) => {
         const isSelected =
           isEditMode && selectedEditObject?.type === 'obstacle' && selectedEditObject.id === obs.id;
-        const onSelect = isEditMode
+        const onSelect = isEditMode && !placementTool
           ? () => selectEditObject('obstacle', obs.id)
           : undefined;
 
@@ -164,7 +163,6 @@ function Obstacles() {
                 <Suspense fallback={fallback}>
                   <GlbObstacleInner
                     obs={obs}
-                    isSelected={isSelected}
                     onSelect={onSelect}
                   />
                 </Suspense>
@@ -191,7 +189,7 @@ function Obstacles() {
               rotation={[0, obs.rotation ?? 0, 0]}
               castShadow
               receiveShadow
-              onClick={isEditMode ? (e) => { e.stopPropagation(); selectEditObject('obstacle', obs.id); } : undefined}
+              onClick={isEditMode && !placementTool ? (e) => { e.stopPropagation(); selectEditObject('obstacle', obs.id); } : undefined}
             >
               <meshStandardMaterial color={isSelected ? '#fbbf24' : obs.color} />
             </Box>
@@ -235,6 +233,7 @@ function Targets() {
   const arena              = useSimulatorStore((s) => s.arena);
   const health             = useSimulatorStore((s) => s.robot.health);
   const isEditMode         = useSimulatorStore((s) => s.isEditMode);
+  const placementTool      = useSimulatorStore((s) => s.placementTool);
   const selectedEditObject = useSimulatorStore((s) => s.selectedEditObject);
   const selectEditObject   = useSimulatorStore((s) => s.selectEditObject);
 
@@ -247,7 +246,7 @@ function Targets() {
           <group
             key={target.id}
             position={target.position}
-            onClick={isEditMode ? (e) => { e.stopPropagation(); selectEditObject('target', target.id); } : undefined}
+            onClick={isEditMode && !placementTool ? (e) => { e.stopPropagation(); selectEditObject('target', target.id); } : undefined}
           >
             <Cylinder args={[target.radius, target.radius, 0.05, 32]} receiveShadow>
               <meshStandardMaterial
@@ -364,9 +363,29 @@ function Walls({ size, color }: { size: number; color: string }) {
   );
 }
 
+function PlacementGhost({
+  position,
+  size,
+  color,
+}: {
+  position: [number, number, number];
+  size: [number, number, number];
+  color: string;
+}) {
+  return (
+    <Box args={size} position={position}>
+      <meshStandardMaterial color={color} transparent opacity={0.35} />
+    </Box>
+  );
+}
+
 export default function Arena3D() {
   const isEditMode         = useSimulatorStore((s) => s.isEditMode);
+  const placementTool      = useSimulatorStore((s) => s.placementTool);
+  const placementPreviewPosition = useSimulatorStore((s) => s.placementPreviewPosition);
   const deselectEditObject = useSimulatorStore((s) => s.deselectEditObject);
+  const setPlacementPreviewPosition = useSimulatorStore((s) => s.setPlacementPreviewPosition);
+  const placeSelectedModelAt = useSimulatorStore((s) => s.placeSelectedModelAt);
   const arena              = useSimulatorStore((s) => s.arena);
 
   const { size, wallColor, floorColor } = arena;
@@ -375,6 +394,35 @@ export default function Arena3D() {
   const bgColor          = darkenHex(floorColor, BG_DARKEN_FACTOR);
   const gridCellColor    = darkenHex(floorColor, GRID_CELL_DARKEN_FACTOR);
   const gridSectionColor = lightenHex(floorColor, GRID_SECTION_LIGHTEN_FACTOR);
+
+  const clampFloorPosition = (point: THREE.Vector3): [number, number, number] => {
+    const half = size / 2 - 0.6;
+    const x = Math.max(-half, Math.min(half, point.x));
+    const z = Math.max(-half, Math.min(half, point.z));
+    const yOffset = placementTool ? placementTool.size[1] / 2 : 0.5;
+    return [x, yOffset, z];
+  };
+
+  const handleFloorPointerMove = (event: ThreeEvent<PointerEvent>) => {
+    if (!isEditMode || !placementTool) return;
+    event.stopPropagation();
+    setPlacementPreviewPosition(clampFloorPosition(event.point));
+  };
+
+  const handleFloorPointerLeave = () => {
+    if (!isEditMode || !placementTool) return;
+    setPlacementPreviewPosition(null);
+  };
+
+  const handleFloorClick = (event: ThreeEvent<MouseEvent>) => {
+    if (!isEditMode) return;
+    if (!placementTool) {
+      deselectEditObject();
+      return;
+    }
+    event.stopPropagation();
+    placeSelectedModelAt(clampFloorPosition(event.point));
+  };
 
   return (
     <Canvas
@@ -403,7 +451,9 @@ export default function Arena3D() {
         args={[size, 0.1, size]}
         position={[0, -0.05, 0]}
         receiveShadow
-        onClick={isEditMode ? () => deselectEditObject() : undefined}
+        onPointerMove={isEditMode && placementTool ? handleFloorPointerMove : undefined}
+        onPointerOut={isEditMode && placementTool ? handleFloorPointerLeave : undefined}
+        onClick={isEditMode ? handleFloorClick : undefined}
       >
         <meshStandardMaterial color={floorColor} />
       </Box>
@@ -411,6 +461,13 @@ export default function Arena3D() {
       <Walls size={size} color={wallColor} />
       <Obstacles />
       <Targets />
+      {isEditMode && placementTool && placementPreviewPosition && (
+        <PlacementGhost
+          position={placementPreviewPosition}
+          size={placementTool.size}
+          color={placementTool.color}
+        />
+      )}
       <Robot />
       <SensorRays />
 

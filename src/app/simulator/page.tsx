@@ -24,6 +24,7 @@ import SavedScenes from '@/components/SavedScenes';
 import SavedPrograms from '@/components/SavedPrograms';
 import BlocklyPanel from '@/components/BlocklyPanel';
 import MobileEditOverlay from '@/components/MobileEditOverlay';
+import CollapsibleSection from '@/components/CollapsibleSection';
 import { useSimulatorStore } from '@/sim/robotController';
 
 // Dynamic import to avoid SSR issues with Three.js
@@ -130,18 +131,35 @@ export default function SimulatorPage() {
         </div>
 
         <aside data-testid="desktop-right-panel" className="h-full min-h-0 overflow-hidden border-l border-slate-700 bg-slate-800">
-          <div className="h-full min-h-0 overflow-y-auto p-4" data-testid="desktop-right-panel-content">
-            <div className="flex min-h-0 flex-col gap-4">
-              <CommandQueue />
+          <div className="h-full min-h-0 overflow-y-auto" data-testid="desktop-right-panel-content">
+            <div className="sticky top-0 z-20 border-b border-slate-700 bg-slate-800/95 px-4 pb-3 pt-4 backdrop-blur-sm">
               <div>
+                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Simulation Setup</h3>
+                <SimSettings showHeader={false} />
+              </div>
+              <div className="mt-3">
                 <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Play, Pause, Stop</h3>
                 <RobotControls showMovementControls={false} />
               </div>
+            </div>
+            <div className="flex min-h-0 flex-col gap-4 px-4 pb-4 pt-4">
               <QuickActions />
-              <BlocklyPanel className="min-h-0" />
-              <SimSettings />
-              <TelemetryPanel />
-              <EventLog />
+              <BlocklyPanel className="min-h-[460px]" prioritizeWorkspace />
+              <CollapsibleSection
+                title="Telemetry"
+                storageKey="sim-ui-collapsible-telemetry-open"
+                defaultOpen={false}
+              >
+                <TelemetryPanel showHeader={false} />
+              </CollapsibleSection>
+              <CollapsibleSection
+                title="Event Log"
+                storageKey="sim-ui-collapsible-event-log-open"
+                defaultOpen={false}
+              >
+                <EventLog showHeader={false} />
+              </CollapsibleSection>
+              <CommandQueue />
               <div>
                 <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Movement Controls</h3>
                 <RobotControls showQueueControls={false} />

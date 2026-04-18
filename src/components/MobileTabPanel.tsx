@@ -26,7 +26,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { id: 'controls',  label: 'Controls',  icon: '🎮' },
   { id: 'scenarios', label: 'Scenarios', icon: '🗺️' },
-  { id: 'models',    label: 'Models',    icon: '📦' },
+  { id: 'models',    label: 'Assets',    icon: '📦' },
   { id: 'scenes',    label: 'Scenes',    icon: '💾' },
   { id: 'queue',     label: 'Queue',     icon: '⚡' },
   { id: 'info',      label: 'Info',      icon: '📊' },
@@ -111,5 +111,4 @@ export default function MobileTabPanel() {
     </div>
   );
 }
-
 

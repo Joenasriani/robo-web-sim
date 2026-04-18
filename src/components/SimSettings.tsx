@@ -2,7 +2,11 @@
 
 import { useSimulatorStore } from '@/sim/robotController';
 
-export default function SimSettings() {
+interface SimSettingsProps {
+  showHeader?: boolean;
+}
+
+export default function SimSettings({ showHeader = true }: SimSettingsProps) {
   const simSpeed = useSimulatorStore((s) => s.simSpeed);
   const moveStep = useSimulatorStore((s) => s.moveStep);
   const turnStep = useSimulatorStore((s) => s.turnStep);
@@ -27,7 +31,7 @@ export default function SimSettings() {
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Sim Settings</h3>
+      {showHeader && <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Sim Settings</h3>}
 
       <label className="flex flex-col gap-1">
         <span className="text-xs text-slate-400">

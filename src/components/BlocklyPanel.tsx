@@ -20,6 +20,7 @@ const BlocklyWorkspace = dynamic(() => import('./BlocklyWorkspace'), {
 interface BlocklyPanelProps {
   showHeader?: boolean;
   className?: string;
+  prioritizeWorkspace?: boolean;
 }
 
 const QUICK_ADD_BUTTONS: { type: CommandType; label: string; icon: string }[] = [
@@ -35,7 +36,11 @@ const QUICK_ADD_BUTTONS: { type: CommandType; label: string; icon: string }[] = 
  * When the user clicks "Send to Queue", the blocks are converted to robot
  * commands and appended to the existing command queue.
  */
-export default function BlocklyPanel({ showHeader = true, className = '' }: BlocklyPanelProps) {
+export default function BlocklyPanel({
+  showHeader = true,
+  className = '',
+  prioritizeWorkspace = false,
+}: BlocklyPanelProps) {
   const addCommand  = useSimulatorStore((s) => s.addCommand);
   const isRunning   = useSimulatorStore((s) => s.robot.isRunningQueue);
 
@@ -93,7 +98,7 @@ export default function BlocklyPanel({ showHeader = true, className = '' }: Bloc
   }, [feedback]);
 
   return (
-    <div className={`flex min-h-0 flex-col rounded-lg border border-slate-700 bg-slate-900/40 p-4 ${className}`}>
+    <div className={`flex min-h-0 flex-col rounded-lg border border-slate-700 bg-slate-900/40 ${prioritizeWorkspace ? 'p-2.5' : 'p-4'} ${className}`}>
       <div className="flex items-center justify-between">
         {showHeader ? (
           <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-300">
@@ -113,7 +118,7 @@ export default function BlocklyPanel({ showHeader = true, className = '' }: Bloc
       </div>
 
       {isExpanded && (
-        <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3">
+        <div className={`mt-3 flex min-h-0 flex-1 flex-col gap-3 ${prioritizeWorkspace ? 'pb-1' : ''}`}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {QUICK_ADD_BUTTONS.map((btn) => (
               <button
@@ -133,8 +138,11 @@ export default function BlocklyPanel({ showHeader = true, className = '' }: Bloc
               ⚠ Stop the queue before editing blocks.
             </p>
           ) : (
-            <div className="flex min-h-0 flex-1">
-              <BlocklyWorkspace onWorkspaceApi={setWorkspaceApi} />
+            <div className={`flex min-h-0 flex-1 ${prioritizeWorkspace ? 'min-h-[360px]' : ''}`}>
+              <BlocklyWorkspace
+                onWorkspaceApi={setWorkspaceApi}
+                className={prioritizeWorkspace ? 'rounded border border-slate-700 bg-slate-900' : ''}
+              />
             </div>
           )}
 

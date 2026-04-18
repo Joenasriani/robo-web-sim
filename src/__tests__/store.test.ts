@@ -38,6 +38,8 @@ beforeEach(() => {
     isHydrated: false,
     commandQueue: [],
     simState: 'idle',
+    placementTool: null,
+    placementPreviewPosition: null,
     robot: {
       position: { x: 0, y: 0.25, z: 0 },
       rotation: 0,
@@ -353,6 +355,37 @@ describe('arena editor', () => {
     useSimulatorStore.getState().loadScenario('example-straight-line');
     expect(useSimulatorStore.getState().isEditMode).toBe(false);
     expect(useSimulatorStore.getState().defaultArenaSnapshot).not.toBeNull();
+  });
+
+  it('selectPlacementTool only works when edit mode is enabled', () => {
+    useSimulatorStore.getState().setEditMode(false);
+    useSimulatorStore.getState().selectPlacementTool('ml-red-crate');
+    expect(useSimulatorStore.getState().placementTool).toBeNull();
+
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectPlacementTool('ml-red-crate');
+    expect(useSimulatorStore.getState().placementTool?.modelId).toBe('ml-red-crate');
+  });
+
+  it('placeSelectedModelAt adds an obstacle when a placement tool is active', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+    useSimulatorStore.getState().selectPlacementTool('ml-traffic-cone');
+    useSimulatorStore.getState().placeSelectedModelAt([1.2, 0.5, -2.3]);
+
+    const state = useSimulatorStore.getState();
+    expect(state.arena.obstacles.length).toBe(before + 1);
+    expect(state.arena.obstacles.at(-1)?.modelId).toBe('ml-traffic-cone');
+  });
+
+  it('setEditMode(false) clears placement tool and preview', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectPlacementTool('ml-red-crate');
+    useSimulatorStore.getState().setPlacementPreviewPosition([0, 0.5, 0]);
+    useSimulatorStore.getState().setEditMode(false);
+
+    expect(useSimulatorStore.getState().placementTool).toBeNull();
+    expect(useSimulatorStore.getState().placementPreviewPosition).toBeNull();
   });
 });
 
