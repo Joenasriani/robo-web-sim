@@ -41,6 +41,20 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+/* Blockly fallback styles in case runtime CSS injection is delayed/skipped. */
+[aria-label="Block programming workspace"] .injectionDiv {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative;
+  overflow: hidden;
+}
+
+[aria-label="Block programming workspace"] .blocklySvg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
 @layer components {
   .btn-control {
     @apply disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-2 rounded transition-colors touch-manipulation select-none min-h-[44px] flex items-center justify-center;
