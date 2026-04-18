@@ -115,7 +115,7 @@ export default function BlocklyWorkspace({
     mounted: false,
     toolboxLoaded: false,
     blockCount: 0,
-    readinessReason: 'not evaluated',
+    containerReadinessReason: 'not evaluated',
     containerWidth: 0,
     containerHeight: 0,
     initError: '',
@@ -228,7 +228,7 @@ export default function BlocklyWorkspace({
 
       const readiness = getContainerReadiness();
       updateDebugState({
-        readinessReason: readiness.ready ? 'ready' : readiness.reason ?? 'not ready',
+        containerReadinessReason: readiness.ready ? 'ready' : readiness.reason ?? 'not ready',
         containerWidth: readiness.width,
         containerHeight: readiness.height,
       });
@@ -245,7 +245,7 @@ export default function BlocklyWorkspace({
         const mod = BlocklyMod ?? await import('blockly');
         const postImportReadiness = getContainerReadiness();
         updateDebugState({
-          readinessReason: postImportReadiness.ready ? 'ready' : postImportReadiness.reason ?? 'not ready',
+          containerReadinessReason: postImportReadiness.ready ? 'ready' : postImportReadiness.reason ?? 'not ready',
           containerWidth: postImportReadiness.width,
           containerHeight: postImportReadiness.height,
         });
@@ -494,13 +494,13 @@ export default function BlocklyWorkspace({
   return (
     <div className={`flex h-full w-full min-h-0 flex-1 self-stretch flex-col overflow-hidden ${className}`}>
       <div className="mb-2 rounded border border-amber-700 bg-amber-950/40 p-2 text-xs text-amber-100" aria-label="Blockly debug status">
-        <div className="font-semibold">Debug state (UI)</div>
+        <div className="font-semibold">Blockly debug state</div>
         <div>{debugState.initStarted ? 'Blockly init started' : 'Blockly init not started'}</div>
         <div>{debugState.mounted ? 'Blockly mounted' : 'Blockly not mounted'}</div>
         <div>{debugState.toolboxLoaded ? 'Toolbox loaded' : 'Toolbox not loaded'}</div>
         <div>{`Block count: ${debugState.blockCount}`}</div>
         <div>{`Container: ${Math.round(debugState.containerWidth)} × ${Math.round(debugState.containerHeight)}`}</div>
-        <div>{`Readiness: ${debugState.readinessReason}`}</div>
+        <div>{`Readiness: ${debugState.containerReadinessReason}`}</div>
         {debugState.initError && <div>{`Init error: ${debugState.initError}`}</div>}
       </div>
       <div
