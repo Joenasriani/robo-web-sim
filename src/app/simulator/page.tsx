@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RobotControls from '@/components/RobotControls';
 import CommandQueue from '@/components/CommandQueue';
@@ -29,6 +29,26 @@ import { useSimulatorStore } from '@/sim/robotController';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
+// Caps secondary monitor stack so the mode workspace remains the dominant dock section.
+const SECONDARY_MONITORS_MAX_HEIGHT = '40vh';
+
+// build: default authoring, edit: arena asset manipulation, run: active simulation monitoring
+type WorkspaceMode = 'build' | 'edit' | 'run';
+
+function resolveWorkspaceMode(isEditMode: boolean, simState: string): WorkspaceMode {
+  if (isEditMode) return 'edit';
+  if (simState !== 'idle') return 'run';
+  return 'build';
+}
+
+function WorkspaceHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div>
+      <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">{title}</h3>
+      <p className="text-xs text-slate-500">{description}</p>
+    </div>
+  );
+}
 
 const VALID_LESSON_IDS = [
   'lesson-1', 'lesson-2', 'lesson-3', 'lesson-4',
@@ -55,6 +75,10 @@ function LessonDeepLink() {
 }
 
 export default function SimulatorPage() {
+  const isEditMode = useSimulatorStore((s) => s.isEditMode);
+  const simState = useSimulatorStore((s) => s.simState);
+  const workspaceMode = useMemo(() => resolveWorkspaceMode(isEditMode, simState), [isEditMode, simState]);
+
   return (
     <div className="h-screen flex flex-col text-white overflow-hidden pb-[52px] lg:pb-0" style={{ background: 'var(--rm-bg)' }}>
       {/* Hydrate store from localStorage on first client render */}
@@ -131,8 +155,8 @@ export default function SimulatorPage() {
         </div>
 
         <aside data-testid="desktop-right-panel" className="h-full min-h-0 overflow-hidden border-l border-slate-700 bg-slate-800">
-          <div className="h-full min-h-0 overflow-y-auto" data-testid="desktop-right-panel-content">
-            <div className="sticky top-0 z-20 border-b border-slate-700 bg-slate-800/95 px-4 pb-3 pt-4 backdrop-blur-sm">
+          <div className="flex h-full min-h-0 flex-col" data-testid="desktop-right-panel-content">
+            <div className="sticky top-0 z-20 shrink-0 border-b border-slate-700 bg-slate-800/95 px-4 pb-3 pt-4 backdrop-blur-sm">
               <div>
                 <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Simulation Setup</h3>
                 <SimSettings showHeader={false} />
@@ -142,32 +166,76 @@ export default function SimulatorPage() {
                 <RobotControls showMovementControls={false} />
               </div>
             </div>
-            <div className="flex min-h-0 flex-col gap-4 px-4 pb-4 pt-4">
-              <QuickActions />
-              <BlocklyPanel className="min-h-[460px]" prioritizeWorkspace />
-              <CollapsibleSection
-                title="Telemetry"
-                storageKey="sim-ui-collapsible-telemetry-open"
-                defaultOpen={false}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <section
+                data-testid="right-dock-primary-workspace"
+                className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4"
               >
-                <TelemetryPanel showHeader={false} />
-              </CollapsibleSection>
-              <CollapsibleSection
-                title="Event Log"
-                storageKey="sim-ui-collapsible-event-log-open"
-                defaultOpen={false}
+                <div className="flex min-h-full flex-col gap-4">
+                  {workspaceMode === 'build' && (
+                    <WorkspaceHeader
+                      title="Build Workspace"
+                      description="Compose and refine robot command programs."
+                    />
+                  )}
+                  {workspaceMode === 'edit' && (
+                    <WorkspaceHeader
+                      title="Edit Workspace"
+                      description="Arrange arena assets and placement tools."
+                    />
+                  )}
+                  {workspaceMode === 'run' && (
+                    <WorkspaceHeader
+                      title="Run Workspace"
+                      description="Track execution while the simulator is active."
+                    />
+                  )}
+
+                  {(workspaceMode === 'build' || workspaceMode === 'run') && <QuickActions />}
+
+                  {workspaceMode === 'build' && (
+                    <>
+                      <BlocklyPanel className="min-h-[460px]" prioritizeWorkspace />
+                      <SavedPrograms />
+                    </>
+                  )}
+
+                  {workspaceMode === 'edit' && (
+                    <>
+                      <ArenaEditor />
+                      <ModelLibrary />
+                      <SavedScenes />
+                    </>
+                  )}
+
+                  {workspaceMode === 'run' && <CommandQueue />}
+                </div>
+              </section>
+
+              <section
+                data-testid="right-dock-secondary-monitors"
+                className="shrink-0 border-t border-slate-700 px-4 py-3"
               >
-                <EventLog showHeader={false} />
-              </CollapsibleSection>
-              <CommandQueue />
-              <div>
-                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Movement Controls</h3>
-                <RobotControls showQueueControls={false} />
-              </div>
-              <ArenaEditor />
-              <ModelLibrary />
-              <SavedScenes />
-              <SavedPrograms />
+                <div
+                  className="flex flex-col gap-3 overflow-y-auto pr-1"
+                  style={{ maxHeight: SECONDARY_MONITORS_MAX_HEIGHT }}
+                >
+                  <CollapsibleSection
+                    title="Telemetry"
+                    storageKey="sim-ui-collapsible-telemetry-open"
+                    defaultOpen={false}
+                  >
+                    <TelemetryPanel showHeader={false} />
+                  </CollapsibleSection>
+                  <CollapsibleSection
+                    title="Event Log"
+                    storageKey="sim-ui-collapsible-event-log-open"
+                    defaultOpen={false}
+                  >
+                    <EventLog showHeader={false} />
+                  </CollapsibleSection>
+                </div>
+              </section>
             </div>
           </div>
         </aside>
