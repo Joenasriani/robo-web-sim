@@ -8,8 +8,18 @@ const mockStoreState = {
 };
 
 jest.mock('@/components/BlocklyWorkspace', () => {
-  return function BlocklyWorkspaceMock() {
-    return <div>MOCK_BLOCKLY_WORKSPACE</div>;
+  return {
+    __esModule: true,
+    default: function BlocklyWorkspaceMock() {
+      return <div>MOCK_BLOCKLY_WORKSPACE</div>;
+    },
+    ROBOT_BLOCK_PALETTE: [
+      { type: 'robot_forward', icon: '↑', label: 'Move Forward' },
+      { type: 'robot_backward', icon: '↓', label: 'Move Backward' },
+      { type: 'robot_turn_left', icon: '←', label: 'Turn Left' },
+      { type: 'robot_turn_right', icon: '→', label: 'Turn Right' },
+      { type: 'robot_wait', icon: '⏸', label: 'Wait' },
+    ],
   };
 });
 
@@ -31,6 +41,9 @@ describe('BlocklyPanel default state', () => {
     expect(html).toContain('⏸ Wait');
     expect(html).toContain('MOCK_BLOCKLY_WORKSPACE');
     expect(html).toContain('Initializing Blockly…');
+    expect(html).toContain('Quick Add is disabled until the block editor finishes initializing.');
+    expect(html).toContain('Block Palette');
+    expect(html).toContain('↑ Move Forward');
     expect(html).toContain('min-h-[320px]');
     expect(html).toContain('<button disabled="" class="btn-small" title="Block editor is initializing">↑ Forward</button>');
     expect(html).toContain('<button class="btn-green text-xs" title="Add all blocks to the command queue" disabled="">➕ Send to Queue</button>');

@@ -15,7 +15,7 @@ import SavedScenes from '@/components/SavedScenes';
 import SavedPrograms from '@/components/SavedPrograms';
 import BlocklyPanel from '@/components/BlocklyPanel';
 
-type Tab = 'controls' | 'scenarios' | 'models' | 'scenes' | 'queue' | 'info';
+type Tab = 'controls' | 'scenarios' | 'models' | 'scenes' | 'blocks' | 'queue' | 'info';
 
 interface TabDef {
   id: Tab;
@@ -28,6 +28,7 @@ const TABS: TabDef[] = [
   { id: 'scenarios', label: 'Scenarios', icon: '🗺️' },
   { id: 'models',    label: 'Assets',    icon: '📦' },
   { id: 'scenes',    label: 'Scenes',    icon: '💾' },
+  { id: 'blocks',    label: 'Blocks',    icon: '🧩' },
   { id: 'queue',     label: 'Queue',     icon: '⚡' },
   { id: 'info',      label: 'Info',      icon: '📊' },
 ];
@@ -65,10 +66,13 @@ export default function MobileTabPanel() {
             <SavedScenes />
           </div>
         )}
-        {activeTab === 'queue' && (
+        {activeTab === 'blocks' && (
           <div className="flex flex-col gap-4">
             <BlocklyPanel />
-            <hr className="border-slate-700" />
+          </div>
+        )}
+        {activeTab === 'queue' && (
+          <div className="flex flex-col gap-4">
             <CommandQueue />
             <hr className="border-slate-700" />
             <SavedPrograms />
@@ -111,4 +115,3 @@ export default function MobileTabPanel() {
     </div>
   );
 }
-

@@ -15,35 +15,52 @@ const BLOCK_COLOURS = {
 const BLOCK_DEFINITIONS = [
   {
     type: 'robot_forward',
+    icon: '↑',
+    label: 'Move Forward',
     message: '↑ Move Forward',
     colour: BLOCK_COLOURS.forward,
     tooltip: 'Move the robot forward one step',
   },
   {
     type: 'robot_backward',
+    icon: '↓',
+    label: 'Move Backward',
     message: '↓ Move Backward',
     colour: BLOCK_COLOURS.backward,
     tooltip: 'Move the robot backward one step',
   },
   {
     type: 'robot_turn_left',
+    icon: '←',
+    label: 'Turn Left',
     message: '← Turn Left',
     colour: BLOCK_COLOURS.turn,
     tooltip: 'Rotate the robot 22.5° to the left',
   },
   {
     type: 'robot_turn_right',
+    icon: '→',
+    label: 'Turn Right',
     message: '→ Turn Right',
     colour: BLOCK_COLOURS.turn,
     tooltip: 'Rotate the robot 22.5° to the right',
   },
   {
     type: 'robot_wait',
+    icon: '⏸',
+    label: 'Wait',
     message: '⏸ Wait',
     colour: BLOCK_COLOURS.wait,
     tooltip: 'Pause the robot for one step',
   },
 ];
+const KNOWN_BLOCK_TYPES = new Set(BLOCK_DEFINITIONS.map((def) => def.type));
+
+export const ROBOT_BLOCK_PALETTE = BLOCK_DEFINITIONS.map((def) => ({
+  type: def.type,
+  icon: def.icon,
+  label: def.label,
+}));
 
 const TOOLBOX = {
   kind: 'flyoutToolbox',
@@ -81,10 +98,12 @@ export interface BlocklyWorkspaceProps {
   onWorkspaceApi?: (api: BlocklyWorkspaceApi | null) => void;
   onWorkspaceReadyChange?: (ready: boolean) => void;
   className?: string;
+  showDebugPanel?: boolean;
 }
 
 export interface BlocklyWorkspaceApi {
   appendCommandBlock: (command: CommandType) => void;
+  appendBlockType: (blockType: string) => void;
   getBlockTypes: () => string[];
   clearWorkspace: () => void;
 }
@@ -107,6 +126,7 @@ export default function BlocklyWorkspace({
   onWorkspaceApi,
   onWorkspaceReadyChange,
   className = '',
+  showDebugPanel = false,
 }: BlocklyWorkspaceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<WorkspaceSvg | null>(null);
@@ -360,6 +380,25 @@ export default function BlocklyWorkspace({
             liveWorkspace.render();
             syncBlockCount();
           },
+          appendBlockType: (blockType: string) => {
+            const liveWorkspace = workspaceRef.current;
+            if (!liveWorkspace) return;
+            if (!KNOWN_BLOCK_TYPES.has(blockType)) {
+              console.warn('[BlocklyWorkspace] Unsupported block type:', blockType);
+              return;
+            }
+            const newBlock = liveWorkspace.newBlock(blockType);
+            newBlock.initSvg();
+            newBlock.render();
+            const topBlocks = liveWorkspace.getTopBlocks(true);
+            const previousTopBlocks = topBlocks.filter((block) => block.id !== newBlock.id);
+            const y = Math.max(24, previousTopBlocks.reduce((maxY, block) => (
+              Math.max(maxY, block.getRelativeToSurfaceXY().y + 64)
+            ), 0));
+            newBlock.moveBy(24, y);
+            liveWorkspace.render();
+            syncBlockCount();
+          },
           getBlockTypes: () => {
             const liveWorkspace = workspaceRef.current;
             if (!liveWorkspace) return [];
@@ -407,15 +446,6 @@ export default function BlocklyWorkspace({
           }
         } catch (err) {
           console.warn('[BlocklyWorkspace] Failed to inspect starter block state:', err);
-        }
-
-        // Add a test block once to confirm actual rendering path.
-        try {
-          if (ws.getAllBlocks(false).length === 0) {
-            appendStarterBlock(ws, STARTER_BLOCK_TYPE);
-          }
-        } catch (err) {
-          console.warn('[BlocklyWorkspace] Failed to add test block:', err);
         }
 
         resizeWorkspace();
@@ -493,17 +523,19 @@ export default function BlocklyWorkspace({
 
   return (
     <div className={`flex h-full w-full min-h-[280px] flex-1 self-stretch flex-col overflow-hidden ${className}`}>
-      <div className="mb-2 rounded border border-amber-700 bg-amber-950/40 p-2 text-xs text-amber-100" aria-label="Blockly debug status">
-        <div className="font-semibold">Blockly Debug State</div>
-        <div>{debugState.initStarted ? 'Blockly init started' : 'Blockly init not started'}</div>
-        <div>{debugState.mounted ? 'Blockly mounted' : 'Blockly not mounted'}</div>
-        <div>{debugState.toolboxLoaded ? 'Toolbox loaded' : 'Toolbox not loaded'}</div>
-        <div>{`Block count: ${debugState.blockCount}`}</div>
-        <div>{`Container: ${Math.round(debugState.containerWidth)} × ${Math.round(debugState.containerHeight)}`}</div>
-        <div>{`Readiness: ${debugState.containerReadinessReason}`}</div>
-        {debugState.initError && <div>{`Init error: ${debugState.initError}`}</div>}
-      </div>
-        <div
+      {showDebugPanel && (
+        <div className="mb-2 rounded border border-amber-700 bg-amber-950/40 p-2 text-xs text-amber-100" aria-label="Blockly debug status">
+          <div className="font-semibold">Blockly Debug State</div>
+          <div>{debugState.initStarted ? 'Blockly init started' : 'Blockly init not started'}</div>
+          <div>{debugState.mounted ? 'Blockly mounted' : 'Blockly not mounted'}</div>
+          <div>{debugState.toolboxLoaded ? 'Toolbox loaded' : 'Toolbox not loaded'}</div>
+          <div>{`Block count: ${debugState.blockCount}`}</div>
+          <div>{`Container: ${Math.round(debugState.containerWidth)} × ${Math.round(debugState.containerHeight)}`}</div>
+          <div>{`Readiness: ${debugState.containerReadinessReason}`}</div>
+          {debugState.initError && <div>{`Init error: ${debugState.initError}`}</div>}
+        </div>
+      )}
+      <div
         ref={containerRef}
         className="w-full flex-1 min-h-0 overflow-hidden rounded border border-slate-600"
         aria-label="Block programming workspace"

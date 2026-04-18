@@ -57,6 +57,9 @@ jest.mock('@/components/EventLog', () => {
 jest.mock('@/components/BlocklyPanel', () => {
   return function BlocklyPanelMock() { return <div>RIGHT_BLOCK_PROGRAMMING</div>; };
 });
+jest.mock('@/components/CommandQueue', () => {
+  return function CommandQueueMock() { return <div>RIGHT_COMMAND_QUEUE</div>; };
+});
 
 jest.mock('@/components/LessonsSidebar', () => {
   return function LessonsSidebarMock() { return <div>LESSONS</div>; };
@@ -108,6 +111,7 @@ describe('Desktop right panel layout', () => {
 
     const orderedMarkers = [
       'RIGHT_BLOCK_PROGRAMMING',
+      'RIGHT_COMMAND_QUEUE',
       'RIGHT_PLAY_PAUSE_STOP_CONTENT',
       'Simulation Setup',
       'RIGHT_SIM_SETTINGS',
@@ -125,6 +129,7 @@ describe('Desktop right panel layout', () => {
     });
 
     expect(html).not.toContain('MODEL_LIBRARY');
+    expect(html).not.toContain('right-dock-secondary-monitors');
     expect((html.match(/grid-template-rows:0fr/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
@@ -136,6 +141,7 @@ describe('Desktop right panel layout', () => {
     expect(html).toContain('Assets / Props / Model Library');
     expect(html).toContain('MODEL_LIBRARY');
     expect(html).not.toContain('RIGHT_BLOCK_PROGRAMMING');
+    expect(html).not.toContain('RIGHT_COMMAND_QUEUE');
     expect(html).not.toContain('RIGHT_SIM_SETTINGS');
     expect(html).not.toContain('RIGHT_PLAY_PAUSE_STOP_CONTENT');
   });
@@ -160,6 +166,7 @@ describe('Desktop right panel layout', () => {
 
     expect((html.match(/grid-template-rows:1fr/g) ?? []).length).toBeGreaterThanOrEqual(2);
     expect(html).not.toContain('RIGHT_BLOCK_PROGRAMMING');
+    expect(html).not.toContain('RIGHT_COMMAND_QUEUE');
     expect(html).not.toContain('RIGHT_SIM_SETTINGS');
   });
 
@@ -180,6 +187,7 @@ describe('Desktop right panel layout', () => {
     expect(html).toContain('data-testid="right-dock-primary-workspace"');
     expect(html).not.toContain('data-testid="right-dock-secondary-monitors"');
     expect(html).toContain('RIGHT_BLOCK_PROGRAMMING');
+    expect(html).toContain('RIGHT_COMMAND_QUEUE');
     expect(html).toContain('Simulation Setup');
   });
 
