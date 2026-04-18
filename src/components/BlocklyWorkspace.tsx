@@ -146,6 +146,7 @@ export default function BlocklyWorkspace({
     let resizeWorkspace: (() => void) | null = null;
     let resizeFrame: number | null = null;
     let retryTimer: number | null = null;
+    let workspaceChangeListener: (() => void) | null = null;
     let initializing = false;
     const container = containerRef.current;
 
@@ -182,6 +183,13 @@ export default function BlocklyWorkspace({
 
     const disposeWorkspace = () => {
       if (workspaceRef.current) {
+        if (
+          workspaceChangeListener
+          && typeof workspaceRef.current.removeChangeListener === 'function'
+        ) {
+          workspaceRef.current.removeChangeListener(workspaceChangeListener);
+        }
+        workspaceChangeListener = null;
         workspaceRef.current.dispose();
         workspaceRef.current = null;
       }
@@ -274,8 +282,12 @@ export default function BlocklyWorkspace({
           // `updateToolbox` is not available in every Blockly workspace-like mock/runtime.
           if (typeof ws.updateToolbox === 'function') {
             ws.updateToolbox(TOOLBOX);
+            toolboxLoaded = true;
+          } else if (typeof ws.getToolbox === 'function') {
+            toolboxLoaded = Boolean(ws.getToolbox());
+          } else {
+            console.warn('[BlocklyWorkspace] Unable to verify toolbox load: workspace has no updateToolbox/getToolbox API');
           }
-          toolboxLoaded = true;
         } catch (toolboxErr) {
           console.error('[BlocklyWorkspace] Toolbox load failed:', {
             source: TOOLBOX_SOURCE,
@@ -291,6 +303,7 @@ export default function BlocklyWorkspace({
         };
         if (typeof ws.addChangeListener === 'function') {
           ws.addChangeListener(onWorkspaceChanged);
+          workspaceChangeListener = onWorkspaceChanged;
         } else {
           console.warn('[BlocklyWorkspace] Workspace does not support addChangeListener; block count updates may be limited');
         }
