@@ -31,8 +31,8 @@ describe('BlocklyPanel default state', () => {
     expect(html).toContain('⏸ Wait');
     expect(html).toContain('MOCK_BLOCKLY_WORKSPACE');
     expect(html).toContain('Initializing Blockly…');
-    expect(html).toContain('➕ Send to Queue');
-    expect(html).toContain('🗑 Clear Blocks');
-    expect(html).toContain('disabled');
+    expect(html).toContain('<button disabled="" class="btn-small" title="Block editor is initializing">↑ Forward</button>');
+    expect(html).toContain('<button class="btn-green text-xs" title="Add all blocks to the command queue" disabled="">➕ Send to Queue</button>');
+    expect(html).toContain('<button class="btn-secondary text-xs" title="Remove all blocks from the workspace" disabled="">🗑 Clear Blocks</button>');
   });
 });

@@ -4,7 +4,12 @@ import EditModeBadge from '@/components/EditModeBadge';
 
 const mockStoreState = {
   isEditMode: true,
-  placementTool: { modelName: 'Blue Barrel' },
+  placementTool: {
+    modelId: 'ml-blue-barrel',
+    modelName: 'Blue Barrel',
+    size: [0.8, 1.2, 0.8] as [number, number, number],
+    color: '#3b82f6',
+  },
 };
 
 jest.mock('@/sim/robotController', () => ({
