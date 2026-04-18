@@ -24,11 +24,12 @@ describe('BlocklyPanel default state', () => {
     mockStoreState.robot = { isRunningQueue: false };
   });
 
-  it('starts collapsed by default', () => {
+  it('shows block programming workspace and quick add controls by default', () => {
     const html = renderToStaticMarkup(<BlocklyPanel />);
 
     expect(html).toContain('🧩 Block Programming');
-    expect(html).toContain('▼ Show');
-    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('↑ Forward');
+    expect(html).toContain('⏸ Wait');
+    expect(html).toContain('MOCK_DYNAMIC');
   });
 });

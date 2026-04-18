@@ -36,11 +36,10 @@ describe('OnboardingStrip desktop quick start', () => {
       toggle.click();
     });
 
-    const desktopSteps = container.querySelector('[aria-label="Desktop quick start steps"]');
+    const desktopSteps = container.querySelector('[aria-label="Quick start steps"]');
     expect(desktopSteps).not.toBeNull();
-    expect(desktopSteps?.textContent).toContain('🗺️ Pick a scenario or lesson');
-    expect(desktopSteps?.textContent).toContain('→ ➕ Add commands to the queue');
-    expect(desktopSteps?.textContent).toContain('→ ▶ Run the queue');
-    expect(desktopSteps?.textContent).toContain('→ 📊 Watch telemetry & lesson status');
+    expect(desktopSteps?.textContent).toContain('1. Pick a lesson');
+    expect(desktopSteps?.textContent).toContain('2. Add commands');
+    expect(desktopSteps?.textContent).toContain('3. Play queue');
   });
 });

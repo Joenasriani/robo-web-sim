@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import type { WorkspaceSvg, Block } from 'blockly';
+import type { CommandType } from '@/sim/commandExecution';
 
 /** Colour hue values for each command block. */
 const BLOCK_COLOURS = {
@@ -70,7 +71,11 @@ function registerBlocks(Blockly: typeof import('blockly')) {
 
 export interface BlocklyWorkspaceProps {
   onSendToQueue: (blockTypes: string[]) => void;
-  workspaceHeight?: number;
+  onWorkspaceApi?: (api: BlocklyWorkspaceApi | null) => void;
+}
+
+export interface BlocklyWorkspaceApi {
+  appendCommandBlock: (command: CommandType) => void;
 }
 
 /**
@@ -80,9 +85,20 @@ export interface BlocklyWorkspaceProps {
  *
  * Must only be rendered on the client (use dynamic import with ssr: false).
  */
-export default function BlocklyWorkspace({ onSendToQueue, workspaceHeight = 280 }: BlocklyWorkspaceProps) {
+export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: BlocklyWorkspaceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<WorkspaceSvg | null>(null);
+
+  const commandToBlockType = useCallback((command: CommandType): string => {
+    switch (command) {
+      case 'forward': return 'robot_forward';
+      case 'backward': return 'robot_backward';
+      case 'left': return 'robot_turn_left';
+      case 'right': return 'robot_turn_right';
+      case 'wait': return 'robot_wait';
+      default: return 'robot_wait';
+    }
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -102,9 +118,47 @@ export default function BlocklyWorkspace({ onSendToQueue, workspaceHeight = 280 
         toolbox: TOOLBOX,
         scrollbars: true,
         trashcan: true,
+        toolboxPosition: 'start',
         move: { scrollbars: true, drag: true, wheel: true },
       });
       workspaceRef.current = ws;
+
+      onWorkspaceApi?.({
+        appendCommandBlock: (command: CommandType) => {
+          if (!ws) return;
+          const blockType = commandToBlockType(command);
+          const newBlock = ws.newBlock(blockType);
+          newBlock.initSvg();
+          newBlock.render();
+
+          const topBlocks = ws.getTopBlocks(true);
+          const lastTopBlock = topBlocks[topBlocks.length - 2] ?? null;
+          let connected = false;
+
+          if (lastTopBlock && newBlock.previousConnection) {
+            let tail: Block = lastTopBlock;
+            while (tail.getNextBlock()) {
+              tail = tail.getNextBlock() as Block;
+            }
+            if (tail.nextConnection) {
+              try {
+                tail.nextConnection.connect(newBlock.previousConnection);
+                connected = true;
+              } catch {
+                connected = false;
+              }
+            }
+          }
+
+          if (!connected) {
+            const y = Math.max(24, topBlocks.reduce((maxY, block) => (
+              Math.max(maxY, block.getRelativeToSurfaceXY().y + 64)
+            ), 0));
+            newBlock.moveBy(24, y);
+          }
+          ws.render();
+        },
+      });
 
       // Restore previous workspace state from localStorage
       try {
@@ -134,8 +188,9 @@ export default function BlocklyWorkspace({ onSendToQueue, workspaceHeight = 280 
         ws.dispose();
       }
       workspaceRef.current = null;
+      onWorkspaceApi?.(null);
     };
-  }, []);
+  }, [commandToBlockType, onWorkspaceApi]);
 
   /** Collect block types in order from the workspace and forward to parent. */
   const handleSendToQueue = useCallback(() => {
@@ -166,20 +221,19 @@ export default function BlocklyWorkspace({ onSendToQueue, workspaceHeight = 280 
   }, []);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
       {/* Blockly injection target */}
       <div
         ref={containerRef}
-        className="w-full rounded border border-slate-600 overflow-hidden"
-        style={{ height: `${workspaceHeight}px` }}
+        className="w-full min-h-[360px] flex-1 rounded border border-slate-600 overflow-hidden"
         aria-label="Block programming workspace"
       />
 
       {/* Workspace action buttons */}
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <button
           onClick={handleSendToQueue}
-          className="btn-green flex-1 text-xs"
+          className="btn-green text-xs"
           title="Add all blocks to the command queue"
         >
           ➕ Send to Queue

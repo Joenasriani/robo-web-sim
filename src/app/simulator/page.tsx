@@ -54,7 +54,7 @@ function LessonDeepLink() {
 }
 
 export default function SimulatorPage() {
-  const [isBlockPanelExpanded, setIsBlockPanelExpanded] = useState(false);
+  const [isBlockPanelOpen, setIsBlockPanelOpen] = useState(true);
 
   return (
     <div className="h-screen flex flex-col text-white overflow-hidden pb-[52px] lg:pb-0" style={{ background: 'var(--rm-bg)' }}>
@@ -70,8 +70,19 @@ export default function SimulatorPage() {
         <Link href="/" className="text-sm flex items-center gap-1" style={{ color: 'var(--rm-primary)' }}>
           ← Home
         </Link>
-        <h1 className="text-base font-bold text-white">RoboWebSim — Simulator</h1>
-        <Link href="/lessons" className="text-sm" style={{ color: 'var(--rm-primary)' }}>
+        <div className="flex items-center gap-3">
+          <h1 className="text-base font-bold text-white">RoboWebSim — Simulator</h1>
+          <button
+            type="button"
+            className="hidden lg:inline-flex btn-secondary text-xs"
+            onClick={() => setIsBlockPanelOpen((open) => !open)}
+            aria-expanded={isBlockPanelOpen}
+            aria-controls="desktop-block-programming-panel"
+          >
+            {isBlockPanelOpen ? 'Close Block Programming' : 'Open Block Programming'}
+          </button>
+        </div>
+        <Link href="/lessons" className="text-sm whitespace-nowrap" style={{ color: 'var(--rm-primary)' }}>
           Lessons →
         </Link>
       </header>
@@ -95,65 +106,61 @@ export default function SimulatorPage() {
           </div>
         </aside>
 
-        {/* 3D Canvas */}
-        <main className="flex-1 relative">
-          <Arena3D />
-          <SimFeedback />
-          <EditModeBadge />
-          {/* Touch-friendly edit controls overlay — mobile only, visible when object is selected */}
-          <MobileEditOverlay />
-          {/* Canvas interaction hint */}
-          <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
-            Drag to orbit • Scroll to zoom • Right-drag to pan
-          </div>
-          <div className="absolute bottom-2 left-2 text-xs text-slate-600 pointer-events-none sm:hidden">
-            Drag to orbit • Pinch to zoom
-          </div>
-        </main>
+        <div className="flex flex-1 min-w-0">
+          {/* 3D Canvas */}
+          <main className="flex-1 min-w-0 relative">
+            <Arena3D />
+            <SimFeedback />
+            <EditModeBadge />
+            {/* Touch-friendly edit controls overlay — mobile only, visible when object is selected */}
+            <MobileEditOverlay />
+            {/* Canvas interaction hint */}
+            <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
+              Drag to orbit • Scroll to zoom • Right-drag to pan
+            </div>
+            <div className="absolute bottom-2 left-2 text-xs text-slate-600 pointer-events-none sm:hidden">
+              Drag to orbit • Pinch to zoom
+            </div>
+          </main>
 
-        {/* Dedicated block programming workspace (desktop only) */}
-        <aside
-          data-testid="desktop-block-programming-panel"
-          className={`hidden lg:flex bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex-col transition-[width] duration-300 ${
-            isBlockPanelExpanded ? 'w-[34rem]' : 'w-72'
-          }`}
-        >
-          <BlocklyPanel onExpandedChange={setIsBlockPanelExpanded} workspaceHeight={isBlockPanelExpanded ? 420 : 280} />
-        </aside>
-
-        {/* Right sidebar: controls + queue + settings + telemetry + event log (desktop only) */}
-        <aside
-          data-testid="desktop-right-panel"
-          className="hidden lg:flex w-80 bg-slate-800 border-l border-slate-700 overflow-y-auto p-3 shrink-0 flex-col gap-4"
-        >
-          <CommandQueue />
-          <hr className="border-slate-700" />
-          <SimSettings />
-          <hr className="border-slate-700" />
-          <div>
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Play, Pause, Stop</h3>
-            <RobotControls showMovementControls={false} />
-          </div>
-          <hr className="border-slate-700" />
-          <QuickActions />
-          <hr className="border-slate-700" />
-          <TelemetryPanel />
-          <hr className="border-slate-700" />
-          <EventLog />
-          <hr className="border-slate-700" />
-          <div>
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Movement Controls</h3>
-            <RobotControls showQueueControls={false} />
-          </div>
-          <hr className="border-slate-700" />
-          <ArenaEditor />
-          <hr className="border-slate-700" />
-          <ModelLibrary />
-          <hr className="border-slate-700" />
-          <SavedScenes />
-          <hr className="border-slate-700" />
-          <SavedPrograms />
-        </aside>
+          {/* Docked block programming workspace (desktop only) */}
+          <aside
+            id="desktop-block-programming-panel"
+            data-testid="desktop-block-programming-panel"
+            className={`hidden lg:flex shrink-0 min-h-0 bg-slate-800 transition-[width,flex-basis] duration-300 ease-out ${
+              isBlockPanelOpen
+                ? 'border-l border-slate-700 basis-[40%] min-w-[380px] max-w-[480px]'
+                : 'basis-0 w-0 min-w-0 border-l-0 overflow-hidden'
+            }`}
+          >
+            {isBlockPanelOpen && (
+              <div className="flex min-h-0 flex-1 flex-col p-3 gap-3">
+                <section className="flex min-h-0 flex-[1_1_62%] flex-col">
+                  <BlocklyPanel className="min-h-0" />
+                </section>
+                <section className="flex min-h-0 flex-[1_1_38%] flex-col gap-3 overflow-y-auto pr-1">
+                  <CommandQueue />
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">Play, Pause, Stop</h3>
+                    <RobotControls showMovementControls={false} />
+                  </div>
+                  <SimSettings />
+                  <QuickActions />
+                  <TelemetryPanel />
+                  <EventLog />
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">Movement Controls</h3>
+                    <RobotControls showQueueControls={false} />
+                  </div>
+                  <ArenaEditor />
+                  <ModelLibrary />
+                  <SavedScenes />
+                  <SavedPrograms />
+                </section>
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
 
       {/* Mobile / tablet bottom tab panel (hidden on desktop) */}

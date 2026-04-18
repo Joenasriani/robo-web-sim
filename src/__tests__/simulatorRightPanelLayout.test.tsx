@@ -105,16 +105,16 @@ describe('Desktop right panel layout', () => {
     mockStoreState.robot = { isRunningQueue: false };
   });
 
-  it('renders desktop right panel components in the requested order', async () => {
+  it('renders docked block programming panel components in the requested order', async () => {
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
     const orderedMarkers = [
       'RIGHT_BLOCK_PROGRAMMING',
       'RIGHT_COMMAND_BUILDER',
-      'RIGHT_SIM_SETTINGS',
       'Play, Pause, Stop',
       'RIGHT_PLAY_PAUSE_STOP_CONTENT',
+      'RIGHT_SIM_SETTINGS',
       'RIGHT_QUICK_ACTIONS',
       'RIGHT_TELEMETRY',
       'RIGHT_EVENT_LOG',
@@ -132,19 +132,17 @@ describe('Desktop right panel layout', () => {
     });
   });
 
-  it('renders block programming in a dedicated desktop panel and widens the right panel', async () => {
+  it('renders a docked desktop block programming split panel with open/close toggle', async () => {
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
     expect(html).toContain('data-testid="desktop-block-programming-panel"');
-    expect(html).toContain('data-testid="desktop-right-panel"');
-    expect(html).toContain('w-80');
+    expect(html).toContain('Close Block Programming');
+    expect(html).toContain('basis-[40%]');
+    expect(html).toContain('min-w-[380px]');
+    expect(html).toContain('max-w-[480px]');
 
-    const blockPanelPos = html.indexOf('data-testid="desktop-block-programming-panel"');
-    const rightPanelPos = html.indexOf('data-testid="desktop-right-panel"');
-
-    expect(blockPanelPos).toBeGreaterThanOrEqual(0);
-    expect(rightPanelPos).toBeGreaterThan(blockPanelPos);
+    expect(html.indexOf('data-testid="desktop-block-programming-panel"')).toBeGreaterThanOrEqual(0);
   });
 
 });

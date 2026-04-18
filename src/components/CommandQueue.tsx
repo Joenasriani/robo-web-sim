@@ -1,18 +1,8 @@
 'use client';
 
 import { useSimulatorStore } from '@/sim/robotController';
-import { CommandType } from '@/sim/commandExecution';
-
-const COMMAND_BUTTONS: { type: CommandType; label: string; icon: string }[] = [
-  { type: 'forward', label: 'Forward', icon: '↑' },
-  { type: 'backward', label: 'Backward', icon: '↓' },
-  { type: 'left', label: 'Turn Left', icon: '←' },
-  { type: 'right', label: 'Turn Right', icon: '→' },
-  { type: 'wait', label: 'Wait', icon: '⏸' },
-];
 
 export default function CommandQueue() {
-  const addCommand = useSimulatorStore((s) => s.addCommand);
   const removeLastCommand = useSimulatorStore((s) => s.removeLastCommand);
   const clearQueue = useSimulatorStore((s) => s.clearQueue);
   const commandQueue = useSimulatorStore((s) => s.commandQueue);
@@ -22,25 +12,12 @@ export default function CommandQueue() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Command Builder</h3>
+        <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Command Queue</h3>
         {commandQueue.length > 0 && (
           <span className="text-xs text-slate-400 tabular-nums">
             {commandQueue.length} cmd{commandQueue.length !== 1 ? 's' : ''}
           </span>
         )}
-      </div>
-
-      {/* Add buttons */}
-      <div className="flex flex-wrap gap-2">
-        {COMMAND_BUTTONS.map((btn) => (
-          <button
-            key={btn.type}
-            onClick={() => addCommand(btn.type)}
-            className="btn-small"
-          >
-            {btn.icon} {btn.label}
-          </button>
-        ))}
       </div>
 
       {/* Queue list */}
