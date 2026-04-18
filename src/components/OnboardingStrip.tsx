@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const DISMISS_KEY = 'robo-web-sim-onboarding-dismissed';
 
-const STEPS = ['Pick a lesson', 'Add commands', 'Play queue'];
+const STEPS = ['Pick a lesson', 'Add commands', 'Run queue'];
 
 /**
  * A compact, dismissible beginner hint strip shown at the top of the simulator.

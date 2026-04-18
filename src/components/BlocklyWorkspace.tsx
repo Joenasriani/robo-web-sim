@@ -132,7 +132,8 @@ export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: Bloc
           newBlock.render();
 
           const topBlocks = ws.getTopBlocks(true);
-          const lastTopBlock = topBlocks[topBlocks.length - 2] ?? null;
+          const previousTopBlocks = topBlocks.filter((block) => block.id !== newBlock.id);
+          const lastTopBlock = previousTopBlocks[previousTopBlocks.length - 1] ?? null;
           let connected = false;
 
           if (lastTopBlock && newBlock.previousConnection) {
@@ -151,7 +152,7 @@ export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: Bloc
           }
 
           if (!connected) {
-            const y = Math.max(24, topBlocks.reduce((maxY, block) => (
+            const y = Math.max(24, previousTopBlocks.reduce((maxY, block) => (
               Math.max(maxY, block.getRelativeToSurfaceXY().y + 64)
             ), 0));
             newBlock.moveBy(24, y);

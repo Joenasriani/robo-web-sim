@@ -40,6 +40,6 @@ describe('OnboardingStrip desktop quick start', () => {
     expect(desktopSteps).not.toBeNull();
     expect(desktopSteps?.textContent).toContain('1. Pick a lesson');
     expect(desktopSteps?.textContent).toContain('2. Add commands');
-    expect(desktopSteps?.textContent).toContain('3. Play queue');
+    expect(desktopSteps?.textContent).toContain('3. Run queue');
   });
 });
