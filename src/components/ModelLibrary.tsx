@@ -180,9 +180,10 @@ export default function ModelLibrary() {
         </p>
       </div>
       {isEditMode ? (
-        <p className="rounded border border-amber-700/50 bg-amber-900/30 px-2 py-1 text-[10px] text-amber-300">
-          {placementTool ? `Placing: ${placementTool.modelName} (Esc to cancel)` : 'No placement tool selected'}
-        </p>
+        <div className="rounded border border-amber-700/50 bg-amber-900/30 px-2 py-1 text-[10px] text-amber-300">
+          <p>{placementTool ? `Placing: ${placementTool.modelName}` : 'No placement tool selected'}</p>
+          {placementTool && <p className="mt-0.5 text-[9px]">Click to place • Esc to cancel</p>}
+        </div>
       ) : (
         <p className="rounded border border-slate-700 bg-slate-800/60 px-2 py-1 text-[10px] text-slate-400">
           Turn on Edit Mode to select an asset placement tool.

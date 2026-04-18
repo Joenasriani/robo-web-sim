@@ -31,5 +31,9 @@ describe('BlocklyPanel default state', () => {
     expect(html).toContain('↑ Forward');
     expect(html).toContain('⏸ Wait');
     expect(html).toContain('MOCK_DYNAMIC');
+    expect(html).toContain('Initializing Blockly…');
+    expect(html).toContain('➕ Send to Queue');
+    expect(html).toContain('🗑 Clear Blocks');
+    expect(html).toContain('disabled');
   });
 });
