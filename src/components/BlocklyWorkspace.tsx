@@ -492,9 +492,9 @@ export default function BlocklyWorkspace({
   }, [commandToBlockType, onWorkspaceApi, onWorkspaceReadyChange, updateDebugState]);
 
   return (
-    <div className={`flex h-full w-full min-h-0 flex-1 self-stretch flex-col overflow-hidden ${className}`}>
+    <div className={`flex h-full w-full min-h-[280px] flex-1 self-stretch flex-col overflow-hidden ${className}`}>
       <div className="mb-2 rounded border border-amber-700 bg-amber-950/40 p-2 text-xs text-amber-100" aria-label="Blockly debug status">
-        <div className="font-semibold">Blockly debug state</div>
+        <div className="font-semibold">Blockly Debug State</div>
         <div>{debugState.initStarted ? 'Blockly init started' : 'Blockly init not started'}</div>
         <div>{debugState.mounted ? 'Blockly mounted' : 'Blockly not mounted'}</div>
         <div>{debugState.toolboxLoaded ? 'Toolbox loaded' : 'Toolbox not loaded'}</div>
@@ -503,9 +503,9 @@ export default function BlocklyWorkspace({
         <div>{`Readiness: ${debugState.containerReadinessReason}`}</div>
         {debugState.initError && <div>{`Init error: ${debugState.initError}`}</div>}
       </div>
-      <div
+        <div
         ref={containerRef}
-        className="w-full flex-1 min-h-[220px] overflow-hidden rounded border border-slate-600"
+        className="w-full flex-1 min-h-0 overflow-hidden rounded border border-slate-600"
         aria-label="Block programming workspace"
       />
     </div>
