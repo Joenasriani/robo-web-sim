@@ -74,7 +74,15 @@ export function getQueueControlUiState(args: {
   };
 }
 
-export default function RobotControls() {
+interface RobotControlsProps {
+  showMovementControls?: boolean;
+  showQueueControls?: boolean;
+}
+
+export default function RobotControls({
+  showMovementControls = true,
+  showQueueControls = true,
+}: RobotControlsProps = {}) {
   const moveForward = useSimulatorStore((s) => s.moveForward);
   const moveBackward = useSimulatorStore((s) => s.moveBackward);
   const turnLeft = useSimulatorStore((s) => s.turnLeft);
@@ -88,6 +96,7 @@ export default function RobotControls() {
   const simState = useSimulatorStore((s) => s.simState);
 
   useEffect(() => {
+    if (!showMovementControls) return;
     const handleKey = (e: KeyboardEvent) => {
       if (robot.isRunningQueue && !robot.isPaused) return;
       if (robot.health === 'hit_obstacle') return;
@@ -100,7 +109,7 @@ export default function RobotControls() {
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [moveForward, moveBackward, turnLeft, turnRight, robot.isRunningQueue, robot.isPaused, robot.health]);
+  }, [moveForward, moveBackward, turnLeft, turnRight, robot.isRunningQueue, robot.isPaused, robot.health, showMovementControls]);
 
   const queueUi = getQueueControlUiState({
     simState,
@@ -131,122 +140,132 @@ export default function RobotControls() {
         {stateLabel[simState] ?? 'Ready'}
       </div>
 
-      {/* Movement controls */}
-      <div className="grid grid-cols-3 gap-2">
-        <div />
-        <button
-          onClick={moveForward}
-          disabled={robot.isRunningQueue && !robot.isPaused}
-          className="btn-control"
-          aria-label="Move Forward"
-          title="Move Forward (↑)"
-        >
-          ↑ Forward
-        </button>
-        <div />
+      {showMovementControls && (
+        <>
+          {/* Movement controls */}
+          <div className="grid grid-cols-3 gap-2">
+            <div />
+            <button
+              onClick={moveForward}
+              disabled={robot.isRunningQueue && !robot.isPaused}
+              className="btn-control"
+              aria-label="Move Forward"
+              title="Move Forward (↑)"
+            >
+              ↑ Forward
+            </button>
+            <div />
 
-        <button
-          onClick={turnLeft}
-          disabled={robot.isRunningQueue && !robot.isPaused}
-          className="btn-control"
-          aria-label="Turn Left"
-          title="Turn Left (←)"
-        >
-          ← Left
-        </button>
-        <button
-          onClick={resetRobot}
-          className="btn-secondary"
-          aria-label="Reset Robot"
-          title="Reset"
-        >
-          ⟳ Reset
-        </button>
-        <button
-          onClick={turnRight}
-          disabled={robot.isRunningQueue && !robot.isPaused}
-          className="btn-control"
-          aria-label="Turn Right"
-          title="Turn Right (→)"
-        >
-          Right →
-        </button>
+            <button
+              onClick={turnLeft}
+              disabled={robot.isRunningQueue && !robot.isPaused}
+              className="btn-control"
+              aria-label="Turn Left"
+              title="Turn Left (←)"
+            >
+              ← Left
+            </button>
+            <button
+              onClick={resetRobot}
+              className="btn-secondary"
+              aria-label="Reset Robot"
+              title="Reset"
+            >
+              ⟳ Reset
+            </button>
+            <button
+              onClick={turnRight}
+              disabled={robot.isRunningQueue && !robot.isPaused}
+              className="btn-control"
+              aria-label="Turn Right"
+              title="Turn Right (→)"
+            >
+              Right →
+            </button>
 
-        <div />
-        <button
-          onClick={moveBackward}
-          disabled={robot.isRunningQueue && !robot.isPaused}
-          className="btn-control"
-          aria-label="Move Backward"
-          title="Move Backward (↓)"
-        >
-          ↓ Back
-        </button>
-        <div />
-      </div>
+            <div />
+            <button
+              onClick={moveBackward}
+              disabled={robot.isRunningQueue && !robot.isPaused}
+              className="btn-control"
+              aria-label="Move Backward"
+              title="Move Backward (↓)"
+            >
+              ↓ Back
+            </button>
+            <div />
+          </div>
 
-      {/* Play/Pause/Stop row */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => runQueue()}
-          disabled={!queueUi.canPlay}
-          className="btn-green flex-1"
-          aria-label="Play Queue"
-          title={queueUi.playTitle}
-        >
-          ▶ Play Queue
-        </button>
+          {simState === 'blocked' && (
+            <p className="text-xs text-red-400 text-center">
+              💥 Hit an obstacle. Click ⟳ Reset to try again.
+            </p>
+          )}
+          {simState === 'completed' && (
+            <p className="text-xs text-green-400 text-center">
+              🎯 Target reached! Click ⟳ Reset to run again.
+            </p>
+          )}
 
-        <button
-          onClick={pauseRobot}
-          disabled={!queueUi.canPauseToggle}
-          className="btn-yellow flex-1"
-          aria-label={queueUi.pauseLabel === '▶ Resume' ? 'Resume Queue' : 'Pause Queue'}
-          title={queueUi.pauseTitle}
-        >
-          {queueUi.pauseLabel}
-        </button>
-
-        <button
-          onClick={stopRobot}
-          disabled={!queueUi.canStop}
-          className="btn-red flex-1"
-          aria-label="Stop Queue"
-          title={queueUi.stopTitle}
-        >
-          ■ Stop
-        </button>
-      </div>
-      <div role="status" aria-live="polite" className="text-xs text-slate-500">
-        {queueUi.helperText}
-      </div>
-
-      {simState === 'blocked' && (
-        <p className="text-xs text-red-400 text-center">
-          💥 Hit an obstacle. Click ⟳ Reset to try again.
-        </p>
-      )}
-      {simState === 'completed' && (
-        <p className="text-xs text-green-400 text-center">
-          🎯 Target reached! Click ⟳ Reset to run again.
-        </p>
+          <p className="text-xs text-slate-500">Keyboard: ↑↓←→ arrow keys</p>
+        </>
       )}
 
-      <p className="text-xs text-slate-500">Keyboard: ↑↓←→ arrow keys</p>
+      {showQueueControls && (
+        <>
+          {/* Play/Pause/Stop row */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => runQueue()}
+              disabled={!queueUi.canPlay}
+              className="btn-green flex-1"
+              aria-label="Play Queue"
+              title={queueUi.playTitle}
+            >
+              ▶ Play Queue
+            </button>
 
-      <details className="text-xs text-slate-500 mt-1">
-        <summary className="cursor-pointer text-slate-400 hover:text-slate-300">
-          ℹ️ Button guide
-        </summary>
-        <ul className="mt-1 space-y-0.5 text-slate-500 pl-2">
-          <li><span className="text-green-400">▶ Play Queue</span> — runs all queued commands in order</li>
-          <li><span className="text-yellow-400">⏸ Pause</span> — freezes the queue mid-run (resume it after)</li>
-          <li><span className="text-yellow-400">▶ Resume</span> — continues from where it paused</li>
-          <li><span className="text-red-400">■ Stop</span> — cancels the queue and returns controls to idle</li>
-          <li><span className="text-slate-300">⟳ Reset</span> — returns robot to start position; keeps your queue</li>
-          <li><span className="text-slate-300">↩ Replay</span> — resets robot then immediately re-runs queue (in Quick Actions)</li>
-        </ul>
-      </details>
+            <button
+              onClick={pauseRobot}
+              disabled={!queueUi.canPauseToggle}
+              className="btn-yellow flex-1"
+              aria-label={queueUi.pauseLabel === '▶ Resume' ? 'Resume Queue' : 'Pause Queue'}
+              title={queueUi.pauseTitle}
+            >
+              {queueUi.pauseLabel}
+            </button>
+
+            <button
+              onClick={stopRobot}
+              disabled={!queueUi.canStop}
+              className="btn-red flex-1"
+              aria-label="Stop Queue"
+              title={queueUi.stopTitle}
+            >
+              ■ Stop
+            </button>
+          </div>
+          <div role="status" aria-live="polite" className="text-xs text-slate-500">
+            {queueUi.helperText}
+          </div>
+        </>
+      )}
+
+      {showMovementControls && (
+        <details className="text-xs text-slate-500 mt-1">
+          <summary className="cursor-pointer text-slate-400 hover:text-slate-300">
+            ℹ️ Button guide
+          </summary>
+          <ul className="mt-1 space-y-0.5 text-slate-500 pl-2">
+            <li><span className="text-green-400">▶ Play Queue</span> — runs all queued commands in order</li>
+            <li><span className="text-yellow-400">⏸ Pause</span> — freezes the queue mid-run (resume it after)</li>
+            <li><span className="text-yellow-400">▶ Resume</span> — continues from where it paused</li>
+            <li><span className="text-red-400">■ Stop</span> — cancels the queue and returns controls to idle</li>
+            <li><span className="text-slate-300">⟳ Reset</span> — returns robot to start position; keeps your queue</li>
+            <li><span className="text-slate-300">↩ Replay</span> — resets robot then immediately re-runs queue (in Quick Actions)</li>
+          </ul>
+        </details>
+      )}
     </div>
   );
 }
