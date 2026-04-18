@@ -10,6 +10,7 @@ export default function ArenaEditor() {
   const arena                    = useSimulatorStore((s) => s.arena);
   const setEditMode              = useSimulatorStore((s) => s.setEditMode);
   const deselectEditObject       = useSimulatorStore((s) => s.deselectEditObject);
+  const clearPlacementTool       = useSimulatorStore((s) => s.clearPlacementTool);
   const moveSelectedObject       = useSimulatorStore((s) => s.moveSelectedObject);
   const rotateSelectedObject     = useSimulatorStore((s) => s.rotateSelectedObject);
   const deleteSelectedObstacle   = useSimulatorStore((s) => s.deleteSelectedObstacle);
@@ -19,21 +20,6 @@ export default function ArenaEditor() {
 
   // Edit mode is only available in free-play
   if (activeLesson !== null) return null;
-
-  if (!isEditMode) {
-    return (
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Arena Editor</span>
-        <button
-          onClick={() => setEditMode(true)}
-          className="btn-small w-full text-left"
-          title="Open arena editor — add, move, or remove obstacles and targets"
-        >
-          ✏️ Edit Arena
-        </button>
-      </div>
-    );
-  }
 
   // Resolve selected object details
   const selectedObs = selectedEditObject?.type === 'obstacle'
@@ -64,18 +50,32 @@ export default function ArenaEditor() {
     <div className="flex flex-col gap-2">
       {/* Header row */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-wide">
-          ✏️ Edit Mode
+        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+          Arena Edit
         </span>
         <button
-          onClick={() => { deselectEditObject(); setEditMode(false); }}
-          className="text-[10px] text-slate-400 hover:text-white transition-colors"
-          title="Exit edit mode"
+          onClick={() => {
+            if (isEditMode) {
+              deselectEditObject();
+              clearPlacementTool();
+            }
+            setEditMode(!isEditMode);
+          }}
+          className={`text-[10px] rounded px-2 py-1 transition-colors ${isEditMode ? 'bg-amber-700/40 text-amber-300' : 'bg-slate-700 text-slate-300 hover:text-white'}`}
+          title={isEditMode ? 'Disable edit mode' : 'Enable edit mode'}
         >
-          ✕ Done
+          {isEditMode ? 'Edit Mode: ON' : 'Edit Mode: OFF'}
         </button>
       </div>
 
+      {!isEditMode && (
+        <p className="text-[10px] text-slate-500 leading-snug">
+          Enable Edit Mode to place assets or modify objects in the arena.
+        </p>
+      )}
+
+      {isEditMode && (
+        <>
       {/* Edit mode hint */}
       <p className="text-[10px] text-slate-500 leading-snug">
         Tap or click an obstacle or target in the 3D view to select it, then use the controls below.
@@ -209,7 +209,8 @@ export default function ArenaEditor() {
       <p className="text-[10px] text-slate-600 leading-snug">
         {arena.obstacles.length} obstacle{arena.obstacles.length !== 1 ? 's' : ''} · {arena.targets.length} target{arena.targets.length !== 1 ? 's' : ''}
       </p>
+        </>
+      )}
     </div>
   );
 }
-

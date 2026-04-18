@@ -46,6 +46,14 @@ export interface EventEntry {
   type: 'info' | 'success' | 'error' | 'warning';
 }
 
+export interface PlacementToolState {
+  modelId: string;
+  modelName: string;
+  size: [number, number, number];
+  color: string;
+  glbUrl?: string;
+}
+
 const MAX_EVENT_LOG = 20;
 let _eventIdCounter = 0;
 
@@ -136,6 +144,10 @@ export interface SimulatorStore {
   isEditMode: boolean;
   /** Currently selected obstacle or target in edit mode. */
   selectedEditObject: { type: 'obstacle' | 'target'; id: string } | null;
+  /** Active model placement tool used for click-to-place editing. */
+  placementTool: PlacementToolState | null;
+  /** Current hover preview position for the active placement tool. */
+  placementPreviewPosition: [number, number, number] | null;
   /** Snapshot of the active scenario's default arena used to power "Reset Arena". */
   defaultArenaSnapshot: ArenaConfig | null;
 
@@ -200,6 +212,10 @@ export interface SimulatorStore {
   // Model library (free-play only)
   /** Place a curated model from the library into the current free-play arena. */
   placeModelFromLibrary: (modelId: string) => void;
+  selectPlacementTool: (modelId: string) => void;
+  clearPlacementTool: () => void;
+  setPlacementPreviewPosition: (position: [number, number, number] | null) => void;
+  placeSelectedModelAt: (position: [number, number, number]) => void;
 
   // ---------------------------------------------------------------------------
   // Saved scenes (free-play only, local-only)
@@ -404,6 +420,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   isHydrated: false,
   isEditMode: false,
   selectedEditObject: null,
+  placementTool: null,
+  placementPreviewPosition: null,
   defaultArenaSnapshot: DEFAULT_ARENA,
 
   savedScenes: loadSavedScenesFromStorage(),
@@ -720,6 +738,10 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       feedbackPriority: 'low',
       hasTurned: false,
       queueEverCompleted: false,
+      isEditMode: false,
+      selectedEditObject: null,
+      placementTool: null,
+      placementPreviewPosition: null,
       lessonStatus: id === null ? 'not_started' : (s.completedLessons.includes(id) ? 'completed' : 'not_started'),
       eventLog: id
         ? [...s.eventLog, makeEvent(`📖 Lesson started: ${lesson?.title ?? id}`, 'info')].slice(-MAX_EVENT_LOG)
@@ -744,6 +766,10 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       simState: 'idle',
       hasTurned: false,
       queueEverCompleted: false,
+      isEditMode: false,
+      selectedEditObject: null,
+      placementTool: null,
+      placementPreviewPosition: null,
       lessonStatus: 'not_started',
       eventLog: [...s.eventLog, makeEvent('🔄 Lesson restarted', 'info')].slice(-MAX_EVENT_LOG),
     }));
@@ -797,6 +823,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       lessonStatus: 'not_started',
       isEditMode: false,
       selectedEditObject: null,
+      placementTool: null,
+      placementPreviewPosition: null,
       defaultArenaSnapshot: scenario.arena,
       eventLog: [...s.eventLog, makeEvent(`🎮 Scenario: ${scenario.title}`, 'info')].slice(-MAX_EVENT_LOG),
     }));
@@ -897,12 +925,21 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     if (active) {
       set({ isEditMode: true });
     } else {
-      set({ isEditMode: false, selectedEditObject: null });
+      set({
+        isEditMode: false,
+        selectedEditObject: null,
+        placementTool: null,
+        placementPreviewPosition: null,
+      });
     }
   },
 
   selectEditObject: (type, id) => {
-    set({ selectedEditObject: { type, id } });
+    set({
+      selectedEditObject: { type, id },
+      placementTool: null,
+      placementPreviewPosition: null,
+    });
   },
 
   deselectEditObject: () => {
@@ -917,7 +954,9 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const half = arena.size / 2 - 0.6; // margin so objects stay visibly inside walls
 
     const applyDelta = (pos: [number, number, number]): [number, number, number] => {
-      let [x, y, z] = pos;
+      let x = pos[0];
+      const y = pos[1];
+      let z = pos[2];
       if (direction === 'north') z -= STEP;
       else if (direction === 'south') z += STEP;
       else if (direction === 'east')  x += STEP;
@@ -1018,7 +1057,10 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     // Pick a position near the center-north that avoids the robot start pose (0,0,0).
     // We cycle through a small grid of x offsets (0..3) to avoid stacking new obstacles.
     const POSITION_CYCLE_RANGE = 4; // number of x positions to cycle through
-    let x = 0, z = -3;
+    const INITIAL_OBSTACLE_X = 0;
+    const INITIAL_OBSTACLE_Z = -3;
+    let x = INITIAL_OBSTACLE_X;
+    const z = INITIAL_OBSTACLE_Z;
     const existingPositions = arena.obstacles.map((o) => `${o.position[0]},${o.position[2]}`);
     let attempt = 0;
     while (existingPositions.includes(`${x},${z}`) && attempt < 8) {
@@ -1050,6 +1092,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       robot,
       selectedEditObject: null,
       isEditMode: false,
+      placementTool: null,
+      placementPreviewPosition: null,
       eventLog: [
         ...s.eventLog,
         makeEvent(`🔁 Arena reset to ${activeScenarioId ?? 'default'}`, 'info'),
@@ -1082,7 +1126,10 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const MAX_PLACEMENT_ATTEMPTS = 8;
     const PLACEMENT_STEP = 1.5;
     const PLACEMENT_GRID_SIZE = 4;
-    let candidateX = 0, candidateZ = -2;
+    const INITIAL_CANDIDATE_X = 0;
+    const INITIAL_CANDIDATE_Z = -2;
+    let candidateX = INITIAL_CANDIDATE_X;
+    const candidateZ = INITIAL_CANDIDATE_Z;
     let attempt = 0;
     while (existingPositions.has(`${candidateX},${candidateZ}`) && attempt < MAX_PLACEMENT_ATTEMPTS) {
       candidateX = Math.round((candidateX + PLACEMENT_STEP) % PLACEMENT_GRID_SIZE);
@@ -1110,6 +1157,72 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         ...s.eventLog,
         makeEvent(`📦 Placed: ${model.name}`, 'success'),
       ].slice(-MAX_EVENT_LOG),
+    }));
+  },
+
+  selectPlacementTool: (modelId) => {
+    const { activeLesson, isEditMode } = get();
+    if (activeLesson !== null || !isEditMode) return;
+
+    const model = getModelById(modelId);
+    if (!model) {
+      set((s) => ({
+        eventLog: [...s.eventLog, makeEvent(`⚠️ Unknown model: ${modelId}`, 'warning')].slice(-MAX_EVENT_LOG),
+      }));
+      return;
+    }
+
+    set((s) => ({
+      placementTool: {
+        modelId: model.id,
+        modelName: model.name,
+        size: model.placementDefaults.size,
+        color: model.placementDefaults.color,
+        ...(model.glbUrl ? { glbUrl: model.glbUrl } : {}),
+      },
+      placementPreviewPosition: null,
+      selectedEditObject: null,
+      eventLog: [...s.eventLog, makeEvent(`🎯 Placement tool selected: ${model.name}`, 'info')].slice(-MAX_EVENT_LOG),
+    }));
+  },
+
+  clearPlacementTool: () => {
+    const { placementTool } = get();
+    if (!placementTool) return;
+    set({ placementTool: null, placementPreviewPosition: null });
+  },
+
+  setPlacementPreviewPosition: (position) => {
+    set({ placementPreviewPosition: position });
+  },
+
+  placeSelectedModelAt: (position) => {
+    const { activeLesson, isEditMode, arena, placementTool } = get();
+    if (activeLesson !== null || !isEditMode || !placementTool) return;
+
+    const half = arena.size / 2 - 0.6;
+    const x = Math.max(-half, Math.min(half, position[0]));
+    const z = Math.max(-half, Math.min(half, position[2]));
+    const yOffset = placementTool.size[1] / 2;
+    const newId = `ml-${placementTool.modelId}-${Date.now()}`;
+
+    const newObs = {
+      id: newId,
+      position: [x, yOffset, z] as [number, number, number],
+      size: placementTool.size,
+      color: placementTool.color,
+      modelId: placementTool.modelId,
+      ...(placementTool.glbUrl ? { glbUrl: placementTool.glbUrl } : {}),
+    };
+    const newArena = { ...arena, obstacles: [...arena.obstacles, newObs] };
+    const robot = { ...get().robot, sensors: computeSensors(get().robot, newArena) };
+
+    set((s) => ({
+      arena: newArena,
+      robot,
+      placementPreviewPosition: null,
+      selectedEditObject: { type: 'obstacle', id: newId },
+      eventLog: [...s.eventLog, makeEvent(`📦 Placed: ${placementTool.modelName}`, 'success')].slice(-MAX_EVENT_LOG),
     }));
   },
 
@@ -1177,6 +1290,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       lessonStatus: 'not_started',
       isEditMode: false,
       selectedEditObject: null,
+      placementTool: null,
+      placementPreviewPosition: null,
       // Snapshot the loaded scene's arena so "Reset Arena" restores to the saved state
       defaultArenaSnapshot: scene.arena,
       eventLog: [...s.eventLog, makeEvent(`📂 Scene loaded: "${scene.name}"`, 'info')].slice(-MAX_EVENT_LOG),

@@ -29,6 +29,8 @@ beforeEach(() => {
     simState: 'idle',
     isEditMode: false,
     selectedEditObject: null,
+    placementTool: null,
+    placementPreviewPosition: null,
     robot: {
       position: { x: 0, y: 0.25, z: 0 },
       rotation: 0,

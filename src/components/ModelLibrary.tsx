@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
 import {
   CURATED_MODELS,
@@ -19,10 +19,14 @@ const CATEGORY_BADGE: Record<ModelCategory, string> = {
 
 function ModelCard({
   model,
-  onPlace,
+  onSelectTool,
+  selected,
+  editModeEnabled,
 }: {
   model: ModelDefinition;
-  onPlace: (id: string) => void;
+  onSelectTool: (id: string) => void;
+  selected: boolean;
+  editModeEnabled: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -127,11 +131,12 @@ function ModelCard({
 
           {/* Place button */}
           <button
-            onClick={() => { onPlace(model.id); setExpanded(false); }}
+            onClick={() => { onSelectTool(model.id); setExpanded(false); }}
+            disabled={!editModeEnabled}
             className="btn-secondary text-xs w-full"
-            aria-label={`Place ${model.name} into the arena`}
+            aria-label={`Select ${model.name} as placement tool`}
           >
-            📦 Place in Arena
+            {selected ? '✅ Placement Tool Selected' : '🎯 Select Placement Tool'}
           </button>
         </div>
       )}
@@ -140,10 +145,23 @@ function ModelCard({
 }
 
 export default function ModelLibrary() {
-  const activeLesson          = useSimulatorStore((s) => s.activeLesson);
-  const placeModelFromLibrary = useSimulatorStore((s) => s.placeModelFromLibrary);
+  const activeLesson = useSimulatorStore((s) => s.activeLesson);
+  const isEditMode = useSimulatorStore((s) => s.isEditMode);
+  const placementTool = useSimulatorStore((s) => s.placementTool);
+  const selectPlacementTool = useSimulatorStore((s) => s.selectPlacementTool);
+  const clearPlacementTool = useSimulatorStore((s) => s.clearPlacementTool);
 
   const [activeCategory, setActiveCategory] = useState<ModelCategory>('obstacle');
+
+  useEffect(() => {
+    if (!isEditMode || !placementTool) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      clearPlacementTool();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [clearPlacementTool, isEditMode, placementTool]);
 
   // Model library is only available in free-play mode
   if (activeLesson !== null) return null;
@@ -155,12 +173,21 @@ export default function ModelLibrary() {
       {/* Section header */}
       <div>
         <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1">
-          Model Library
+          Assets
         </h3>
         <p className="text-[10px] text-slate-600 leading-snug">
-          Place curated objects into the free-play arena.
+          Select assets as placement tools for Edit Mode.
         </p>
       </div>
+      {isEditMode ? (
+        <p className="rounded border border-amber-700/50 bg-amber-900/30 px-2 py-1 text-[10px] text-amber-300">
+          {placementTool ? `Placing: ${placementTool.modelName} (Esc to cancel)` : 'No placement tool selected'}
+        </p>
+      ) : (
+        <p className="rounded border border-slate-700 bg-slate-800/60 px-2 py-1 text-[10px] text-slate-400">
+          Turn on Edit Mode to select an asset placement tool.
+        </p>
+      )}
 
       {/* Category filter tabs */}
       <div className="flex flex-wrap gap-1" role="tablist" aria-label="Model categories">
@@ -193,7 +220,13 @@ export default function ModelLibrary() {
           </p>
         ) : (
           visibleModels.map((model) => (
-            <ModelCard key={model.id} model={model} onPlace={placeModelFromLibrary} />
+            <ModelCard
+              key={model.id}
+              model={model}
+              onSelectTool={selectPlacementTool}
+              selected={placementTool?.modelId === model.id}
+              editModeEnabled={isEditMode}
+            />
           ))
         )}
       </div>
