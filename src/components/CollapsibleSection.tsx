@@ -53,7 +53,7 @@ export default function CollapsibleSection({
         <span className="text-xs text-slate-500" aria-hidden="true">{indicator}</span>
       </button>
       <div
-        className="grid overflow-hidden transition-[grid-template-rows] duration-300 ease-in-out"
+        className="grid overflow-hidden transition-[grid-template-rows] duration-300 ease-in-out motion-reduce:transition-none"
         style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
       >
         <div className="min-h-0 overflow-hidden px-3 pb-3">
