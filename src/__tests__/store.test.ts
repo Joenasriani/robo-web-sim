@@ -242,6 +242,24 @@ describe('arena editor', () => {
     expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before);
   });
 
+  it('deleteSelectedEditObject removes the selected obstacle', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+    useSimulatorStore.getState().deleteSelectedEditObject();
+    expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before - 1);
+    expect(useSimulatorStore.getState().selectedEditObject).toBeNull();
+  });
+
+  it('deleteSelectedEditObject removes the selected target', () => {
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().selectEditObject('target', 'target1');
+    const before = useSimulatorStore.getState().arena.targets.length;
+    useSimulatorStore.getState().deleteSelectedEditObject();
+    expect(useSimulatorStore.getState().arena.targets.length).toBe(before - 1);
+    expect(useSimulatorStore.getState().selectedEditObject).toBeNull();
+  });
+
   it('moveSelectedObject moves an obstacle position', () => {
     useSimulatorStore.getState().setEditMode(true);
     useSimulatorStore.getState().selectEditObject('obstacle', 'obs1');

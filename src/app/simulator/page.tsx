@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RobotControls from '@/components/RobotControls';
-import CommandQueue from '@/components/CommandQueue';
 import LessonsSidebar from '@/components/LessonsSidebar';
 import ScenarioSelector from '@/components/ScenarioSelector';
 import SimFeedback from '@/components/SimFeedback';
@@ -14,14 +13,10 @@ import SimSettings from '@/components/SimSettings';
 import EventLog from '@/components/EventLog';
 import StoreHydrator from '@/components/StoreHydrator';
 import CurrentContextPanel from '@/components/CurrentContextPanel';
-import QuickActions from '@/components/QuickActions';
 import MobileTabPanel from '@/components/MobileTabPanel';
 import OnboardingStrip from '@/components/OnboardingStrip';
-import ArenaEditor from '@/components/ArenaEditor';
 import EditModeBadge from '@/components/EditModeBadge';
 import ModelLibrary from '@/components/ModelLibrary';
-import SavedScenes from '@/components/SavedScenes';
-import SavedPrograms from '@/components/SavedPrograms';
 import BlocklyPanel from '@/components/BlocklyPanel';
 import MobileEditOverlay from '@/components/MobileEditOverlay';
 import CollapsibleSection from '@/components/CollapsibleSection';
@@ -38,11 +33,41 @@ function resolveWorkspaceMode(isEditMode: boolean, simState: string): WorkspaceM
   return 'build';
 }
 
-function WorkspaceHeader({ title, description }: { title: string; description: string }) {
+function CenterModeTabs({
+  isEditMode,
+  simState,
+  onSetEditMode,
+}: {
+  isEditMode: boolean;
+  simState: string;
+  onSetEditMode: (active: boolean) => void;
+}) {
+  const canEdit = simState === 'idle';
   return (
-    <div>
-      <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">{title}</h3>
-      <p className="text-xs text-slate-500">{description}</p>
+    <div className="flex items-center gap-2 px-3 py-2">
+      <button
+        type="button"
+        onClick={() => onSetEditMode(false)}
+        className={`rounded px-3 py-1.5 text-sm font-semibold transition-colors ${
+          !isEditMode
+            ? 'bg-blue-600 text-white'
+            : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
+        }`}
+      >
+        Simulate
+      </button>
+      <button
+        type="button"
+        onClick={() => onSetEditMode(true)}
+        disabled={!canEdit}
+        className={`rounded px-3 py-1.5 text-sm font-semibold transition-colors ${
+          isEditMode
+            ? 'bg-amber-500 text-slate-900'
+            : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
+        } disabled:cursor-not-allowed disabled:opacity-50`}
+      >
+        Edit Arena
+      </button>
     </div>
   );
 }
@@ -74,7 +99,29 @@ function LessonDeepLink() {
 export default function SimulatorPage() {
   const isEditMode = useSimulatorStore((s) => s.isEditMode);
   const simState = useSimulatorStore((s) => s.simState);
+  const setEditMode = useSimulatorStore((s) => s.setEditMode);
+  const clearPlacementTool = useSimulatorStore((s) => s.clearPlacementTool);
+  const deleteSelectedEditObject = useSimulatorStore((s) => s.deleteSelectedEditObject);
   const workspaceMode = useMemo(() => resolveWorkspaceMode(isEditMode, simState), [isEditMode, simState]);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        clearPlacementTool();
+        return;
+      }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const activeEl = document.activeElement;
+        if (activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement) {
+          return;
+        }
+        deleteSelectedEditObject();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [clearPlacementTool, deleteSelectedEditObject, isEditMode]);
 
   return (
     <div className="h-screen flex flex-col text-white overflow-hidden pb-[52px] lg:pb-0" style={{ background: 'var(--rm-bg)' }}>
@@ -106,20 +153,25 @@ export default function SimulatorPage() {
 
       {/* Main content */}
       <div className="flex flex-1 min-h-0 overflow-hidden lg:hidden">
-        <main className="relative flex-1 min-w-0 min-h-0">
-          <Arena3D />
-          <SimFeedback />
-          <EditModeBadge />
-          {/* Touch-friendly edit controls overlay — mobile only, visible when object is selected */}
-          <MobileEditOverlay />
-          {/* Canvas interaction hint */}
-          <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
-            Drag to orbit • Scroll to zoom • Right-drag to pan
+        <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden">
+          <div className="shrink-0 border-b border-slate-700 bg-slate-900/60">
+            <CenterModeTabs isEditMode={isEditMode} simState={simState} onSetEditMode={setEditMode} />
           </div>
-          <div className="absolute bottom-2 left-2 text-xs text-slate-600 pointer-events-none sm:hidden">
-            Drag to orbit • Pinch to zoom
-          </div>
-        </main>
+          <main className="relative flex-1 min-h-0">
+            <Arena3D />
+            <SimFeedback />
+            <EditModeBadge />
+            {/* Touch-friendly edit controls overlay — mobile only, visible when object is selected */}
+            <MobileEditOverlay />
+            {/* Canvas interaction hint */}
+            <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
+              Drag to orbit • Scroll to zoom • Right-drag to pan
+            </div>
+            <div className="absolute bottom-2 left-2 text-xs text-slate-600 pointer-events-none sm:hidden">
+              Drag to orbit • Pinch to zoom
+            </div>
+          </main>
+        </div>
       </div>
 
       <div
@@ -136,8 +188,11 @@ export default function SimulatorPage() {
           </div>
         </aside>
 
-        <div className="h-full min-h-0 overflow-hidden">
-          <main className="relative h-full min-h-0">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <div className="shrink-0 border-b border-slate-700 bg-slate-900/60">
+            <CenterModeTabs isEditMode={isEditMode} simState={simState} onSetEditMode={setEditMode} />
+          </div>
+          <main className="relative flex-1 min-h-0">
             <Arena3D />
             <SimFeedback />
             <EditModeBadge />
@@ -160,10 +215,8 @@ export default function SimulatorPage() {
               <div className="flex min-h-full flex-col gap-4">
                 {workspaceMode === 'build' && (
                   <>
-                    <BlocklyPanel className="min-h-[460px]" prioritizeWorkspace />
-                    <SavedPrograms />
+                    <BlocklyPanel className="h-full min-h-0 flex-1 overflow-hidden" prioritizeWorkspace />
                     <div>
-                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Play, Pause, Stop</h3>
                       <RobotControls showMovementControls={false} />
                     </div>
                     <div>
@@ -189,23 +242,16 @@ export default function SimulatorPage() {
 
                 {workspaceMode === 'edit' && (
                   <>
-                    <WorkspaceHeader
-                      title="Edit Workspace"
-                      description="Arrange arena assets and placement tools while editing in the center canvas."
-                    />
-                    <ArenaEditor />
                     <div className="rounded-lg border border-slate-700 bg-slate-900/30 p-3">
-                      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-300">Assets / Props / Model Library</h3>
+                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Assets / Props / Model Library</h3>
                       <ModelLibrary />
                     </div>
-                    <SavedScenes />
                   </>
                 )}
 
                 {workspaceMode === 'run' && (
                   <>
                     <div>
-                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Play, Pause, Stop</h3>
                       <RobotControls showMovementControls={false} />
                     </div>
                     <CollapsibleSection
@@ -222,8 +268,6 @@ export default function SimulatorPage() {
                     >
                       <EventLog showHeader={false} />
                     </CollapsibleSection>
-                    <CommandQueue />
-                    <QuickActions />
                   </>
                 )}
               </div>

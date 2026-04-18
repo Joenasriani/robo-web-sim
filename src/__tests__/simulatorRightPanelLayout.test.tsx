@@ -6,6 +6,9 @@ const mockStoreState = {
   robot: { isRunningQueue: false },
   isEditMode: false,
   simState: 'idle',
+  setEditMode: jest.fn(),
+  clearPlacementTool: jest.fn(),
+  deleteSelectedEditObject: jest.fn(),
 };
 
 jest.mock('next/dynamic', () => {
@@ -42,9 +45,6 @@ jest.mock('@/components/RobotControls', () => {
   };
 });
 
-jest.mock('@/components/CommandQueue', () => {
-  return function CommandQueueMock() { return <div>RIGHT_COMMAND_QUEUE</div>; };
-});
 jest.mock('@/components/SimSettings', () => {
   return function SimSettingsMock() { return <div>RIGHT_SIM_SETTINGS</div>; };
 });
@@ -53,9 +53,6 @@ jest.mock('@/components/TelemetryPanel', () => {
 });
 jest.mock('@/components/EventLog', () => {
   return function EventLogMock() { return <div>RIGHT_EVENT_LOG</div>; };
-});
-jest.mock('@/components/QuickActions', () => {
-  return function QuickActionsMock() { return <div>RIGHT_QUICK_ACTIONS</div>; };
 });
 jest.mock('@/components/BlocklyPanel', () => {
   return function BlocklyPanelMock() { return <div>RIGHT_BLOCK_PROGRAMMING</div>; };
@@ -82,20 +79,11 @@ jest.mock('@/components/MobileTabPanel', () => {
 jest.mock('@/components/OnboardingStrip', () => {
   return function OnboardingStripMock() { return null; };
 });
-jest.mock('@/components/ArenaEditor', () => {
-  return function ArenaEditorMock() { return <div>ARENA_EDITOR</div>; };
-});
 jest.mock('@/components/EditModeBadge', () => {
   return function EditModeBadgeMock() { return null; };
 });
 jest.mock('@/components/ModelLibrary', () => {
   return function ModelLibraryMock() { return <div>MODEL_LIBRARY</div>; };
-});
-jest.mock('@/components/SavedScenes', () => {
-  return function SavedScenesMock() { return <div>SAVED_SCENES</div>; };
-});
-jest.mock('@/components/SavedPrograms', () => {
-  return function SavedProgramsMock() { return <div>SAVED_PROGRAMS</div>; };
 });
 jest.mock('@/components/MobileEditOverlay', () => {
   return function MobileEditOverlayMock() { return null; };
@@ -107,6 +95,9 @@ describe('Desktop right panel layout', () => {
     mockStoreState.robot = { isRunningQueue: false };
     mockStoreState.isEditMode = false;
     mockStoreState.simState = 'idle';
+    mockStoreState.setEditMode = jest.fn();
+    mockStoreState.clearPlacementTool = jest.fn();
+    mockStoreState.deleteSelectedEditObject = jest.fn();
   });
 
   it('renders build mode workspace with block programming first, then controls, setup, and collapsed monitors', async () => {
@@ -117,8 +108,6 @@ describe('Desktop right panel layout', () => {
 
     const orderedMarkers = [
       'RIGHT_BLOCK_PROGRAMMING',
-      'SAVED_PROGRAMS',
-      'Play, Pause, Stop',
       'RIGHT_PLAY_PAUSE_STOP_CONTENT',
       'Simulation Setup',
       'RIGHT_SIM_SETTINGS',
@@ -135,28 +124,20 @@ describe('Desktop right panel layout', () => {
       }
     });
 
-    expect(html).not.toContain('ARENA_EDITOR');
     expect(html).not.toContain('MODEL_LIBRARY');
-    expect(html).not.toContain('RIGHT_COMMAND_QUEUE');
-    expect(html).not.toContain('RIGHT_QUICK_ACTIONS');
     expect((html.match(/grid-template-rows:0fr/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders edit mode with contextual assets and placement tools while hiding block workspace', async () => {
+  it('renders edit mode with model library only while hiding build/run tools', async () => {
     mockStoreState.isEditMode = true;
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
-    expect(html).toContain('Edit Workspace');
     expect(html).toContain('Assets / Props / Model Library');
-    expect(html).toContain('ARENA_EDITOR');
     expect(html).toContain('MODEL_LIBRARY');
-    expect(html).toContain('SAVED_SCENES');
     expect(html).not.toContain('RIGHT_BLOCK_PROGRAMMING');
-    expect(html).not.toContain('RIGHT_COMMAND_QUEUE');
     expect(html).not.toContain('RIGHT_SIM_SETTINGS');
     expect(html).not.toContain('RIGHT_PLAY_PAUSE_STOP_CONTENT');
-    expect(html).not.toContain('RIGHT_QUICK_ACTIONS');
   });
 
   it('renders run mode with controls first and expanded telemetry/event log', async () => {
@@ -165,12 +146,9 @@ describe('Desktop right panel layout', () => {
     const html = renderToStaticMarkup(<SimulatorPage />);
 
     const orderedMarkers = [
-      'Play, Pause, Stop',
       'RIGHT_PLAY_PAUSE_STOP_CONTENT',
       'RIGHT_TELEMETRY',
       'RIGHT_EVENT_LOG',
-      'RIGHT_COMMAND_QUEUE',
-      'RIGHT_QUICK_ACTIONS',
     ];
     const positions = orderedMarkers.map((marker) => html.indexOf(marker));
     positions.forEach((position, idx) => {
@@ -181,9 +159,7 @@ describe('Desktop right panel layout', () => {
     });
 
     expect((html.match(/grid-template-rows:1fr/g) ?? []).length).toBeGreaterThanOrEqual(2);
-    expect(html).toContain('RIGHT_COMMAND_QUEUE');
     expect(html).not.toContain('RIGHT_BLOCK_PROGRAMMING');
-    expect(html).not.toContain('ARENA_EDITOR');
     expect(html).not.toContain('RIGHT_SIM_SETTINGS');
   });
 
@@ -204,8 +180,15 @@ describe('Desktop right panel layout', () => {
     expect(html).toContain('data-testid="right-dock-primary-workspace"');
     expect(html).not.toContain('data-testid="right-dock-secondary-monitors"');
     expect(html).toContain('RIGHT_BLOCK_PROGRAMMING');
-    expect(html).toContain('Play, Pause, Stop');
     expect(html).toContain('Simulation Setup');
+  });
+
+  it('shows center mode switch tabs above the shared canvas workspace', async () => {
+    const { default: SimulatorPage } = await import('@/app/simulator/page');
+    const html = renderToStaticMarkup(<SimulatorPage />);
+
+    expect(html).toContain('Simulate');
+    expect(html).toContain('Edit Arena');
   });
 
 });
