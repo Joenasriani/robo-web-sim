@@ -109,21 +109,19 @@ describe('Desktop right panel layout', () => {
     mockStoreState.simState = 'idle';
   });
 
-  it('renders build mode workspace with sticky controls and secondary monitors', async () => {
+  it('renders build mode workspace with block programming first, then controls, setup, and collapsed monitors', async () => {
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
     expect(html).toContain('data-testid="desktop-right-panel-content"');
 
     const orderedMarkers = [
-      'Simulation Setup',
-      'RIGHT_SIM_SETTINGS',
-      'Play, Pause, Stop',
-      'RIGHT_PLAY_PAUSE_STOP_CONTENT',
-      'Build Workspace',
-      'RIGHT_QUICK_ACTIONS',
       'RIGHT_BLOCK_PROGRAMMING',
       'SAVED_PROGRAMS',
+      'Play, Pause, Stop',
+      'RIGHT_PLAY_PAUSE_STOP_CONTENT',
+      'Simulation Setup',
+      'RIGHT_SIM_SETTINGS',
       'RIGHT_TELEMETRY',
       'RIGHT_EVENT_LOG',
     ];
@@ -140,35 +138,53 @@ describe('Desktop right panel layout', () => {
     expect(html).not.toContain('ARENA_EDITOR');
     expect(html).not.toContain('MODEL_LIBRARY');
     expect(html).not.toContain('RIGHT_COMMAND_QUEUE');
+    expect(html).not.toContain('RIGHT_QUICK_ACTIONS');
+    expect((html.match(/grid-template-rows:0fr/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders edit mode as the sole dominant primary workspace', async () => {
+  it('renders edit mode with contextual assets and placement tools while hiding block workspace', async () => {
     mockStoreState.isEditMode = true;
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
     expect(html).toContain('Edit Workspace');
+    expect(html).toContain('Assets / Props / Model Library');
     expect(html).toContain('ARENA_EDITOR');
     expect(html).toContain('MODEL_LIBRARY');
     expect(html).toContain('SAVED_SCENES');
-    expect(html).not.toContain('Build Workspace');
-    expect(html).not.toContain('Run Workspace');
     expect(html).not.toContain('RIGHT_BLOCK_PROGRAMMING');
     expect(html).not.toContain('RIGHT_COMMAND_QUEUE');
+    expect(html).not.toContain('RIGHT_SIM_SETTINGS');
+    expect(html).not.toContain('RIGHT_PLAY_PAUSE_STOP_CONTENT');
+    expect(html).not.toContain('RIGHT_QUICK_ACTIONS');
   });
 
-  it('renders run mode as the sole dominant primary workspace', async () => {
+  it('renders run mode with controls first and expanded telemetry/event log', async () => {
     mockStoreState.simState = 'running';
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
-    expect(html).toContain('Run Workspace');
-    expect(html).toContain('RIGHT_QUICK_ACTIONS');
+    const orderedMarkers = [
+      'Play, Pause, Stop',
+      'RIGHT_PLAY_PAUSE_STOP_CONTENT',
+      'RIGHT_TELEMETRY',
+      'RIGHT_EVENT_LOG',
+      'RIGHT_COMMAND_QUEUE',
+      'RIGHT_QUICK_ACTIONS',
+    ];
+    const positions = orderedMarkers.map((marker) => html.indexOf(marker));
+    positions.forEach((position, idx) => {
+      expect(position).toBeGreaterThanOrEqual(0);
+      if (idx > 0) {
+        expect(position).toBeGreaterThan(positions[idx - 1]);
+      }
+    });
+
+    expect((html.match(/grid-template-rows:1fr/g) ?? []).length).toBeGreaterThanOrEqual(2);
     expect(html).toContain('RIGHT_COMMAND_QUEUE');
-    expect(html).not.toContain('Build Workspace');
-    expect(html).not.toContain('Edit Workspace');
     expect(html).not.toContain('RIGHT_BLOCK_PROGRAMMING');
     expect(html).not.toContain('ARENA_EDITOR');
+    expect(html).not.toContain('RIGHT_SIM_SETTINGS');
   });
 
   it('uses strict 3-column desktop layout and no separate desktop block panel container', async () => {
@@ -181,15 +197,15 @@ describe('Desktop right panel layout', () => {
     expect(html).not.toContain('data-testid="desktop-block-programming-panel"');
   });
 
-  it('keeps setup and playback controls sticky within the right panel scroll area', async () => {
+  it('keeps right-panel workspace as a single mode-driven scroll area', async () => {
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
-    expect(html).toContain('sticky top-0');
-    expect(html).toContain('Simulation Setup');
-    expect(html).toContain('Play, Pause, Stop');
     expect(html).toContain('data-testid="right-dock-primary-workspace"');
-    expect(html).toContain('data-testid="right-dock-secondary-monitors"');
+    expect(html).not.toContain('data-testid="right-dock-secondary-monitors"');
+    expect(html).toContain('RIGHT_BLOCK_PROGRAMMING');
+    expect(html).toContain('Play, Pause, Stop');
+    expect(html).toContain('Simulation Setup');
   });
 
 });
