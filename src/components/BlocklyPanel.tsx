@@ -1,21 +1,10 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { useSimulatorStore } from '@/sim/robotController';
 import { convertBlockTypesToCommands } from '@/sim/blocklyConverter';
 import { CommandType } from '@/sim/commandExecution';
-import type { BlocklyWorkspaceApi } from './BlocklyWorkspace';
-
-// Dynamic import: Blockly manipulates the DOM and must not run on the server.
-const BlocklyWorkspace = dynamic(() => import('./BlocklyWorkspace'), {
-  ssr: false,
-  loading: () => (
-    <div className="min-h-[260px] flex-1 flex items-center justify-center bg-slate-900 rounded border border-slate-700">
-      <span className="text-xs text-slate-500">Loading block editor…</span>
-    </div>
-  ),
-});
+import BlocklyWorkspace, { type BlocklyWorkspaceApi } from './BlocklyWorkspace';
 
 interface BlocklyPanelProps {
   showHeader?: boolean;
@@ -45,6 +34,7 @@ export default function BlocklyPanel({
   const isRunning   = useSimulatorStore((s) => s.robot.isRunningQueue);
 
   const [workspaceApi, setWorkspaceApi] = useState<BlocklyWorkspaceApi | null>(null);
+  const [isWorkspaceReady, setIsWorkspaceReady] = useState(false);
   const [feedback, setFeedback]   = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const handleSendToQueue = useCallback(() => {
@@ -114,9 +104,15 @@ export default function BlocklyPanel({
             <button
               key={btn.type}
               onClick={() => handleQuickAdd(btn.type)}
-              disabled={isRunning}
+              disabled={isRunning || !isWorkspaceReady}
               className="btn-small"
-              title={isRunning ? 'Stop the queue before adding commands' : `Quick add ${btn.label} and mirror it in blocks`}
+              title={
+                !isWorkspaceReady
+                  ? 'Block editor is initializing'
+                  : isRunning
+                    ? 'Stop the queue before adding commands'
+                    : `Quick add ${btn.label} and mirror it in blocks`
+              }
             >
               {btn.icon} {btn.label}
             </button>
@@ -128,9 +124,15 @@ export default function BlocklyPanel({
             ⚠ Stop the queue before editing blocks.
           </p>
         ) : (
-          <div className={`flex min-h-0 flex-1 overflow-hidden ${prioritizeWorkspace ? 'min-h-[360px]' : ''}`}>
+          <div className={`relative flex min-h-0 flex-1 items-stretch overflow-hidden ${prioritizeWorkspace ? 'h-[360px] min-h-[360px]' : ''}`}>
+            {!isWorkspaceReady && (
+              <div className="absolute z-10 m-2 rounded border border-slate-700 bg-slate-900/90 px-2 py-1.5 text-[11px] text-slate-400">
+                Initializing Blockly…
+              </div>
+            )}
             <BlocklyWorkspace
               onWorkspaceApi={setWorkspaceApi}
+              onWorkspaceReadyChange={setIsWorkspaceReady}
               className={prioritizeWorkspace ? 'rounded border border-slate-700 bg-slate-900' : ''}
             />
           </div>
@@ -141,6 +143,7 @@ export default function BlocklyPanel({
             onClick={handleSendToQueue}
             className="btn-green text-xs"
             title="Add all blocks to the command queue"
+            disabled={!isWorkspaceReady || isRunning}
           >
             ➕ Send to Queue
           </button>
@@ -148,6 +151,7 @@ export default function BlocklyPanel({
             onClick={handleClearBlocks}
             className="btn-secondary text-xs"
             title="Remove all blocks from the workspace"
+            disabled={!isWorkspaceReady || isRunning}
           >
             🗑 Clear Blocks
           </button>

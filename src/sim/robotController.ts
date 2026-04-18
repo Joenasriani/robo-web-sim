@@ -55,6 +55,7 @@ export interface PlacementToolState {
 }
 
 const MAX_EVENT_LOG = 20;
+const FLOOR_CLEARANCE = 0.01;
 let _eventIdCounter = 0;
 
 function makeEvent(message: string, type: EventEntry['type']): EventEntry {
@@ -1091,7 +1092,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const newId = `obs-edit-${Date.now()}`;
     const newObs = {
       id: newId,
-      position: [x, 0.5, z] as [number, number, number],
+      position: [x, 0.5 + FLOOR_CLEARANCE, z] as [number, number, number],
       size: [1, 1, 1] as [number, number, number],
       color: '#a855f7',
     };
@@ -1160,7 +1161,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const z = Math.max(-half, Math.min(half, candidateZ));
 
     const newId = `ml-${model.id}-${Date.now()}`;
-    const yOffset = model.placementDefaults.size[1] / 2;
+    const yOffset = model.placementDefaults.size[1] / 2 + FLOOR_CLEARANCE;
     const newObs = {
       id: newId,
       position: [x, yOffset, z] as [number, number, number],
@@ -1224,7 +1225,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const half = arena.size / 2 - 0.6;
     const x = Math.max(-half, Math.min(half, position[0]));
     const z = Math.max(-half, Math.min(half, position[2]));
-    const yOffset = placementTool.size[1] / 2;
+    const yOffset = placementTool.size[1] / 2 + FLOOR_CLEARANCE;
     const newId = `ml-${placementTool.modelId}-${Date.now()}`;
 
     const newObs = {

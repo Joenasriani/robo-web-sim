@@ -1,11 +1,12 @@
 'use client';
 
-import { useRef, useMemo, Suspense, Component, ReactNode } from 'react';
+import { useRef, useMemo, Suspense, Component, ReactNode, useLayoutEffect, useState } from 'react';
 import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, Box, Cylinder, Line, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { useSimulatorStore } from '@/sim/robotController';
 import { Obstacle } from '@/sim/arenaConfig';
+import { INITIAL_ROBOT_STATE } from '@/sim/robotState';
 
 // ---------------------------------------------------------------------------
 // Color palette helpers — derived from the arena's floorColor so every
@@ -34,6 +35,15 @@ function lightenHex(hex: string, factor: number): string {
 const BG_DARKEN_FACTOR           = 0.20; // dark backdrop: ~20 % of floor brightness
 const GRID_CELL_DARKEN_FACTOR    = 0.40; // minor grid lines: ~40 % of floor brightness for clear contrast
 const GRID_SECTION_LIGHTEN_FACTOR = 0.70; // major grid lines blend 70 % toward white for strong legibility
+const FLOOR_CLEARANCE = 0.01;
+
+/** Compute the Y offset needed to rest a mesh on the floor with a tiny clearance. */
+export function computeGroundedYOffset(object: THREE.Object3D): number {
+  const box = new THREE.Box3().setFromObject(object);
+  if (box.isEmpty()) return FLOOR_CLEARANCE;
+  const offset = -box.min.y + FLOOR_CLEARANCE;
+  return Number.isFinite(offset) ? offset : FLOOR_CLEARANCE;
+}
 
 
 /** React error boundary that catches GLB load failures and renders a fallback. */
@@ -70,9 +80,7 @@ function GlbObstacleInner({
   return (
     <primitive
       object={clone}
-      position={obs.position}
       scale={obs.size}
-      rotation={[0, obs.rotation ?? 0, 0]}
       onClick={onSelect ? (e: THREE.Event) => { (e as unknown as { stopPropagation: () => void }).stopPropagation(); onSelect(); } : undefined}
     />
   );
@@ -83,7 +91,6 @@ function GlbFallbackBox({ obs, isSelected }: { obs: Obstacle; isSelected: boolea
   return (
     <Box
       args={obs.size as [number, number, number]}
-      position={obs.position}
       castShadow
       receiveShadow
     >
@@ -94,12 +101,20 @@ function GlbFallbackBox({ obs, isSelected }: { obs: Obstacle; isSelected: boolea
 
 function Robot() {
   const meshRef = useRef<THREE.Group>(null);
+  const robotModelRef = useRef<THREE.Group>(null);
   const robot = useSimulatorStore((s) => s.robot);
+  const [robotYOffset, setRobotYOffset] = useState(FLOOR_CLEARANCE);
+
+  useLayoutEffect(() => {
+    if (!robotModelRef.current) return;
+    robotModelRef.current.updateMatrixWorld(true);
+    setRobotYOffset(computeGroundedYOffset(robotModelRef.current));
+  }, []);
 
   useFrame(() => {
     if (!meshRef.current) return;
     meshRef.current.position.x = robot.position.x;
-    meshRef.current.position.y = robot.position.y;
+    meshRef.current.position.y = robot.position.y - INITIAL_ROBOT_STATE.position.y + robotYOffset;
     meshRef.current.position.z = robot.position.z;
     meshRef.current.rotation.y = robot.rotation;
   });
@@ -108,28 +123,54 @@ function Robot() {
 
   return (
     <group ref={meshRef}>
-      {/* Body */}
-      <Box args={[0.5, 0.4, 0.6]} castShadow>
-        <meshStandardMaterial color={bodyColor} />
-      </Box>
-      {/* Forward direction cone */}
-      <mesh position={[0, 0.1, 0.4]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
-        <coneGeometry args={[0.07, 0.2, 8]} />
-        <meshStandardMaterial color="#facc15" />
-      </mesh>
-      {/* Wheels */}
-      <Cylinder args={[0.12, 0.12, 0.1, 16]} position={[-0.3, -0.2, 0.2]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <meshStandardMaterial color="#1e293b" />
-      </Cylinder>
-      <Cylinder args={[0.12, 0.12, 0.1, 16]} position={[0.3, -0.2, 0.2]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <meshStandardMaterial color="#1e293b" />
-      </Cylinder>
-      <Cylinder args={[0.12, 0.12, 0.1, 16]} position={[-0.3, -0.2, -0.2]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <meshStandardMaterial color="#1e293b" />
-      </Cylinder>
-      <Cylinder args={[0.12, 0.12, 0.1, 16]} position={[0.3, -0.2, -0.2]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <meshStandardMaterial color="#1e293b" />
-      </Cylinder>
+      <group ref={robotModelRef}>
+        {/* Body */}
+        <Box args={[0.5, 0.4, 0.6]} castShadow>
+          <meshStandardMaterial color={bodyColor} />
+        </Box>
+        {/* Forward direction cone */}
+        <mesh position={[0, 0.1, 0.4]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
+          <coneGeometry args={[0.07, 0.2, 8]} />
+          <meshStandardMaterial color="#facc15" />
+        </mesh>
+        {/* Wheels */}
+        <Cylinder args={[0.12, 0.12, 0.1, 16]} position={[-0.3, -0.2, 0.2]} rotation={[0, 0, Math.PI / 2]} castShadow>
+          <meshStandardMaterial color="#1e293b" />
+        </Cylinder>
+        <Cylinder args={[0.12, 0.12, 0.1, 16]} position={[0.3, -0.2, 0.2]} rotation={[0, 0, Math.PI / 2]} castShadow>
+          <meshStandardMaterial color="#1e293b" />
+        </Cylinder>
+        <Cylinder args={[0.12, 0.12, 0.1, 16]} position={[-0.3, -0.2, -0.2]} rotation={[0, 0, Math.PI / 2]} castShadow>
+          <meshStandardMaterial color="#1e293b" />
+        </Cylinder>
+        <Cylinder args={[0.12, 0.12, 0.1, 16]} position={[0.3, -0.2, -0.2]} rotation={[0, 0, Math.PI / 2]} castShadow>
+          <meshStandardMaterial color="#1e293b" />
+        </Cylinder>
+      </group>
+    </group>
+  );
+}
+
+function GroundedObstacleGroup({
+  obs,
+  children,
+}: {
+  obs: Obstacle;
+  children: ReactNode;
+}) {
+  const contentRef = useRef<THREE.Group>(null);
+  const [yOffset, setYOffset] = useState(FLOOR_CLEARANCE);
+  const baseY = obs.position[1] - obs.size[1] / 2;
+
+  useLayoutEffect(() => {
+    if (!contentRef.current) return;
+    contentRef.current.updateMatrixWorld(true);
+    setYOffset(computeGroundedYOffset(contentRef.current));
+  }, [obs.glbUrl, obs.size]);
+
+  return (
+    <group position={[obs.position[0], baseY + yOffset, obs.position[2]]} rotation={[0, obs.rotation ?? 0, 0]}>
+      <group ref={contentRef}>{children}</group>
     </group>
   );
 }
@@ -155,7 +196,7 @@ function Obstacles() {
           // GLB model: render inside ErrorBoundary > Suspense with a box fallback
           const fallback = <GlbFallbackBox obs={obs} isSelected={isSelected} />;
           return (
-            <group key={obs.id}>
+            <GroundedObstacleGroup key={obs.id} obs={obs}>
               <GlbErrorBoundary
                 fallback={fallback}
                 onError={(msg) => appendEvent(msg, 'warning')}
@@ -170,23 +211,19 @@ function Obstacles() {
               {isSelected && (
                 <Box
                   args={[(obs.size[0] + 0.12) as number, (obs.size[1] + 0.12) as number, (obs.size[2] + 0.12) as number]}
-                  position={obs.position}
-                  rotation={[0, obs.rotation ?? 0, 0]}
                 >
                   <meshStandardMaterial color="#fbbf24" transparent opacity={0.25} wireframe />
                 </Box>
               )}
-            </group>
+            </GroundedObstacleGroup>
           );
         }
 
         // Built-in box primitive (default)
         return (
-          <group key={obs.id}>
+          <GroundedObstacleGroup key={obs.id} obs={obs}>
             <Box
               args={obs.size as [number, number, number]}
-              position={obs.position}
-              rotation={[0, obs.rotation ?? 0, 0]}
               castShadow
               receiveShadow
               onClick={isEditMode && !placementTool ? (e) => { e.stopPropagation(); selectEditObject('obstacle', obs.id); } : undefined}
@@ -197,13 +234,11 @@ function Obstacles() {
             {isSelected && (
               <Box
                 args={[(obs.size[0] + 0.12) as number, (obs.size[1] + 0.12) as number, (obs.size[2] + 0.12) as number]}
-                position={obs.position}
-                rotation={[0, obs.rotation ?? 0, 0]}
               >
                 <meshStandardMaterial color="#fbbf24" transparent opacity={0.25} wireframe />
               </Box>
             )}
-          </group>
+          </GroundedObstacleGroup>
         );
       })}
     </>
@@ -400,7 +435,7 @@ export default function Arena3D() {
     const snap = (value: number) => Math.round(value);
     const x = Math.max(-half, Math.min(half, snap(point.x)));
     const z = Math.max(-half, Math.min(half, snap(point.z)));
-    const yOffset = placementTool ? placementTool.size[1] / 2 : 0.5;
+    const yOffset = placementTool ? placementTool.size[1] / 2 + FLOOR_CLEARANCE : 0.5 + FLOOR_CLEARANCE;
     return [x, yOffset, z];
   };
 
@@ -429,7 +464,10 @@ export default function Arena3D() {
     <Canvas
       shadows
       camera={{ position: [8, 8, 8], fov: 50 }}
-      style={{ background: bgColor }}
+      style={{
+        background: bgColor,
+        cursor: isEditMode && placementTool ? 'crosshair' : isEditMode ? 'default' : 'grab',
+      }}
     >
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
