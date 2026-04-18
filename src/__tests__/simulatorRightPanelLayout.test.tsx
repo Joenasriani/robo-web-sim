@@ -41,7 +41,7 @@ jest.mock('@/components/RobotControls', () => {
 });
 
 jest.mock('@/components/CommandQueue', () => {
-  return function CommandQueueMock() { return <div>RIGHT_COMMAND_BUILDER</div>; };
+  return function CommandQueueMock() { return <div>RIGHT_COMMAND_QUEUE</div>; };
 });
 jest.mock('@/components/SimSettings', () => {
   return function SimSettingsMock() { return <div>RIGHT_SIM_SETTINGS</div>; };
@@ -111,7 +111,7 @@ describe('Desktop right panel layout', () => {
 
     const orderedMarkers = [
       'RIGHT_BLOCK_PROGRAMMING',
-      'RIGHT_COMMAND_BUILDER',
+      'RIGHT_COMMAND_QUEUE',
       'Play, Pause, Stop',
       'RIGHT_PLAY_PAUSE_STOP_CONTENT',
       'RIGHT_SIM_SETTINGS',
