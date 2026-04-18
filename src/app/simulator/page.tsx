@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RobotControls from '@/components/RobotControls';
 import CommandQueue from '@/components/CommandQueue';
@@ -29,13 +29,25 @@ import { useSimulatorStore } from '@/sim/robotController';
 
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
+// Caps secondary monitor stack so the mode workspace remains the dominant dock section.
+const SECONDARY_MONITORS_MAX_HEIGHT = '40vh';
 
+// build: default authoring, edit: arena asset manipulation, run: active simulation monitoring
 type WorkspaceMode = 'build' | 'edit' | 'run';
 
-function resolveWorkspaceMode(args: { isEditMode: boolean; simState: string }): WorkspaceMode {
-  if (args.isEditMode) return 'edit';
-  if (args.simState !== 'idle') return 'run';
+function resolveWorkspaceMode(isEditMode: boolean, simState: string): WorkspaceMode {
+  if (isEditMode) return 'edit';
+  if (simState !== 'idle') return 'run';
   return 'build';
+}
+
+function WorkspaceHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div>
+      <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">{title}</h3>
+      <p className="text-xs text-slate-500">{description}</p>
+    </div>
+  );
 }
 
 const VALID_LESSON_IDS = [
@@ -65,7 +77,7 @@ function LessonDeepLink() {
 export default function SimulatorPage() {
   const isEditMode = useSimulatorStore((s) => s.isEditMode);
   const simState = useSimulatorStore((s) => s.simState);
-  const workspaceMode = resolveWorkspaceMode({ isEditMode, simState });
+  const workspaceMode = useMemo(() => resolveWorkspaceMode(isEditMode, simState), [isEditMode, simState]);
 
   return (
     <div className="h-screen flex flex-col text-white overflow-hidden pb-[52px] lg:pb-0" style={{ background: 'var(--rm-bg)' }}>
@@ -161,12 +173,28 @@ export default function SimulatorPage() {
               >
                 <div className="flex min-h-full flex-col gap-4">
                   {workspaceMode === 'build' && (
+                    <WorkspaceHeader
+                      title="Build Workspace"
+                      description="Compose and refine robot command programs."
+                    />
+                  )}
+                  {workspaceMode === 'edit' && (
+                    <WorkspaceHeader
+                      title="Edit Workspace"
+                      description="Arrange arena assets and placement tools."
+                    />
+                  )}
+                  {workspaceMode === 'run' && (
+                    <WorkspaceHeader
+                      title="Run Workspace"
+                      description="Track execution while the simulator is active."
+                    />
+                  )}
+
+                  {(workspaceMode === 'build' || workspaceMode === 'run') && <QuickActions />}
+
+                  {workspaceMode === 'build' && (
                     <>
-                      <div>
-                        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">Build Workspace</h3>
-                        <p className="text-xs text-slate-500">Compose and refine robot command programs.</p>
-                      </div>
-                      <QuickActions />
                       <BlocklyPanel className="min-h-[460px]" prioritizeWorkspace />
                       <SavedPrograms />
                     </>
@@ -174,26 +202,13 @@ export default function SimulatorPage() {
 
                   {workspaceMode === 'edit' && (
                     <>
-                      <div>
-                        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">Edit Workspace</h3>
-                        <p className="text-xs text-slate-500">Arrange arena assets and placement tools.</p>
-                      </div>
                       <ArenaEditor />
                       <ModelLibrary />
                       <SavedScenes />
                     </>
                   )}
 
-                  {workspaceMode === 'run' && (
-                    <>
-                      <div>
-                        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">Run Workspace</h3>
-                        <p className="text-xs text-slate-500">Track execution while the simulator is active.</p>
-                      </div>
-                      <QuickActions />
-                      <CommandQueue />
-                    </>
-                  )}
+                  {workspaceMode === 'run' && <CommandQueue />}
                 </div>
               </section>
 
@@ -201,7 +216,10 @@ export default function SimulatorPage() {
                 data-testid="right-dock-secondary-monitors"
                 className="shrink-0 border-t border-slate-700 px-4 py-3"
               >
-                <div className="flex max-h-[40vh] flex-col gap-3 overflow-y-auto pr-1">
+                <div
+                  className="flex flex-col gap-3 overflow-y-auto pr-1"
+                  style={{ maxHeight: SECONDARY_MONITORS_MAX_HEIGHT }}
+                >
                   <CollapsibleSection
                     title="Telemetry"
                     storageKey="sim-ui-collapsible-telemetry-open"

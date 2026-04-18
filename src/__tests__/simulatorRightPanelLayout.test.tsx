@@ -109,7 +109,7 @@ describe('Desktop right panel layout', () => {
     mockStoreState.simState = 'idle';
   });
 
-  it('renders build mode with sticky controls, one primary build workspace, and secondary monitoring stack', async () => {
+  it('renders build mode workspace with sticky controls and secondary monitors', async () => {
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
@@ -163,6 +163,7 @@ describe('Desktop right panel layout', () => {
     const html = renderToStaticMarkup(<SimulatorPage />);
 
     expect(html).toContain('Run Workspace');
+    expect(html).toContain('RIGHT_QUICK_ACTIONS');
     expect(html).toContain('RIGHT_COMMAND_QUEUE');
     expect(html).not.toContain('Build Workspace');
     expect(html).not.toContain('Edit Workspace');
