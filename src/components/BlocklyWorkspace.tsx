@@ -49,6 +49,7 @@ const TOOLBOX = {
   kind: 'flyoutToolbox',
   contents: BLOCK_DEFINITIONS.map((def) => ({ kind: 'block', type: def.type })),
 };
+const TOOLBOX_SOURCE = 'BlocklyWorkspace TOOLBOX constant';
 
 const WORKSPACE_STORAGE_KEY = 'blockly-workspace-state';
 const STARTER_BLOCK_TYPE = (() => {
@@ -134,7 +135,10 @@ export default function BlocklyWorkspace({
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      console.warn('[BlocklyWorkspace] Cannot initialize Blockly: containerRef.current is null');
+      return;
+    }
 
     let disposed = false;
     let BlocklyMod: typeof import('blockly') | null = null;
@@ -142,6 +146,7 @@ export default function BlocklyWorkspace({
     let resizeWorkspace: (() => void) | null = null;
     let resizeFrame: number | null = null;
     let retryTimer: number | null = null;
+    let workspaceChangeListener: (() => void) | null = null;
     let initializing = false;
     const container = containerRef.current;
 
@@ -153,13 +158,22 @@ export default function BlocklyWorkspace({
       };
     };
 
-    const isContainerReady = () => {
-      if (!container.isConnected) return false;
+    const getContainerReadiness = () => {
       const { height, width } = getContainerLayoutMetrics();
-      if (height <= 0 || width <= 0) return false;
+      if (!container.isConnected) {
+        return { ready: false as const, reason: 'container is not connected to the DOM', width, height };
+      }
+      if (height <= 0 || width <= 0) {
+        return { ready: false as const, reason: 'container has zero size', width, height };
+      }
       const style = window.getComputedStyle(container);
-      if (style.display === 'none' || style.visibility === 'hidden') return false;
-      return true;
+      if (style.display === 'none') {
+        return { ready: false as const, reason: 'container display is none', width, height };
+      }
+      if (style.visibility === 'hidden') {
+        return { ready: false as const, reason: 'container visibility is hidden', width, height };
+      }
+      return { ready: true as const, reason: null, width, height };
     };
 
     const syncBlockCount = () => {
@@ -169,6 +183,13 @@ export default function BlocklyWorkspace({
 
     const disposeWorkspace = () => {
       if (workspaceRef.current) {
+        if (
+          workspaceChangeListener
+          && typeof workspaceRef.current.removeChangeListener === 'function'
+        ) {
+          workspaceRef.current.removeChangeListener(workspaceChangeListener);
+        }
+        workspaceChangeListener = null;
         workspaceRef.current.dispose();
         workspaceRef.current = null;
       }
@@ -201,14 +222,10 @@ export default function BlocklyWorkspace({
     const tryInitWorkspace = async () => {
       if (disposed || initializing || workspaceRef.current) return;
 
-      const { width, height } = getContainerLayoutMetrics();
-      console.info('[BlocklyWorkspace] Container size before init:', { width, height });
-      if (width <= 0 || height <= 0) {
-        console.info('[BlocklyWorkspace] Skipping init: container size is zero');
-        return;
-      }
-      if (!isContainerReady()) {
-        console.info('[BlocklyWorkspace] Skipping init: container not ready/visible');
+      const readiness = getContainerReadiness();
+      console.info('[BlocklyWorkspace] Container readiness before init:', readiness);
+      if (!readiness.ready) {
+        console.info('[BlocklyWorkspace] Skipping init:', readiness.reason);
         return;
       }
 
@@ -217,7 +234,11 @@ export default function BlocklyWorkspace({
 
       try {
         const mod = BlocklyMod ?? await import('blockly');
-        if (disposed || !isContainerReady()) {
+        const postImportReadiness = getContainerReadiness();
+        if (disposed || !postImportReadiness.ready) {
+          if (!postImportReadiness.ready) {
+            console.info('[BlocklyWorkspace] Skipping init after import:', postImportReadiness);
+          }
           initializing = false;
           return;
         }
@@ -236,7 +257,7 @@ export default function BlocklyWorkspace({
           throw new Error('Invalid Blockly toolbox configuration');
         }
 
-        console.info('[BlocklyWorkspace] Toolbox config passed to inject:', TOOLBOX);
+        console.info('[BlocklyWorkspace] Toolbox config passed to inject:', { source: TOOLBOX_SOURCE, toolbox: TOOLBOX });
         disposeWorkspace();
         container.replaceChildren();
 
@@ -256,25 +277,36 @@ export default function BlocklyWorkspace({
         }
 
         workspaceRef.current = ws;
-
-        const injectedSvg = container.querySelector('svg.blocklySvg');
-        const injectedInjectionDiv = container.querySelector('.blocklyInjectionDiv');
-        const hasInjectedDom = Boolean(injectedSvg && injectedInjectionDiv);
-        console.info('[BlocklyWorkspace] Injected DOM check:', {
-          hasInjectedSvg: Boolean(injectedSvg),
-          hasInjectionDiv: Boolean(injectedInjectionDiv),
-        });
-        if (!hasInjectedDom) {
-          throw new Error('Blockly DOM/SVG was not injected into container');
+        let toolboxLoaded = false;
+        try {
+          // `updateToolbox` is not available in every Blockly workspace-like mock/runtime.
+          if (typeof ws.updateToolbox === 'function') {
+            ws.updateToolbox(TOOLBOX);
+            toolboxLoaded = true;
+          } else if (typeof ws.getToolbox === 'function') {
+            toolboxLoaded = Boolean(ws.getToolbox());
+          } else {
+            console.warn('[BlocklyWorkspace] Unable to verify toolbox load: workspace has no updateToolbox/getToolbox API');
+          }
+        } catch (toolboxErr) {
+          console.error('[BlocklyWorkspace] Toolbox load failed:', {
+            source: TOOLBOX_SOURCE,
+            error: toolboxErr,
+          });
         }
 
         onWorkspaceReadyChange?.(true);
-        updateDebugState({ mounted: true, toolboxLoaded: true });
+        updateDebugState({ mounted: true, toolboxLoaded });
 
         const onWorkspaceChanged = () => {
           syncBlockCount();
         };
-        ws.addChangeListener(onWorkspaceChanged);
+        if (typeof ws.addChangeListener === 'function') {
+          ws.addChangeListener(onWorkspaceChanged);
+          workspaceChangeListener = onWorkspaceChanged;
+        } else {
+          console.warn('[BlocklyWorkspace] Workspace does not support addChangeListener; block count updates may be limited');
+        }
 
         onWorkspaceApi?.({
           appendCommandBlock: (command: CommandType) => {
