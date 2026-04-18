@@ -117,12 +117,21 @@ export default function BlocklyWorkspace({
     let resizeObserver: ResizeObserver | null = null;
     let resizeWorkspace: (() => void) | null = null;
     let resizeFrame: number | null = null;
+    let retryTimer: number | null = null;
     let initializing = false;
     const container = containerRef.current;
 
+    const getContainerLayoutMetrics = () => {
+      const parent = container.parentElement;
+      const height = container.clientHeight > 0 ? container.clientHeight : parent?.clientHeight ?? 0;
+      const width = container.clientWidth > 0 ? container.clientWidth : parent?.clientWidth ?? 0;
+      return { height, width };
+    };
+
     const isContainerReady = () => {
       if (!container.isConnected) return false;
-      if (container.clientHeight <= 0 || container.clientWidth <= 0) return false;
+      const { height, width } = getContainerLayoutMetrics();
+      if (height <= 0 || width <= 0) return false;
       const style = window.getComputedStyle(container);
       if (style.display === 'none' || style.visibility === 'hidden') return false;
       return true;
@@ -169,12 +178,17 @@ export default function BlocklyWorkspace({
         BlocklyMod = mod;
         registerBlocks(mod);
         disposeWorkspace();
+        const { height } = getContainerLayoutMetrics();
+        if (container.clientHeight <= 0 && height > 0) {
+          container.style.height = `${height}px`;
+        }
         container.replaceChildren();
 
         const ws = mod.inject(container, {
           toolbox: TOOLBOX,
           scrollbars: true,
-          trashcan: true,
+          trashcan: false,
+          sounds: false,
           toolboxPosition: 'start',
           move: { scrollbars: true, drag: true, wheel: true },
         });
@@ -287,11 +301,23 @@ export default function BlocklyWorkspace({
     };
     window.addEventListener('resize', onWindowResize);
     void tryInitWorkspace();
+    const scheduleInitRetry = () => {
+      if (disposed || workspaceRef.current) return;
+      retryTimer = window.setTimeout(() => {
+        void tryInitWorkspace();
+        scheduleInitRetry();
+      }, 250);
+    };
+    scheduleInitRetry();
 
     return () => {
       disposed = true;
       window.removeEventListener('resize', onWindowResize);
       resizeObserver?.disconnect();
+      if (retryTimer !== null) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
       if (resizeFrame !== null) {
         cancelAnimationFrame(resizeFrame);
         resizeFrame = null;
@@ -313,7 +339,7 @@ export default function BlocklyWorkspace({
   }, [commandToBlockType, onWorkspaceApi, onWorkspaceReadyChange]);
 
   return (
-    <div className={`flex h-full min-h-0 flex-1 flex-col overflow-hidden ${className}`}>
+    <div className={`flex h-full w-full min-h-0 flex-1 self-stretch flex-col overflow-hidden ${className}`}>
       <div
         ref={containerRef}
         className="h-full w-full flex-1 min-h-0 overflow-hidden rounded border border-slate-600"

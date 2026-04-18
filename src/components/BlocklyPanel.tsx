@@ -1,16 +1,10 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { useSimulatorStore } from '@/sim/robotController';
 import { convertBlockTypesToCommands } from '@/sim/blocklyConverter';
 import { CommandType } from '@/sim/commandExecution';
-import type { BlocklyWorkspaceApi } from './BlocklyWorkspace';
-
-// Dynamic import: Blockly manipulates the DOM and must not run on the server.
-const BlocklyWorkspace = dynamic(() => import('./BlocklyWorkspace'), {
-  ssr: false,
-});
+import BlocklyWorkspace, { type BlocklyWorkspaceApi } from './BlocklyWorkspace';
 
 interface BlocklyPanelProps {
   showHeader?: boolean;
@@ -130,7 +124,7 @@ export default function BlocklyPanel({
             ⚠ Stop the queue before editing blocks.
           </p>
         ) : (
-          <div className={`relative flex min-h-0 flex-1 overflow-hidden ${prioritizeWorkspace ? 'min-h-[360px]' : ''}`}>
+          <div className={`relative flex min-h-0 flex-1 items-stretch overflow-hidden ${prioritizeWorkspace ? 'h-[360px] min-h-[360px]' : ''}`}>
             {!isWorkspaceReady && (
               <div className="absolute z-10 m-2 rounded border border-slate-700 bg-slate-900/90 px-2 py-1.5 text-[11px] text-slate-400">
                 Initializing Blockly…

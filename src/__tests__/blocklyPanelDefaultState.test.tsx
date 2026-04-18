@@ -7,10 +7,9 @@ const mockStoreState = {
   robot: { isRunningQueue: false },
 };
 
-jest.mock('next/dynamic', () => {
-  return () => {
-    const DynamicStub = () => <div>MOCK_DYNAMIC</div>;
-    return DynamicStub;
+jest.mock('@/components/BlocklyWorkspace', () => {
+  return function BlocklyWorkspaceMock() {
+    return <div>MOCK_BLOCKLY_WORKSPACE</div>;
   };
 });
 
@@ -30,7 +29,7 @@ describe('BlocklyPanel default state', () => {
     expect(html).toContain('🧩 Block Programming');
     expect(html).toContain('↑ Forward');
     expect(html).toContain('⏸ Wait');
-    expect(html).toContain('MOCK_DYNAMIC');
+    expect(html).toContain('MOCK_BLOCKLY_WORKSPACE');
     expect(html).toContain('Initializing Blockly…');
     expect(html).toContain('➕ Send to Queue');
     expect(html).toContain('🗑 Clear Blocks');
