@@ -133,7 +133,7 @@ export default function BlocklyPanel({ showHeader = true, className = '' }: Bloc
               ⚠ Stop the queue before editing blocks.
             </p>
           ) : (
-            <div className="flex flex-1 min-h-0">
+            <div className="flex min-h-0 flex-1">
               <BlocklyWorkspace onWorkspaceApi={setWorkspaceApi} />
             </div>
           )}

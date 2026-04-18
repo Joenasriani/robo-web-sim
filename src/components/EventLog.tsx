@@ -22,7 +22,7 @@ export default function EventLog() {
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Event Log</h3>
-      <div className="flex min-h-[60px] flex-col gap-1 overflow-y-auto rounded-lg bg-slate-900 p-2 max-h-[200px] lg:max-h-none lg:overflow-visible">
+      <div className="flex flex-col gap-1 min-h-[60px] max-h-[200px] overflow-y-auto rounded-lg bg-slate-900 p-2 lg:max-h-none lg:overflow-visible">
         {eventLog.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-3">
             <p className="text-xs text-slate-500">No events yet</p>
