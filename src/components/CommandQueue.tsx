@@ -21,7 +21,7 @@ export default function CommandQueue() {
       </div>
 
       {/* Queue list */}
-      <div className="bg-slate-900 rounded-lg p-2 min-h-[80px] max-h-[160px] overflow-y-auto">
+      <div className="bg-slate-900 rounded-lg p-2 min-h-[80px] max-h-[200px] overflow-y-auto lg:max-h-none lg:overflow-visible">
         {commandQueue.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1 py-3">
             <p className="text-xs text-slate-500">Queue is empty</p>
