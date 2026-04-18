@@ -120,6 +120,11 @@ export default function BlocklyWorkspace({ onWorkspaceApi, className = '' }: Blo
 
       BlocklyMod = mod;
       registerBlocks(mod);
+      if (workspaceRef.current) {
+        workspaceRef.current.dispose();
+        workspaceRef.current = null;
+      }
+      containerRef.current.replaceChildren();
 
       ws = mod.inject(containerRef.current, {
         toolbox: TOOLBOX,
@@ -137,6 +142,8 @@ export default function BlocklyWorkspace({ onWorkspaceApi, className = '' }: Blo
         }
         resizeFrame = requestAnimationFrame(() => {
           if (ws) {
+            const maybeResizableWorkspace = ws as WorkspaceSvg & { resize?: () => void };
+            maybeResizableWorkspace.resize?.();
             mod.svgResize(ws);
           }
           resizeFrame = null;
@@ -255,10 +262,10 @@ export default function BlocklyWorkspace({ onWorkspaceApi, className = '' }: Blo
   }, [commandToBlockType, onWorkspaceApi]);
 
   return (
-    <div className={`flex min-h-0 flex-1 ${className}`}>
+    <div className={`flex h-full min-h-0 flex-1 overflow-hidden ${className}`}>
       <div
         ref={containerRef}
-        className="h-full w-full min-h-[260px] flex-1 overflow-hidden rounded border border-slate-600"
+        className="h-full w-full flex-1 min-h-0 overflow-hidden rounded border border-slate-600"
         aria-label="Block programming workspace"
       />
     </div>

@@ -397,8 +397,9 @@ export default function Arena3D() {
 
   const clampFloorPosition = (point: THREE.Vector3): [number, number, number] => {
     const half = size / 2 - 0.6;
-    const x = Math.max(-half, Math.min(half, point.x));
-    const z = Math.max(-half, Math.min(half, point.z));
+    const snap = (value: number) => Math.round(value);
+    const x = Math.max(-half, Math.min(half, snap(point.x)));
+    const z = Math.max(-half, Math.min(half, snap(point.z)));
     const yOffset = placementTool ? placementTool.size[1] / 2 : 0.5;
     return [x, yOffset, z];
   };

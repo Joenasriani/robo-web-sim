@@ -204,6 +204,7 @@ export interface SimulatorStore {
   /** Rotate the selected obstacle by 45° CW or CCW around the Y axis. */
   rotateSelectedObject: (direction: 'cw' | 'ccw') => void;
   deleteSelectedObstacle: () => void;
+  deleteSelectedEditObject: () => void;
   /** Duplicate the selected obstacle, placing the copy nearby. */
   duplicateSelectedObstacle: () => void;
   addObstacle: () => void;
@@ -1007,6 +1008,26 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       robot,
       selectedEditObject: null,
       eventLog: [...s.eventLog, makeEvent('🗑️ Obstacle removed', 'warning')].slice(-MAX_EVENT_LOG),
+    }));
+  },
+
+  deleteSelectedEditObject: () => {
+    const { selectedEditObject, arena } = get();
+    if (!selectedEditObject) return;
+
+    if (selectedEditObject.type === 'obstacle') {
+      get().deleteSelectedObstacle();
+      return;
+    }
+
+    const targets = arena.targets.filter((target) => target.id !== selectedEditObject.id);
+    const newArena = { ...arena, targets };
+    const robot = { ...get().robot, sensors: computeSensors(get().robot, newArena) };
+    set((s) => ({
+      arena: newArena,
+      robot,
+      selectedEditObject: null,
+      eventLog: [...s.eventLog, makeEvent('🗑️ Target removed', 'warning')].slice(-MAX_EVENT_LOG),
     }));
   },
 

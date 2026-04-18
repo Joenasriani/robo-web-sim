@@ -45,7 +45,6 @@ export default function BlocklyPanel({
   const isRunning   = useSimulatorStore((s) => s.robot.isRunningQueue);
 
   const [workspaceApi, setWorkspaceApi] = useState<BlocklyWorkspaceApi | null>(null);
-  const [isExpanded, setIsExpanded] = useState(true);
   const [feedback, setFeedback]   = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const handleSendToQueue = useCallback(() => {
@@ -98,7 +97,7 @@ export default function BlocklyPanel({
   }, [feedback]);
 
   return (
-    <div className={`flex min-h-0 flex-col rounded-lg border border-slate-700 bg-slate-900/40 ${prioritizeWorkspace ? 'p-2.5' : 'p-4'} ${className}`}>
+    <div className={`flex h-full min-h-0 flex-col rounded-lg border border-slate-700 bg-slate-900/40 ${prioritizeWorkspace ? 'p-2.5' : 'p-4'} ${className}`}>
       <div className="flex items-center justify-between">
         {showHeader ? (
           <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-300">
@@ -107,76 +106,66 @@ export default function BlocklyPanel({
         ) : (
           <div />
         )}
-        <button
-          type="button"
-          className="btn-secondary text-xs"
-          onClick={() => setIsExpanded((expanded) => !expanded)}
-          aria-expanded={isExpanded}
-        >
-          {isExpanded ? 'Collapse' : 'Expand'}
-        </button>
       </div>
 
-      {isExpanded && (
-        <div className={`mt-3 flex min-h-0 flex-1 flex-col gap-3 ${prioritizeWorkspace ? 'pb-1' : ''}`}>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {QUICK_ADD_BUTTONS.map((btn) => (
-              <button
-                key={btn.type}
-                onClick={() => handleQuickAdd(btn.type)}
-                disabled={isRunning}
-                className="btn-small"
-                title={isRunning ? 'Stop the queue before adding commands' : `Quick add ${btn.label} and mirror it in blocks`}
-              >
-                {btn.icon} {btn.label}
-              </button>
-            ))}
-          </div>
-
-          {isRunning ? (
-            <p className="rounded bg-yellow-950/40 px-2 py-1.5 text-xs text-yellow-400">
-              ⚠ Stop the queue before editing blocks.
-            </p>
-          ) : (
-            <div className={`flex min-h-0 flex-1 ${prioritizeWorkspace ? 'min-h-[360px]' : ''}`}>
-              <BlocklyWorkspace
-                onWorkspaceApi={setWorkspaceApi}
-                className={prioritizeWorkspace ? 'rounded border border-slate-700 bg-slate-900' : ''}
-              />
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-2">
+      <div className={`mt-3 flex min-h-0 flex-1 flex-col gap-3 ${prioritizeWorkspace ? 'pb-1' : ''}`}>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {QUICK_ADD_BUTTONS.map((btn) => (
             <button
-              onClick={handleSendToQueue}
-              className="btn-green text-xs"
-              title="Add all blocks to the command queue"
+              key={btn.type}
+              onClick={() => handleQuickAdd(btn.type)}
+              disabled={isRunning}
+              className="btn-small"
+              title={isRunning ? 'Stop the queue before adding commands' : `Quick add ${btn.label} and mirror it in blocks`}
             >
-              ➕ Send to Queue
+              {btn.icon} {btn.label}
             </button>
-            <button
-              onClick={handleClearBlocks}
-              className="btn-secondary text-xs"
-              title="Remove all blocks from the workspace"
-            >
-              🗑 Clear Blocks
-            </button>
-          </div>
-
-          {feedback && (
-            <p
-              className={`shrink-0 rounded px-2 py-1.5 text-xs ${
-                feedback.type === 'success'
-                  ? 'bg-green-950/40 text-green-300'
-                  : 'bg-red-950/40 text-red-300'
-              }`}
-              role="status"
-            >
-              {feedback.msg}
-            </p>
-          )}
+          ))}
         </div>
-      )}
+
+        {isRunning ? (
+          <p className="rounded bg-yellow-950/40 px-2 py-1.5 text-xs text-yellow-400">
+            ⚠ Stop the queue before editing blocks.
+          </p>
+        ) : (
+          <div className={`flex min-h-0 flex-1 overflow-hidden ${prioritizeWorkspace ? 'min-h-[360px]' : ''}`}>
+            <BlocklyWorkspace
+              onWorkspaceApi={setWorkspaceApi}
+              className={prioritizeWorkspace ? 'rounded border border-slate-700 bg-slate-900' : ''}
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={handleSendToQueue}
+            className="btn-green text-xs"
+            title="Add all blocks to the command queue"
+          >
+            ➕ Send to Queue
+          </button>
+          <button
+            onClick={handleClearBlocks}
+            className="btn-secondary text-xs"
+            title="Remove all blocks from the workspace"
+          >
+            🗑 Clear Blocks
+          </button>
+        </div>
+
+        {feedback && (
+          <p
+            className={`shrink-0 rounded px-2 py-1.5 text-xs ${
+              feedback.type === 'success'
+                ? 'bg-green-950/40 text-green-300'
+                : 'bg-red-950/40 text-red-300'
+            }`}
+            role="status"
+          >
+            {feedback.msg}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
