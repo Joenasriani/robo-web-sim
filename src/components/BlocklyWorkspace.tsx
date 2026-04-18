@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import type { WorkspaceSvg, Block } from 'blockly';
 import type { CommandType } from '@/sim/commandExecution';
 
@@ -109,6 +109,16 @@ export default function BlocklyWorkspace({
 }: BlocklyWorkspaceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<WorkspaceSvg | null>(null);
+  const [debugState, setDebugState] = useState({
+    initStarted: false,
+    mounted: false,
+    toolboxLoaded: false,
+    blockCount: 0,
+  });
+
+  const updateDebugState = useCallback((next: Partial<typeof debugState>) => {
+    setDebugState((prev) => ({ ...prev, ...next }));
+  }, []);
 
   const commandToBlockType = useCallback((command: CommandType): string => {
     switch (command) {
@@ -152,6 +162,11 @@ export default function BlocklyWorkspace({
       return true;
     };
 
+    const syncBlockCount = () => {
+      const ws = workspaceRef.current;
+      updateDebugState({ blockCount: ws ? ws.getAllBlocks(false).length : 0 });
+    };
+
     const disposeWorkspace = () => {
       if (workspaceRef.current) {
         workspaceRef.current.dispose();
@@ -159,6 +174,7 @@ export default function BlocklyWorkspace({
       }
       onWorkspaceApi?.(null);
       onWorkspaceReadyChange?.(false);
+      updateDebugState({ mounted: false, toolboxLoaded: false, blockCount: 0 });
     };
 
     resizeWorkspace = () => {
@@ -176,6 +192,7 @@ export default function BlocklyWorkspace({
           liveWorkspace.resizeContents();
           mod.svgResize(liveWorkspace);
           liveWorkspace.render();
+          syncBlockCount();
         }
         resizeFrame = null;
       });
@@ -183,8 +200,21 @@ export default function BlocklyWorkspace({
 
     const tryInitWorkspace = async () => {
       if (disposed || initializing || workspaceRef.current) return;
-      if (!isContainerReady()) return;
+
+      const { width, height } = getContainerLayoutMetrics();
+      console.info('[BlocklyWorkspace] Container size before init:', { width, height });
+      if (width <= 0 || height <= 0) {
+        console.info('[BlocklyWorkspace] Skipping init: container size is zero');
+        return;
+      }
+      if (!isContainerReady()) {
+        console.info('[BlocklyWorkspace] Skipping init: container not ready/visible');
+        return;
+      }
+
       initializing = true;
+      updateDebugState({ initStarted: true });
+
       try {
         const mod = BlocklyMod ?? await import('blockly');
         if (disposed || !isContainerReady()) {
@@ -194,6 +224,10 @@ export default function BlocklyWorkspace({
 
         BlocklyMod = mod;
         registerBlocks(mod);
+
+        const registeredTypes = BLOCK_DEFINITIONS.filter((def) => Boolean(mod.Blocks[def.type])).map((def) => def.type);
+        console.info('[BlocklyWorkspace] Registered block definitions:', registeredTypes);
+
         if (
           TOOLBOX.kind !== 'flyoutToolbox'
           || !Array.isArray(TOOLBOX.contents)
@@ -201,9 +235,12 @@ export default function BlocklyWorkspace({
         ) {
           throw new Error('Invalid Blockly toolbox configuration');
         }
+
+        console.info('[BlocklyWorkspace] Toolbox config passed to inject:', TOOLBOX);
         disposeWorkspace();
         container.replaceChildren();
 
+        console.info('[BlocklyWorkspace] Blockly.inject start');
         const ws = mod.inject(container, {
           toolbox: TOOLBOX,
           scrollbars: true,
@@ -212,11 +249,32 @@ export default function BlocklyWorkspace({
           toolboxPosition: 'start',
           move: { scrollbars: true, drag: true, wheel: true },
         });
+        console.info('[BlocklyWorkspace] Blockly.inject complete', { workspaceNonNull: Boolean(ws) });
+
         if (!ws) {
           throw new Error('Blockly.inject returned a null workspace');
         }
+
         workspaceRef.current = ws;
+
+        const injectedSvg = container.querySelector('svg.blocklySvg');
+        const injectedInjectionDiv = container.querySelector('.blocklyInjectionDiv');
+        const hasInjectedDom = Boolean(injectedSvg && injectedInjectionDiv);
+        console.info('[BlocklyWorkspace] Injected DOM check:', {
+          hasInjectedSvg: Boolean(injectedSvg),
+          hasInjectionDiv: Boolean(injectedInjectionDiv),
+        });
+        if (!hasInjectedDom) {
+          throw new Error('Blockly DOM/SVG was not injected into container');
+        }
+
         onWorkspaceReadyChange?.(true);
+        updateDebugState({ mounted: true, toolboxLoaded: true });
+
+        const onWorkspaceChanged = () => {
+          syncBlockCount();
+        };
+        ws.addChangeListener(onWorkspaceChanged);
 
         onWorkspaceApi?.({
           appendCommandBlock: (command: CommandType) => {
@@ -242,7 +300,6 @@ export default function BlocklyWorkspace({
                   tail.nextConnection.connect(newBlock.previousConnection);
                   connected = true;
                 } catch {
-                  // Connection can fail if block types are incompatible; fall back to free placement below.
                   connected = false;
                 }
               }
@@ -255,6 +312,7 @@ export default function BlocklyWorkspace({
               newBlock.moveBy(24, y);
             }
             liveWorkspace.render();
+            syncBlockCount();
           },
           getBlockTypes: () => {
             const liveWorkspace = workspaceRef.current;
@@ -275,6 +333,7 @@ export default function BlocklyWorkspace({
           },
           clearWorkspace: () => {
             workspaceRef.current?.clear();
+            syncBlockCount();
             try {
               localStorage.removeItem(WORKSPACE_STORAGE_KEY);
             } catch (err) {
@@ -293,7 +352,6 @@ export default function BlocklyWorkspace({
             restoredWorkspace = true;
           }
         } catch (err) {
-          // Warn on restoration failure — could indicate corrupted or incompatible state
           console.warn('[BlocklyWorkspace] Failed to restore workspace state:', err);
         }
 
@@ -305,8 +363,18 @@ export default function BlocklyWorkspace({
           console.warn('[BlocklyWorkspace] Failed to inspect starter block state:', err);
         }
 
+        // Add a test block once to confirm actual rendering path.
+        try {
+          if (ws.getAllBlocks(false).length === 0) {
+            appendStarterBlock(ws, STARTER_BLOCK_TYPE);
+          }
+        } catch (err) {
+          console.warn('[BlocklyWorkspace] Failed to add test block:', err);
+        }
+
         resizeWorkspace();
         requestAnimationFrame(() => resizeWorkspace());
+        syncBlockCount();
       } catch (err) {
         console.warn('[BlocklyWorkspace] Failed to initialize workspace:', err);
         onWorkspaceReadyChange?.(false);
@@ -334,7 +402,12 @@ export default function BlocklyWorkspace({
       void tryInitWorkspace();
     };
     window.addEventListener('resize', onWindowResize);
-    void tryInitWorkspace();
+
+    // Delay first init by one frame so expanded panel dimensions are measurable.
+    requestAnimationFrame(() => {
+      void tryInitWorkspace();
+    });
+
     const scheduleInitRetry = () => {
       if (disposed || workspaceRef.current) return;
       retryTimer = window.setTimeout(() => {
@@ -358,22 +431,26 @@ export default function BlocklyWorkspace({
       }
 
       if (workspaceRef.current && BlocklyMod) {
-        // Persist workspace state before disposing
         try {
           const dom = BlocklyMod.Xml.workspaceToDom(workspaceRef.current);
           const text = BlocklyMod.utils.xml.domToText(dom);
           localStorage.setItem(WORKSPACE_STORAGE_KEY, text);
         } catch (err) {
-          // Warn on persistence failure — could indicate storage quota exceeded
           console.warn('[BlocklyWorkspace] Failed to persist workspace state:', err);
         }
       }
       disposeWorkspace();
     };
-  }, [commandToBlockType, onWorkspaceApi, onWorkspaceReadyChange]);
+  }, [commandToBlockType, onWorkspaceApi, onWorkspaceReadyChange, updateDebugState]);
 
   return (
-    <div className={`flex h-full w-full min-h-0 flex-1 self-stretch flex-col overflow-hidden ${className}`}>
+    <div className={`flex h-full w-full min-h-0 flex-1 self-stretch flex-col overflow-hidden ${className}`}>        
+      <div className="mb-2 rounded border border-amber-700 bg-amber-950/40 p-2 text-xs text-amber-100" aria-label="Blockly debug status">
+        <div>{debugState.initStarted ? 'Blockly init started' : 'Blockly init not started'}</div>
+        <div>{debugState.mounted ? 'Blockly mounted' : 'Blockly not mounted'}</div>
+        <div>{debugState.toolboxLoaded ? 'Toolbox loaded' : 'Toolbox not loaded'}</div>
+        <div>{`Block count: ${debugState.blockCount}`}</div>
+      </div>
       <div
         ref={containerRef}
         className="h-full w-full flex-1 min-h-0 overflow-hidden rounded border border-slate-600"
