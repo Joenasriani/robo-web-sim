@@ -954,8 +954,9 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const half = arena.size / 2 - 0.6; // margin so objects stay visibly inside walls
 
     const applyDelta = (pos: [number, number, number]): [number, number, number] => {
-      let [x, , z] = pos;
+      let x = pos[0];
       const y = pos[1];
+      let z = pos[2];
       if (direction === 'north') z -= STEP;
       else if (direction === 'south') z += STEP;
       else if (direction === 'east')  x += STEP;
@@ -1056,8 +1057,10 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     // Pick a position near the center-north that avoids the robot start pose (0,0,0).
     // We cycle through a small grid of x offsets (0..3) to avoid stacking new obstacles.
     const POSITION_CYCLE_RANGE = 4; // number of x positions to cycle through
-    let x = 0;
-    const z = -3;
+    const INITIAL_OBSTACLE_X = 0;
+    const INITIAL_OBSTACLE_Z = -3;
+    let x = INITIAL_OBSTACLE_X;
+    const z = INITIAL_OBSTACLE_Z;
     const existingPositions = arena.obstacles.map((o) => `${o.position[0]},${o.position[2]}`);
     let attempt = 0;
     while (existingPositions.includes(`${x},${z}`) && attempt < 8) {
@@ -1123,8 +1126,10 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     const MAX_PLACEMENT_ATTEMPTS = 8;
     const PLACEMENT_STEP = 1.5;
     const PLACEMENT_GRID_SIZE = 4;
-    let candidateX = 0;
-    const candidateZ = -2;
+    const INITIAL_CANDIDATE_X = 0;
+    const INITIAL_CANDIDATE_Z = -2;
+    let candidateX = INITIAL_CANDIDATE_X;
+    const candidateZ = INITIAL_CANDIDATE_Z;
     let attempt = 0;
     while (existingPositions.has(`${candidateX},${candidateZ}`) && attempt < MAX_PLACEMENT_ATTEMPTS) {
       candidateX = Math.round((candidateX + PLACEMENT_STEP) % PLACEMENT_GRID_SIZE);
