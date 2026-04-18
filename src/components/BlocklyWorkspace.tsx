@@ -115,6 +115,10 @@ export default function BlocklyWorkspace({
     mounted: false,
     toolboxLoaded: false,
     blockCount: 0,
+    readinessReason: 'not evaluated',
+    containerWidth: 0,
+    containerHeight: 0,
+    initError: '',
   });
 
   const updateDebugState = useCallback((next: Partial<typeof debugState>) => {
@@ -223,6 +227,11 @@ export default function BlocklyWorkspace({
       if (disposed || initializing || workspaceRef.current) return;
 
       const readiness = getContainerReadiness();
+      updateDebugState({
+        readinessReason: readiness.ready ? 'ready' : readiness.reason ?? 'not ready',
+        containerWidth: readiness.width,
+        containerHeight: readiness.height,
+      });
       console.info('[BlocklyWorkspace] Container readiness before init:', readiness);
       if (!readiness.ready) {
         console.info('[BlocklyWorkspace] Skipping init:', readiness.reason);
@@ -235,6 +244,11 @@ export default function BlocklyWorkspace({
       try {
         const mod = BlocklyMod ?? await import('blockly');
         const postImportReadiness = getContainerReadiness();
+        updateDebugState({
+          readinessReason: postImportReadiness.ready ? 'ready' : postImportReadiness.reason ?? 'not ready',
+          containerWidth: postImportReadiness.width,
+          containerHeight: postImportReadiness.height,
+        });
         if (disposed || !postImportReadiness.ready) {
           if (!postImportReadiness.ready) {
             console.info('[BlocklyWorkspace] Skipping init after import:', postImportReadiness);
@@ -296,7 +310,7 @@ export default function BlocklyWorkspace({
         }
 
         onWorkspaceReadyChange?.(true);
-        updateDebugState({ mounted: true, toolboxLoaded });
+        updateDebugState({ mounted: true, toolboxLoaded, initError: '' });
 
         const onWorkspaceChanged = () => {
           syncBlockCount();
@@ -409,6 +423,8 @@ export default function BlocklyWorkspace({
         syncBlockCount();
       } catch (err) {
         console.warn('[BlocklyWorkspace] Failed to initialize workspace:', err);
+        const message = err instanceof Error ? err.message : String(err);
+        updateDebugState({ initError: message });
         onWorkspaceReadyChange?.(false);
       } finally {
         initializing = false;
@@ -476,16 +492,20 @@ export default function BlocklyWorkspace({
   }, [commandToBlockType, onWorkspaceApi, onWorkspaceReadyChange, updateDebugState]);
 
   return (
-    <div className={`flex h-full w-full min-h-0 flex-1 self-stretch flex-col overflow-hidden ${className}`}>        
+    <div className={`flex h-full w-full min-h-0 flex-1 self-stretch flex-col overflow-hidden ${className}`}>
       <div className="mb-2 rounded border border-amber-700 bg-amber-950/40 p-2 text-xs text-amber-100" aria-label="Blockly debug status">
+        <div className="font-semibold">Debug state (UI)</div>
         <div>{debugState.initStarted ? 'Blockly init started' : 'Blockly init not started'}</div>
         <div>{debugState.mounted ? 'Blockly mounted' : 'Blockly not mounted'}</div>
         <div>{debugState.toolboxLoaded ? 'Toolbox loaded' : 'Toolbox not loaded'}</div>
         <div>{`Block count: ${debugState.blockCount}`}</div>
+        <div>{`Container: ${Math.round(debugState.containerWidth)} × ${Math.round(debugState.containerHeight)}`}</div>
+        <div>{`Readiness: ${debugState.readinessReason}`}</div>
+        {debugState.initError && <div>{`Init error: ${debugState.initError}`}</div>}
       </div>
       <div
         ref={containerRef}
-        className="h-full w-full flex-1 min-h-0 overflow-hidden rounded border border-slate-600"
+        className="w-full flex-1 min-h-[220px] overflow-hidden rounded border border-slate-600"
         aria-label="Block programming workspace"
       />
     </div>

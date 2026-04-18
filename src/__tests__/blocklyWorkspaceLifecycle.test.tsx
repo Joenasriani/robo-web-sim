@@ -159,6 +159,8 @@ describe('BlocklyWorkspace lifecycle', () => {
     await flushMicrotasks();
 
     expect(mockBlocklyModule.inject).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Readiness: container has zero size');
+    expect(container.textContent).toContain('Container: 0 × 0');
 
     const workspaceContainer = container.querySelector('[aria-label="Block programming workspace"]');
     expect(workspaceContainer).not.toBeNull();
@@ -183,6 +185,8 @@ describe('BlocklyWorkspace lifecycle', () => {
     expect(mockBlocklyModule.svgResize).toHaveBeenCalled();
     expect(mockWorkspace.resizeContents).toHaveBeenCalled();
     expect(onReady).toHaveBeenCalledWith(true);
+    expect(container.textContent).toContain('Readiness: ready');
+    expect(container.textContent).toContain('Container: 360 × 240');
   });
 
   it('keeps a single workspace instance and disposes on unmount', async () => {
