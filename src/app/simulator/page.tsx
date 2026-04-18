@@ -30,6 +30,14 @@ import { useSimulatorStore } from '@/sim/robotController';
 // Dynamic import to avoid SSR issues with Three.js
 const Arena3D = dynamic(() => import('@/components/Arena3D'), { ssr: false });
 
+type WorkspaceMode = 'build' | 'edit' | 'run';
+
+function resolveWorkspaceMode(args: { isEditMode: boolean; simState: string }): WorkspaceMode {
+  if (args.isEditMode) return 'edit';
+  if (args.simState !== 'idle') return 'run';
+  return 'build';
+}
+
 const VALID_LESSON_IDS = [
   'lesson-1', 'lesson-2', 'lesson-3', 'lesson-4',
   'lesson-5', 'lesson-6', 'lesson-7', 'lesson-8',
@@ -55,6 +63,10 @@ function LessonDeepLink() {
 }
 
 export default function SimulatorPage() {
+  const isEditMode = useSimulatorStore((s) => s.isEditMode);
+  const simState = useSimulatorStore((s) => s.simState);
+  const workspaceMode = resolveWorkspaceMode({ isEditMode, simState });
+
   return (
     <div className="h-screen flex flex-col text-white overflow-hidden pb-[52px] lg:pb-0" style={{ background: 'var(--rm-bg)' }}>
       {/* Hydrate store from localStorage on first client render */}
@@ -131,8 +143,8 @@ export default function SimulatorPage() {
         </div>
 
         <aside data-testid="desktop-right-panel" className="h-full min-h-0 overflow-hidden border-l border-slate-700 bg-slate-800">
-          <div className="h-full min-h-0 overflow-y-auto" data-testid="desktop-right-panel-content">
-            <div className="sticky top-0 z-20 border-b border-slate-700 bg-slate-800/95 px-4 pb-3 pt-4 backdrop-blur-sm">
+          <div className="flex h-full min-h-0 flex-col" data-testid="desktop-right-panel-content">
+            <div className="sticky top-0 z-20 shrink-0 border-b border-slate-700 bg-slate-800/95 px-4 pb-3 pt-4 backdrop-blur-sm">
               <div>
                 <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Simulation Setup</h3>
                 <SimSettings showHeader={false} />
@@ -142,32 +154,70 @@ export default function SimulatorPage() {
                 <RobotControls showMovementControls={false} />
               </div>
             </div>
-            <div className="flex min-h-0 flex-col gap-4 px-4 pb-4 pt-4">
-              <QuickActions />
-              <BlocklyPanel className="min-h-[460px]" prioritizeWorkspace />
-              <CollapsibleSection
-                title="Telemetry"
-                storageKey="sim-ui-collapsible-telemetry-open"
-                defaultOpen={false}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <section
+                data-testid="right-dock-primary-workspace"
+                className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4"
               >
-                <TelemetryPanel showHeader={false} />
-              </CollapsibleSection>
-              <CollapsibleSection
-                title="Event Log"
-                storageKey="sim-ui-collapsible-event-log-open"
-                defaultOpen={false}
+                <div className="flex min-h-full flex-col gap-4">
+                  {workspaceMode === 'build' && (
+                    <>
+                      <div>
+                        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">Build Workspace</h3>
+                        <p className="text-xs text-slate-500">Compose and refine robot command programs.</p>
+                      </div>
+                      <QuickActions />
+                      <BlocklyPanel className="min-h-[460px]" prioritizeWorkspace />
+                      <SavedPrograms />
+                    </>
+                  )}
+
+                  {workspaceMode === 'edit' && (
+                    <>
+                      <div>
+                        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">Edit Workspace</h3>
+                        <p className="text-xs text-slate-500">Arrange arena assets and placement tools.</p>
+                      </div>
+                      <ArenaEditor />
+                      <ModelLibrary />
+                      <SavedScenes />
+                    </>
+                  )}
+
+                  {workspaceMode === 'run' && (
+                    <>
+                      <div>
+                        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">Run Workspace</h3>
+                        <p className="text-xs text-slate-500">Track execution while the simulator is active.</p>
+                      </div>
+                      <QuickActions />
+                      <CommandQueue />
+                    </>
+                  )}
+                </div>
+              </section>
+
+              <section
+                data-testid="right-dock-secondary-monitors"
+                className="shrink-0 border-t border-slate-700 px-4 py-3"
               >
-                <EventLog showHeader={false} />
-              </CollapsibleSection>
-              <CommandQueue />
-              <div>
-                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Movement Controls</h3>
-                <RobotControls showQueueControls={false} />
-              </div>
-              <ArenaEditor />
-              <ModelLibrary />
-              <SavedScenes />
-              <SavedPrograms />
+                <div className="flex max-h-[40vh] flex-col gap-3 overflow-y-auto pr-1">
+                  <CollapsibleSection
+                    title="Telemetry"
+                    storageKey="sim-ui-collapsible-telemetry-open"
+                    defaultOpen={false}
+                  >
+                    <TelemetryPanel showHeader={false} />
+                  </CollapsibleSection>
+                  <CollapsibleSection
+                    title="Event Log"
+                    storageKey="sim-ui-collapsible-event-log-open"
+                    defaultOpen={false}
+                  >
+                    <EventLog showHeader={false} />
+                  </CollapsibleSection>
+                </div>
+              </section>
             </div>
           </div>
         </aside>

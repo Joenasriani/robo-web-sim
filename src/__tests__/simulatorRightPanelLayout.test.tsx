@@ -4,6 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 const mockStoreState = {
   addCommand: jest.fn(),
   robot: { isRunningQueue: false },
+  isEditMode: false,
+  simState: 'idle',
 };
 
 jest.mock('next/dynamic', () => {
@@ -103,9 +105,11 @@ describe('Desktop right panel layout', () => {
   beforeEach(() => {
     mockStoreState.addCommand = jest.fn();
     mockStoreState.robot = { isRunningQueue: false };
+    mockStoreState.isEditMode = false;
+    mockStoreState.simState = 'idle';
   });
 
-  it('renders desktop right panel components in the requested order with block programming inside it', async () => {
+  it('renders build mode with sticky controls, one primary build workspace, and secondary monitoring stack', async () => {
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
@@ -116,13 +120,12 @@ describe('Desktop right panel layout', () => {
       'RIGHT_SIM_SETTINGS',
       'Play, Pause, Stop',
       'RIGHT_PLAY_PAUSE_STOP_CONTENT',
+      'Build Workspace',
       'RIGHT_QUICK_ACTIONS',
       'RIGHT_BLOCK_PROGRAMMING',
+      'SAVED_PROGRAMS',
       'RIGHT_TELEMETRY',
       'RIGHT_EVENT_LOG',
-      'RIGHT_COMMAND_QUEUE',
-      'Movement Controls',
-      'RIGHT_MOVEMENT_CONTROLS_CONTENT',
     ];
 
     const positions = orderedMarkers.map((marker) => html.indexOf(marker));
@@ -133,6 +136,38 @@ describe('Desktop right panel layout', () => {
         expect(position).toBeGreaterThan(positions[idx - 1]);
       }
     });
+
+    expect(html).not.toContain('ARENA_EDITOR');
+    expect(html).not.toContain('MODEL_LIBRARY');
+    expect(html).not.toContain('RIGHT_COMMAND_QUEUE');
+  });
+
+  it('renders edit mode as the sole dominant primary workspace', async () => {
+    mockStoreState.isEditMode = true;
+    const { default: SimulatorPage } = await import('@/app/simulator/page');
+    const html = renderToStaticMarkup(<SimulatorPage />);
+
+    expect(html).toContain('Edit Workspace');
+    expect(html).toContain('ARENA_EDITOR');
+    expect(html).toContain('MODEL_LIBRARY');
+    expect(html).toContain('SAVED_SCENES');
+    expect(html).not.toContain('Build Workspace');
+    expect(html).not.toContain('Run Workspace');
+    expect(html).not.toContain('RIGHT_BLOCK_PROGRAMMING');
+    expect(html).not.toContain('RIGHT_COMMAND_QUEUE');
+  });
+
+  it('renders run mode as the sole dominant primary workspace', async () => {
+    mockStoreState.simState = 'running';
+    const { default: SimulatorPage } = await import('@/app/simulator/page');
+    const html = renderToStaticMarkup(<SimulatorPage />);
+
+    expect(html).toContain('Run Workspace');
+    expect(html).toContain('RIGHT_COMMAND_QUEUE');
+    expect(html).not.toContain('Build Workspace');
+    expect(html).not.toContain('Edit Workspace');
+    expect(html).not.toContain('RIGHT_BLOCK_PROGRAMMING');
+    expect(html).not.toContain('ARENA_EDITOR');
   });
 
   it('uses strict 3-column desktop layout and no separate desktop block panel container', async () => {
@@ -152,6 +187,8 @@ describe('Desktop right panel layout', () => {
     expect(html).toContain('sticky top-0');
     expect(html).toContain('Simulation Setup');
     expect(html).toContain('Play, Pause, Stop');
+    expect(html).toContain('data-testid="right-dock-primary-workspace"');
+    expect(html).toContain('data-testid="right-dock-secondary-monitors"');
   });
 
 });
