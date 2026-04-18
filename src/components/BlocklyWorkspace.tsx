@@ -112,6 +112,7 @@ export default function BlocklyWorkspace({ onWorkspaceApi, className = '' }: Blo
     let BlocklyMod: typeof import('blockly') | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let resizeWorkspace: (() => void) | null = null;
+    let resizeFrame: number | null = null;
 
     (async () => {
       const mod = await import('blockly');
@@ -130,9 +131,16 @@ export default function BlocklyWorkspace({ onWorkspaceApi, className = '' }: Blo
       workspaceRef.current = ws;
 
       resizeWorkspace = () => {
-        if (ws) {
-          mod.svgResize(ws);
+        if (!ws) return;
+        if (resizeFrame !== null) {
+          cancelAnimationFrame(resizeFrame);
         }
+        resizeFrame = requestAnimationFrame(() => {
+          if (ws) {
+            mod.svgResize(ws);
+          }
+          resizeFrame = null;
+        });
       };
 
       resizeObserver = typeof ResizeObserver !== 'undefined'
@@ -225,6 +233,10 @@ export default function BlocklyWorkspace({ onWorkspaceApi, className = '' }: Blo
           window.removeEventListener('resize', resizeWorkspace);
         }
         resizeObserver?.disconnect();
+        if (resizeFrame !== null) {
+          cancelAnimationFrame(resizeFrame);
+          resizeFrame = null;
+        }
 
         // Persist workspace state before disposing
         try {
