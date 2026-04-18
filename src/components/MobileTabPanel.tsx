@@ -2,20 +2,16 @@
 
 import { useState } from 'react';
 import RobotControls from '@/components/RobotControls';
-import QuickActions from '@/components/QuickActions';
-import ArenaEditor from '@/components/ArenaEditor';
 import ScenarioSelector from '@/components/ScenarioSelector';
 import LessonsSidebar from '@/components/LessonsSidebar';
 import CommandQueue from '@/components/CommandQueue';
-import SimSettings from '@/components/SimSettings';
 import TelemetryPanel from '@/components/TelemetryPanel';
 import EventLog from '@/components/EventLog';
 import ModelLibrary from '@/components/ModelLibrary';
 import SavedScenes from '@/components/SavedScenes';
-import SavedPrograms from '@/components/SavedPrograms';
 import BlocklyPanel from '@/components/BlocklyPanel';
 
-type Tab = 'controls' | 'scenarios' | 'models' | 'scenes' | 'blocks' | 'queue' | 'info';
+type Tab = 'scenarios' | 'models' | 'scenes' | 'blocks' | 'info';
 
 interface TabDef {
   id: Tab;
@@ -24,31 +20,20 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: 'controls',  label: 'Controls',  icon: '🎮' },
   { id: 'scenarios', label: 'Scenarios', icon: '🗺️' },
   { id: 'models',    label: 'Assets',    icon: '📦' },
   { id: 'scenes',    label: 'Scenes',    icon: '💾' },
   { id: 'blocks',    label: 'Blocks',    icon: '🧩' },
-  { id: 'queue',     label: 'Queue',     icon: '⚡' },
   { id: 'info',      label: 'Info',      icon: '📊' },
 ];
 
 export default function MobileTabPanel() {
-  const [activeTab, setActiveTab] = useState<Tab>('controls');
+  const [activeTab, setActiveTab] = useState<Tab>('blocks');
 
   return (
     <div className="lg:hidden flex flex-col shrink-0">
       {/* Persistent content panel — normal document flow below the 3D canvas */}
       <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[45vh] p-3">
-        {activeTab === 'controls' && (
-          <div className="flex flex-col gap-4">
-            <RobotControls />
-            <hr className="border-slate-700" />
-            <QuickActions />
-            <hr className="border-slate-700" />
-            <ArenaEditor />
-          </div>
-        )}
         {activeTab === 'scenarios' && (
           <div className="flex flex-col gap-4">
             <ScenarioSelector />
@@ -69,15 +54,10 @@ export default function MobileTabPanel() {
         {activeTab === 'blocks' && (
           <div className="flex flex-col gap-4">
             <BlocklyPanel />
-          </div>
-        )}
-        {activeTab === 'queue' && (
-          <div className="flex flex-col gap-4">
+            <hr className="border-slate-700" />
             <CommandQueue />
             <hr className="border-slate-700" />
-            <SavedPrograms />
-            <hr className="border-slate-700" />
-            <SimSettings />
+            <RobotControls showMovementControls={false} />
           </div>
         )}
         {activeTab === 'info' && (
