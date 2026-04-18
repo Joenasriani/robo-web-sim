@@ -103,7 +103,7 @@ function Robot() {
   const meshRef = useRef<THREE.Group>(null);
   const robotModelRef = useRef<THREE.Group>(null);
   const robot = useSimulatorStore((s) => s.robot);
-  const [robotYOffset, setRobotYOffset] = useState(INITIAL_ROBOT_STATE.position.y + FLOOR_CLEARANCE);
+  const [robotYOffset, setRobotYOffset] = useState(FLOOR_CLEARANCE);
 
   useLayoutEffect(() => {
     if (!robotModelRef.current) return;
@@ -159,7 +159,7 @@ function GroundedObstacleGroup({
   children: ReactNode;
 }) {
   const contentRef = useRef<THREE.Group>(null);
-  const [yOffset, setYOffset] = useState(obs.size[1] / 2 + FLOOR_CLEARANCE);
+  const [yOffset, setYOffset] = useState(FLOOR_CLEARANCE);
   const baseY = obs.position[1] - obs.size[1] / 2;
 
   useLayoutEffect(() => {
