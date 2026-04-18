@@ -25,6 +25,7 @@ const MOBILE_STEPS = [
  */
 export default function OnboardingStrip() {
   const [visible, setVisible] = useState(false);
+  const [desktopExpanded, setDesktopExpanded] = useState(false);
 
   // Only read sessionStorage on the client to avoid SSR mismatch
   useEffect(() => {
@@ -45,10 +46,31 @@ export default function OnboardingStrip() {
       aria-label="Quick start guide"
       className="shrink-0 bg-blue-950/60 border-b border-blue-900/60 px-3 py-1.5 flex items-center gap-3 text-xs overflow-x-auto"
     >
-      <span className="text-blue-300 font-semibold whitespace-nowrap shrink-0">💡 Quick start:</span>
+      {/* Desktop (lg+) */}
+      <div className="hidden lg:flex flex-col gap-1">
+        <button
+          type="button"
+          onClick={() => setDesktopExpanded((open) => !open)}
+          aria-expanded={desktopExpanded}
+          aria-label="Toggle quick start steps"
+          className="text-left text-blue-300 font-semibold whitespace-nowrap shrink-0 hover:text-blue-200 transition-colors"
+        >
+          💡 Quick Start
+        </button>
+        {desktopExpanded && (
+          <ul className="flex flex-col gap-0.5 text-blue-200/80" aria-label="Desktop quick start steps">
+            {STEPS.map((step, i) => (
+              <li key={i} className="whitespace-nowrap">
+                {i === 0 ? '' : '→ '}{step.icon} {step.text}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
-      {/* Desktop / tablet steps */}
-      <ol className="hidden sm:flex items-center gap-3 min-w-0" aria-label="Steps to use the simulator">
+      {/* Tablet + mobile (unchanged) */}
+      <span className="text-blue-300 font-semibold whitespace-nowrap shrink-0 lg:hidden">💡 Quick start:</span>
+      <ol className="hidden sm:flex lg:hidden items-center gap-3 min-w-0" aria-label="Steps to use the simulator">
         {STEPS.map((step, i) => (
           <li key={i} className="flex items-center gap-1 whitespace-nowrap text-blue-200/80">
             <span aria-hidden="true" className="text-base leading-none">{step.icon}</span>
@@ -59,9 +81,7 @@ export default function OnboardingStrip() {
           </li>
         ))}
       </ol>
-
-      {/* Mobile steps — shown only on small screens */}
-      <ol className="flex sm:hidden items-center gap-3 min-w-0" aria-label="Steps to use the simulator on mobile">
+      <ol className="flex sm:hidden lg:hidden items-center gap-3 min-w-0" aria-label="Steps to use the simulator on mobile">
         {MOBILE_STEPS.map((step, i) => (
           <li key={i} className="flex items-center gap-1 whitespace-nowrap text-blue-200/80">
             <span aria-hidden="true" className="text-base leading-none">{step.icon}</span>

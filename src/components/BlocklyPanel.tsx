@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useSimulatorStore } from '@/sim/robotController';
 import { convertBlockTypesToCommands } from '@/sim/blocklyConverter';
@@ -15,17 +15,26 @@ const BlocklyWorkspace = dynamic(() => import('./BlocklyWorkspace'), {
   ),
 });
 
+interface BlocklyPanelProps {
+  onExpandedChange?: (expanded: boolean) => void;
+  workspaceHeight?: number;
+}
+
 /**
  * Collapsible panel that exposes a Blockly visual programming workspace.
  * When the user clicks "Send to Queue", the blocks are converted to robot
  * commands and appended to the existing command queue.
  */
-export default function BlocklyPanel() {
+export default function BlocklyPanel({ onExpandedChange, workspaceHeight = 280 }: BlocklyPanelProps) {
   const addCommand  = useSimulatorStore((s) => s.addCommand);
   const isRunning   = useSimulatorStore((s) => s.robot.isRunningQueue);
 
   const [expanded, setExpanded]   = useState(false);
   const [feedback, setFeedback]   = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  useEffect(() => {
+    onExpandedChange?.(expanded);
+  }, [expanded, onExpandedChange]);
 
   const handleSendToQueue = useCallback(
     (blockTypes: string[]) => {
@@ -90,7 +99,7 @@ export default function BlocklyPanel() {
               ⚠ Stop the queue before sending new commands.
             </p>
           ) : (
-            <BlocklyWorkspace onSendToQueue={handleSendToQueue} />
+            <BlocklyWorkspace onSendToQueue={handleSendToQueue} workspaceHeight={workspaceHeight} />
           )}
 
           {feedback && (
