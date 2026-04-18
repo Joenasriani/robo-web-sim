@@ -70,12 +70,14 @@ function registerBlocks(Blockly: typeof import('blockly')) {
 }
 
 export interface BlocklyWorkspaceProps {
-  onSendToQueue: (blockTypes: string[]) => void;
   onWorkspaceApi?: (api: BlocklyWorkspaceApi | null) => void;
+  className?: string;
 }
 
 export interface BlocklyWorkspaceApi {
   appendCommandBlock: (command: CommandType) => void;
+  getBlockTypes: () => string[];
+  clearWorkspace: () => void;
 }
 
 /**
@@ -85,7 +87,7 @@ export interface BlocklyWorkspaceApi {
  *
  * Must only be rendered on the client (use dynamic import with ssr: false).
  */
-export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: BlocklyWorkspaceProps) {
+export default function BlocklyWorkspace({ onWorkspaceApi, className = '' }: BlocklyWorkspaceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<WorkspaceSvg | null>(null);
 
@@ -108,6 +110,8 @@ export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: Bloc
     let disposed = false;
     let ws: WorkspaceSvg | null = null;
     let BlocklyMod: typeof import('blockly') | null = null;
+    let resizeObserver: ResizeObserver | null = null;
+    let resizeWorkspace: (() => void) | null = null;
 
     (async () => {
       const mod = await import('blockly');
@@ -124,6 +128,19 @@ export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: Bloc
         move: { scrollbars: true, drag: true, wheel: true },
       });
       workspaceRef.current = ws;
+
+      resizeWorkspace = () => {
+        if (ws) {
+          mod.svgResize(ws);
+        }
+      };
+
+      resizeObserver = typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => resizeWorkspace?.())
+        : null;
+      resizeObserver?.observe(containerRef.current);
+      window.addEventListener('resize', resizeWorkspace);
+      requestAnimationFrame(() => resizeWorkspace?.());
 
       onWorkspaceApi?.({
         appendCommandBlock: (command: CommandType) => {
@@ -162,6 +179,30 @@ export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: Bloc
           }
           ws.render();
         },
+        getBlockTypes: () => {
+          if (!ws) return [];
+
+          const blockTypes: string[] = [];
+          const topBlocks = ws.getTopBlocks(true);
+
+          for (const topBlock of topBlocks) {
+            let block: Block | null = topBlock;
+            while (block) {
+              blockTypes.push(block.type);
+              block = block.getNextBlock();
+            }
+          }
+
+          return blockTypes;
+        },
+        clearWorkspace: () => {
+          ws?.clear();
+          try {
+            localStorage.removeItem(WORKSPACE_STORAGE_KEY);
+          } catch (err) {
+            console.warn('[BlocklyWorkspace] Failed to clear persisted workspace state:', err);
+          }
+        },
       });
 
       // Restore previous workspace state from localStorage
@@ -180,6 +221,11 @@ export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: Bloc
     return () => {
       disposed = true;
       if (ws && BlocklyMod) {
+        if (resizeWorkspace) {
+          window.removeEventListener('resize', resizeWorkspace);
+        }
+        resizeObserver?.disconnect();
+
         // Persist workspace state before disposing
         try {
           const dom = BlocklyMod.Xml.workspaceToDom(ws);
@@ -196,60 +242,13 @@ export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: Bloc
     };
   }, [commandToBlockType, onWorkspaceApi]);
 
-  /** Collect block types in order from the workspace and forward to parent. */
-  const handleSendToQueue = useCallback(() => {
-    const ws = workspaceRef.current;
-    if (!ws) return;
-
-    const blockTypes: string[] = [];
-    const topBlocks = ws.getTopBlocks(true);
-
-    for (const topBlock of topBlocks) {
-      let block: Block | null = topBlock;
-      while (block) {
-        blockTypes.push(block.type);
-        block = block.getNextBlock();
-      }
-    }
-
-    onSendToQueue(blockTypes);
-  }, [onSendToQueue]);
-
-  const handleClearWorkspace = useCallback(() => {
-    workspaceRef.current?.clear();
-    try {
-      localStorage.removeItem(WORKSPACE_STORAGE_KEY);
-    } catch (err) {
-      console.warn('[BlocklyWorkspace] Failed to clear persisted workspace state:', err);
-    }
-  }, []);
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {/* Blockly injection target */}
+    <div className={`flex min-h-0 flex-1 ${className}`}>
       <div
         ref={containerRef}
-        className="w-full min-h-[360px] flex-1 rounded border border-slate-600 overflow-hidden"
+        className="h-full w-full min-h-[260px] flex-1 overflow-hidden rounded border border-slate-600"
         aria-label="Block programming workspace"
       />
-
-      {/* Workspace action buttons */}
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={handleSendToQueue}
-          className="btn-green text-xs"
-          title="Add all blocks to the command queue"
-        >
-          ➕ Send to Queue
-        </button>
-        <button
-          onClick={handleClearWorkspace}
-          className="btn-secondary text-xs"
-          title="Remove all blocks from the workspace"
-        >
-          🗑 Clear Blocks
-        </button>
-      </div>
     </div>
   );
 }
