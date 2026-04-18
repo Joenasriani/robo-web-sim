@@ -51,6 +51,13 @@ const TOOLBOX = {
 };
 
 const WORKSPACE_STORAGE_KEY = 'blockly-workspace-state';
+const STARTER_BLOCK_TYPE = (() => {
+  const starterType = BLOCK_DEFINITIONS[0]?.type;
+  if (!starterType) {
+    throw new Error('No Blockly starter block type is configured');
+  }
+  return starterType;
+})();
 
 /** Register custom robot command blocks (idempotent). */
 function registerBlocks(Blockly: typeof import('blockly')) {
@@ -79,6 +86,13 @@ export interface BlocklyWorkspaceApi {
   appendCommandBlock: (command: CommandType) => void;
   getBlockTypes: () => string[];
   clearWorkspace: () => void;
+}
+
+function appendStarterBlock(workspace: WorkspaceSvg, blockType: string) {
+  const starterBlock = workspace.newBlock(blockType);
+  starterBlock.initSvg();
+  starterBlock.render();
+  starterBlock.moveBy(24, 24);
 }
 
 /**
@@ -122,10 +136,11 @@ export default function BlocklyWorkspace({
     const container = containerRef.current;
 
     const getContainerLayoutMetrics = () => {
-      const parent = container.parentElement;
-      const height = container.clientHeight > 0 ? container.clientHeight : parent?.clientHeight ?? 0;
-      const width = container.clientWidth > 0 ? container.clientWidth : parent?.clientWidth ?? 0;
-      return { height, width };
+      const rect = container.getBoundingClientRect();
+      return {
+        height: rect.height,
+        width: rect.width,
+      };
     };
 
     const isContainerReady = () => {
@@ -158,7 +173,9 @@ export default function BlocklyWorkspace({
         if (liveWorkspace) {
           const maybeResizableWorkspace = liveWorkspace as WorkspaceSvg & { resize?: () => void };
           maybeResizableWorkspace.resize?.();
+          liveWorkspace.resizeContents();
           mod.svgResize(liveWorkspace);
+          liveWorkspace.render();
         }
         resizeFrame = null;
       });
@@ -177,11 +194,14 @@ export default function BlocklyWorkspace({
 
         BlocklyMod = mod;
         registerBlocks(mod);
-        disposeWorkspace();
-        const { height } = getContainerLayoutMetrics();
-        if (container.clientHeight <= 0 && height > 0) {
-          container.style.height = `${height}px`;
+        if (
+          TOOLBOX.kind !== 'flyoutToolbox'
+          || !Array.isArray(TOOLBOX.contents)
+          || TOOLBOX.contents.length === 0
+        ) {
+          throw new Error('Invalid Blockly toolbox configuration');
         }
+        disposeWorkspace();
         container.replaceChildren();
 
         const ws = mod.inject(container, {
@@ -192,6 +212,9 @@ export default function BlocklyWorkspace({
           toolboxPosition: 'start',
           move: { scrollbars: true, drag: true, wheel: true },
         });
+        if (!ws) {
+          throw new Error('Blockly.inject returned a null workspace');
+        }
         workspaceRef.current = ws;
         onWorkspaceReadyChange?.(true);
 
@@ -261,18 +284,29 @@ export default function BlocklyWorkspace({
         });
 
         // Restore previous workspace state from localStorage
+        let restoredWorkspace = false;
         try {
           const saved = localStorage.getItem(WORKSPACE_STORAGE_KEY);
           if (saved) {
             const dom = mod.utils.xml.textToDom(saved);
             mod.Xml.domToWorkspace(dom, ws);
+            restoredWorkspace = true;
           }
         } catch (err) {
           // Warn on restoration failure — could indicate corrupted or incompatible state
           console.warn('[BlocklyWorkspace] Failed to restore workspace state:', err);
         }
 
+        try {
+          if (!restoredWorkspace && ws.getAllBlocks(false).length === 0) {
+            appendStarterBlock(ws, STARTER_BLOCK_TYPE);
+          }
+        } catch (err) {
+          console.warn('[BlocklyWorkspace] Failed to inspect starter block state:', err);
+        }
+
         resizeWorkspace();
+        requestAnimationFrame(() => resizeWorkspace());
       } catch (err) {
         console.warn('[BlocklyWorkspace] Failed to initialize workspace:', err);
         onWorkspaceReadyChange?.(false);
