@@ -96,7 +96,9 @@ export default function BlocklyWorkspace({ onSendToQueue, onWorkspaceApi }: Bloc
       case 'left': return 'robot_turn_left';
       case 'right': return 'robot_turn_right';
       case 'wait': return 'robot_wait';
-      default: return 'robot_wait';
+      default:
+        console.warn('[BlocklyWorkspace] Unsupported command type:', command);
+        return 'robot_wait';
     }
   }, []);
 
