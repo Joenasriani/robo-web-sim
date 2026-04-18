@@ -225,6 +225,13 @@ describe('BlocklyWorkspace lifecycle', () => {
     expect(mockBlocklyModule.inject).not.toHaveBeenCalled();
 
     element.style.display = 'block';
+    element.style.visibility = 'hidden';
+    triggerResizeObservers();
+    await flushMicrotasks();
+    expect(mockBlocklyModule.inject).not.toHaveBeenCalled();
+
+    element.style.visibility = 'visible';
+    element.style.display = 'block';
     triggerResizeObservers();
     await flushMicrotasks();
     expect(mockBlocklyModule.inject).toHaveBeenCalledTimes(1);

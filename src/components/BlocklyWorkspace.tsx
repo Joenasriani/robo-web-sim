@@ -50,6 +50,17 @@ const TOOLBOX = {
   contents: BLOCK_DEFINITIONS.map((def) => ({ kind: 'block', type: def.type })),
 };
 
+function isValidToolboxConfig(Blockly: typeof import('blockly')) {
+  if (TOOLBOX.kind !== 'flyoutToolbox') return false;
+  if (!Array.isArray(TOOLBOX.contents) || TOOLBOX.contents.length === 0) return false;
+
+  return TOOLBOX.contents.every((item) => (
+    item.kind === 'block'
+    && typeof item.type === 'string'
+    && Boolean(Blockly.Blocks[item.type])
+  ));
+}
+
 const WORKSPACE_STORAGE_KEY = 'blockly-workspace-state';
 const STARTER_BLOCK_TYPE = (() => {
   const starterType = BLOCK_DEFINITIONS[0]?.type;
@@ -203,7 +214,7 @@ export default function BlocklyWorkspace({
     const tryInitWorkspace = async () => {
       if (disposed || initializing || workspaceRef.current) return;
 
-      const currentAttempt = ++initAttempt;
+      const thisAttempt = ++initAttempt;
       const { width, height } = getContainerLayoutMetrics();
       console.info('[BlocklyWorkspace] Container size before init:', { width, height });
       if (width <= 0 || height <= 0) {
@@ -220,7 +231,7 @@ export default function BlocklyWorkspace({
 
       try {
         const mod = BlocklyMod ?? await import('blockly');
-        if (disposed || currentAttempt !== initAttempt || !isContainerReady()) {
+        if (disposed || thisAttempt !== initAttempt || !isContainerReady()) {
           initializing = false;
           return;
         }
@@ -231,12 +242,7 @@ export default function BlocklyWorkspace({
         const registeredTypes = BLOCK_DEFINITIONS.filter((def) => Boolean(mod.Blocks[def.type])).map((def) => def.type);
         console.info('[BlocklyWorkspace] Registered block definitions:', registeredTypes);
 
-        if (
-          TOOLBOX.kind !== 'flyoutToolbox'
-          || !Array.isArray(TOOLBOX.contents)
-          || TOOLBOX.contents.length === 0
-          || TOOLBOX.contents.some((item) => item.kind !== 'block' || typeof item.type !== 'string' || !mod.Blocks[item.type])
-        ) {
+        if (!isValidToolboxConfig(mod)) {
           throw new Error('Invalid Blockly toolbox configuration');
         }
 
