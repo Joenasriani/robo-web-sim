@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
 import { convertBlockTypesToCommands } from '@/sim/blocklyConverter';
 import { CommandType } from '@/sim/commandExecution';
-import BlocklyWorkspace, { ROBOT_BLOCK_PALETTE, type BlocklyWorkspaceApi } from './BlocklyWorkspace';
+import BlocklyWorkspace, { type BlocklyWorkspaceApi, BLOCK_DEFINITIONS } from './BlocklyWorkspace';
 
 interface BlocklyPanelProps {
   showHeader?: boolean;
@@ -12,186 +12,163 @@ interface BlocklyPanelProps {
   prioritizeWorkspace?: boolean;
 }
 
-const QUICK_ADD_BUTTONS: { type: CommandType; label: string; icon: string }[] = [
-  { type: 'forward', label: 'Forward', icon: '↑' },
-  { type: 'backward', label: 'Backward', icon: '↓' },
-  { type: 'left', label: 'Left', icon: '←' },
-  { type: 'right', label: 'Right', icon: '→' },
-  { type: 'wait', label: 'Wait', icon: '⏸' },
-];
+const BLOCK_TYPE_TO_COMMAND: Record<string, CommandType> = {
+  robot_forward:    'forward',
+  robot_backward:   'backward',
+  robot_turn_left:  'left',
+  robot_turn_right: 'right',
+  robot_wait:       'wait',
+};
 
-/**
- * Collapsible panel that exposes a Blockly visual programming workspace.
- * When the user clicks "Send to Queue", the blocks are converted to robot
- * commands and appended to the existing command queue.
- */
+const BLOCK_ICON: Record<string, string> = {
+  robot_forward: '↑', robot_backward: '↓',
+  robot_turn_left: '↺', robot_turn_right: '↻', robot_wait: '⏸',
+};
+
+const BLOCK_COLOR: Record<string, string> = {
+  robot_forward:    'bg-emerald-800/70 hover:bg-emerald-700/80 border-emerald-600/50 text-emerald-200',
+  robot_backward:   'bg-sky-800/70 hover:bg-sky-700/80 border-sky-600/50 text-sky-200',
+  robot_turn_left:  'bg-violet-800/70 hover:bg-violet-700/80 border-violet-600/50 text-violet-200',
+  robot_turn_right: 'bg-violet-800/70 hover:bg-violet-700/80 border-violet-600/50 text-violet-200',
+  robot_wait:       'bg-amber-800/70 hover:bg-amber-700/80 border-amber-600/50 text-amber-200',
+};
+
 export default function BlocklyPanel({
   showHeader = true,
   className = '',
   prioritizeWorkspace = false,
 }: BlocklyPanelProps) {
-  const addCommand  = useSimulatorStore((s) => s.addCommand);
-  const isRunning   = useSimulatorStore((s) => s.robot.isRunningQueue);
+  const addCommand = useSimulatorStore((s) => s.addCommand);
+  const isRunning  = useSimulatorStore((s) => s.robot.isRunningQueue);
 
-  const [workspaceApi, setWorkspaceApi] = useState<BlocklyWorkspaceApi | null>(null);
+  const [workspaceApi, setWorkspaceApi]         = useState<BlocklyWorkspaceApi | null>(null);
   const [isWorkspaceReady, setIsWorkspaceReady] = useState(false);
-  const [feedback, setFeedback]   = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [feedback, setFeedback]                 = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  const showFeedback = useCallback((type: 'success' | 'error', msg: string) => {
+    setFeedback({ type, msg });
+  }, []);
 
   const handleSendToQueue = useCallback(() => {
-      const blockTypes = workspaceApi?.getBlockTypes() ?? [];
-      setFeedback(null);
+    const blockTypes = workspaceApi?.getBlockTypes() ?? [];
+    setFeedback(null);
+    if (blockTypes.length === 0) {
+      showFeedback('error', 'Workspace is empty — drag some blocks first.');
+      return;
+    }
+    const { commands, errors } = convertBlockTypesToCommands(blockTypes);
+    if (errors.length > 0) {
+      showFeedback('error', `Unsupported blocks: ${errors.join(', ')}`);
+      return;
+    }
+    if (commands.length === 0) {
+      showFeedback('error', 'No valid commands were generated.');
+      return;
+    }
+    for (const cmd of commands) addCommand(cmd);
+    showFeedback('success', `Added ${commands.length} command${commands.length !== 1 ? 's' : ''} to queue.`);
+  }, [addCommand, workspaceApi, showFeedback]);
 
-      if (blockTypes.length === 0) {
-        setFeedback({ type: 'error', msg: 'Workspace is empty — drag some blocks first.' });
-        return;
-      }
-
-      const { commands, errors } = convertBlockTypesToCommands(blockTypes);
-
-      if (errors.length > 0) {
-        setFeedback({ type: 'error', msg: `Unsupported blocks found: ${errors.join(', ')}` });
-        return;
-      }
-
-      if (commands.length === 0) {
-        setFeedback({ type: 'error', msg: 'No valid commands were generated.' });
-        return;
-      }
-
-      for (const cmd of commands) {
-        addCommand(cmd);
-      }
-
-      setFeedback({
-        type: 'success',
-        msg: `Added ${commands.length} command${commands.length !== 1 ? 's' : ''} to the queue.`,
-      });
-    }, [addCommand, workspaceApi]);
-
-  const handleQuickAdd = useCallback((command: CommandType) => {
-    if (isRunning) return;
-    addCommand(command);
-    workspaceApi?.appendCommandBlock(command);
-    setFeedback({ type: 'success', msg: `Added ${command} to queue.` });
-  }, [addCommand, isRunning, workspaceApi]);
+  const handleQuickAdd = useCallback((blockType: string) => {
+    if (isRunning || !isWorkspaceReady) return;
+    const commandType = BLOCK_TYPE_TO_COMMAND[blockType];
+    if (!commandType) return;
+    addCommand(commandType);
+    workspaceApi?.appendCommandBlock(commandType);
+    showFeedback('success', `Added ${commandType} to workspace & queue.`);
+  }, [addCommand, isRunning, isWorkspaceReady, workspaceApi, showFeedback]);
 
   const handleClearBlocks = useCallback(() => {
     workspaceApi?.clearWorkspace();
-    setFeedback({ type: 'success', msg: 'Cleared all blocks.' });
-  }, [workspaceApi]);
+    showFeedback('success', 'Cleared all blocks.');
+  }, [workspaceApi, showFeedback]);
 
   useEffect(() => {
     if (!feedback) return;
-    const timeout = setTimeout(() => setFeedback(null), 1800);
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => setFeedback(null), 2200);
+    return () => clearTimeout(t);
   }, [feedback]);
 
-  const workspaceInitializing = !isWorkspaceReady && !isRunning;
-  const showDebugPanel = useMemo(() => {
-    if (process.env.NODE_ENV === 'production' || typeof window === 'undefined') {
-      return false;
-    }
-    const debugParam = new URLSearchParams(window.location.search).get('blocklyDebug');
-    return debugParam === '1' || debugParam === 'true';
-  }, []);
-
   return (
-    <div className={`flex h-full min-h-0 flex-col rounded-lg border border-slate-700 bg-slate-900/40 ${prioritizeWorkspace ? 'p-2.5' : 'p-4'} ${className}`}>
-      <div className="flex items-center justify-between">
-        {showHeader ? (
-          <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-300">
-            🧩 Block Programming
-          </h3>
-        ) : (
-          <div />
-        )}
-      </div>
+    <div className={`flex h-full min-h-0 flex-col rounded-lg border border-slate-700 bg-slate-900/40 ${prioritizeWorkspace ? 'p-2.5' : 'p-4'} ${className}`}>  
+      {showHeader && (
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-300 mb-3">
+          🧩 Block Programming
+        </h3>
+      )}
 
-      <div className={`mt-3 flex min-h-0 flex-1 flex-col gap-3 ${prioritizeWorkspace ? 'pb-1' : ''}`}>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {QUICK_ADD_BUTTONS.map((btn) => (
-            <button
-              key={btn.type}
-              onClick={() => handleQuickAdd(btn.type)}
-              disabled={isRunning || !isWorkspaceReady}
-              className="btn-small"
-              title={
-                !isWorkspaceReady
-                  ? 'Block editor is initializing'
-                  : isRunning
-                    ? 'Stop the queue before adding commands'
-                    : `Quick add ${btn.label} and mirror it in blocks`
-              }
-            >
-              {btn.icon} {btn.label}
-            </button>
-          ))}
-        </div>
-        {workspaceInitializing && (
-          <p className="rounded border border-slate-700 bg-slate-900/70 px-2 py-1.5 text-xs text-slate-300">
-            Quick Add is disabled until the block editor finishes initializing.
-          </p>
-        )}
+      <div className={`flex min-h-0 flex-1 flex-col gap-3 ${prioritizeWorkspace ? 'pb-1' : ''}`}>  
 
+        {/* Single compact 5-column quick-add palette */}
         <div>
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Block Palette
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Quick-Add</p>
+          <div className="grid grid-cols-5 gap-1.5">
+            {BLOCK_DEFINITIONS.map((def) => {
+              const cmd = BLOCK_TYPE_TO_COMMAND[def.type];
+              const label = cmd
+                ? cmd.charAt(0).toUpperCase() + cmd.slice(1)
+                : def.type.replace('robot_', '');
+              return (
+                <button
+                  key={def.type}
+                  onClick={() => handleQuickAdd(def.type)}
+                  disabled={isRunning || !isWorkspaceReady}
+                  title={
+                    !isWorkspaceReady ? 'Block editor is loading…'
+                    : isRunning ? 'Stop the queue first'
+                    : `Add "${label}" to workspace & queue`
+                  }
+                  className={`flex flex-col items-center gap-0.5 rounded border px-1 py-1.5 text-center text-[10px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 touch-manipulation select-none ${BLOCK_COLOR[def.type] ?? 'bg-slate-700/70 border-slate-500/50 text-slate-200'}`}
+                >
+                  <span className="text-sm leading-none">{BLOCK_ICON[def.type] ?? '🧩'}</span>
+                  <span className="text-[9px]">{label}</span>
+                </button>
+              );
+            })}
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {ROBOT_BLOCK_PALETTE.map((block) => (
-              <button
-                key={block.type}
-                onClick={() => workspaceApi?.appendBlockType(block.type)}
-                disabled={isRunning || !isWorkspaceReady}
-                className="btn-small"
-                title={
-                  !isWorkspaceReady
-                    ? 'Block editor is initializing'
-                    : isRunning
-                      ? 'Stop the queue before editing blocks'
-                      : `Add ${block.label} block`
-                }
-              >
-                {block.icon} {block.label}
-              </button>
-            ))}
-          </div>
+          <p className="mt-1 text-[10px] text-slate-600 italic">
+            Or drag from the toolbox on the left of the workspace below.
+          </p>
         </div>
 
+        {/* Blockly Workspace */}
         {isRunning ? (
           <p className="rounded bg-yellow-950/40 px-2 py-1.5 text-xs text-yellow-400">
             ⚠ Stop the queue before editing blocks.
           </p>
         ) : (
-          <div className={`relative flex min-h-0 flex-1 items-stretch overflow-hidden ${prioritizeWorkspace ? 'h-[360px] min-h-[360px]' : 'min-h-[320px]'}`}>
+          <div className={`relative flex min-h-0 flex-1 items-stretch overflow-hidden ${prioritizeWorkspace ? 'h-[360px] min-h-[360px]' : 'min-h-[320px]'}`}>  
             {!isWorkspaceReady && (
-              <div className="absolute z-10 m-2 rounded border border-slate-700 bg-slate-900/90 px-2 py-1.5 text-[11px] text-slate-400">
-                Initializing Blockly…
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded border border-slate-700 bg-slate-900/80">
+                <div className="flex flex-col items-center gap-2 text-slate-400">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-600 border-t-blue-400" />
+                  <span className="text-xs">Loading block editor…</span>
+                </div>
               </div>
             )}
             <BlocklyWorkspace
               onWorkspaceApi={setWorkspaceApi}
               onWorkspaceReadyChange={setIsWorkspaceReady}
               className={prioritizeWorkspace ? 'rounded border border-slate-700 bg-slate-900' : ''}
-              showDebugPanel={showDebugPanel}
             />
           </div>
         )}
 
+        {/* Action buttons */}
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={handleSendToQueue}
             className="btn-green text-xs"
-            title="Add all blocks to the command queue"
             disabled={!isWorkspaceReady || isRunning}
+            title="Convert all workspace blocks to commands and add to queue"
           >
             ➕ Send to Queue
           </button>
           <button
             onClick={handleClearBlocks}
             className="btn-secondary text-xs"
-            title="Remove all blocks from the workspace"
             disabled={!isWorkspaceReady || isRunning}
+            title="Remove all blocks from the workspace"
           >
             🗑 Clear Blocks
           </button>
@@ -199,11 +176,7 @@ export default function BlocklyPanel({
 
         {feedback && (
           <p
-            className={`shrink-0 rounded px-2 py-1.5 text-xs ${
-              feedback.type === 'success'
-                ? 'bg-green-950/40 text-green-300'
-                : 'bg-red-950/40 text-red-300'
-            }`}
+            className={`shrink-0 rounded px-2 py-1.5 text-xs ${feedback.type === 'success' ? 'bg-green-950/40 text-green-300' : 'bg-red-950/40 text-red-300'}`}
             role="status"
           >
             {feedback.msg}
