@@ -216,7 +216,7 @@ export default function SimulatorPage() {
               <div className="flex min-h-full flex-col gap-4">
                 {workspaceMode === 'build' && (
                   <>
-                    <BlocklyPanel className="h-full min-h-0 flex-1 overflow-hidden" prioritizeWorkspace />
+                    <BlocklyPanel className="flex-1" prioritizeWorkspace />
                     <div>
                       <CommandQueue />
                     </div>
