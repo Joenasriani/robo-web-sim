@@ -1,17 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import RobotControls from '@/components/RobotControls';
 import ScenarioSelector from '@/components/ScenarioSelector';
 import LessonsSidebar from '@/components/LessonsSidebar';
 import CommandQueue from '@/components/CommandQueue';
 import TelemetryPanel from '@/components/TelemetryPanel';
 import EventLog from '@/components/EventLog';
+import ArenaEditor from '@/components/ArenaEditor';
 import ModelLibrary from '@/components/ModelLibrary';
 import SavedScenes from '@/components/SavedScenes';
 import BlocklyPanel from '@/components/BlocklyPanel';
+import { useSimulatorStore } from '@/sim/robotController';
 
-type Tab = 'scenarios' | 'models' | 'scenes' | 'blocks' | 'info';
+type Tab = 'scenarios' | 'blocks' | 'info';
 
 interface TabDef {
   id: Tab;
@@ -21,14 +23,17 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: 'scenarios', label: 'Scenarios', icon: '🗺️' },
-  { id: 'models',    label: 'Assets',    icon: '📦' },
-  { id: 'scenes',    label: 'Scenes',    icon: '💾' },
   { id: 'blocks',    label: 'Blocks',    icon: '🧩' },
   { id: 'info',      label: 'Info',      icon: '📊' },
 ];
 
 export default function MobileTabPanel() {
+  const isEditMode = useSimulatorStore((s) => s.isEditMode);
   const [activeTab, setActiveTab] = useState<Tab>('blocks');
+
+  useEffect(() => {
+    if (isEditMode) setActiveTab('scenarios');
+  }, [isEditMode]);
 
   return (
     <div className="lg:hidden flex flex-col shrink-0">
@@ -36,19 +41,24 @@ export default function MobileTabPanel() {
       <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[45vh] p-3">
         {activeTab === 'scenarios' && (
           <div className="flex flex-col gap-4">
-            <ScenarioSelector />
-            <hr className="border-slate-700" />
-            <LessonsSidebar />
-          </div>
-        )}
-        {activeTab === 'models' && (
-          <div className="flex flex-col gap-4">
-            <ModelLibrary />
-          </div>
-        )}
-        {activeTab === 'scenes' && (
-          <div className="flex flex-col gap-4">
-            <SavedScenes />
+            {isEditMode ? (
+              <>
+                <ArenaEditor />
+                <hr className="border-slate-700" />
+                <ModelLibrary />
+                <hr className="border-slate-700" />
+                <SavedScenes />
+              </>
+            ) : (
+              <>
+                <ScenarioSelector />
+                <hr className="border-slate-700" />
+                <LessonsSidebar />
+                <p className="text-[10px] text-slate-500 leading-snug">
+                  Switch to Edit Arena (top center tab) to access Assets and Saved Scenes.
+                </p>
+              </>
+            )}
           </div>
         )}
         {activeTab === 'blocks' && (
