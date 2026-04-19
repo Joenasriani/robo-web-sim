@@ -210,15 +210,17 @@ export default function ModelLibrary() {
       </div>
 
       {/* Model cards */}
-      {visibleModels.length === 0 ? (
-        <p className="text-zinc-500 text-xs py-4 text-center">No items yet — coming in a future update.</p>
-      ) : (
-        <div
-          role="tabpanel"
-          aria-label={`${activeCategory} models`}
-          className="flex flex-col gap-1.5"
-        >
-          {visibleModels.map((model) => (
+      <div
+        role="tabpanel"
+        aria-label={`${activeCategory} models`}
+        className="flex flex-col gap-1.5"
+      >
+        {visibleModels.length === 0 ? (
+          <p className="text-xs text-slate-500 italic py-2 text-center">
+            No models in this category yet.
+          </p>
+        ) : (
+          visibleModels.map((model) => (
             <ModelCard
               key={model.id}
               model={model}
@@ -226,9 +228,9 @@ export default function ModelLibrary() {
               selected={placementTool?.modelId === model.id}
               editModeEnabled={isEditMode}
             />
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
       {/* Attribution footer */}
       <p className="text-[9px] text-slate-600 leading-snug mt-1">

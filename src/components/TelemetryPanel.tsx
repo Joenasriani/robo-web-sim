@@ -16,15 +16,15 @@ const SIM_STATE_LABELS: Record<string, string> = {
   idle: 'Idle',
   running: 'Running',
   paused: 'Paused',
-  completed: 'Stopped',
-  blocked: 'Stopped',
+  completed: 'Completed',
+  blocked: 'Blocked',
 };
 
 const SIM_STATE_COLORS: Record<string, string> = {
-  idle: 'text-zinc-400',
+  idle: 'text-slate-400',
   running: 'text-green-400',
   paused: 'text-yellow-400',
-  completed: 'text-red-400',
+  completed: 'text-green-300',
   blocked: 'text-red-400',
 };
 
@@ -56,7 +56,6 @@ export default function TelemetryPanel({ showHeader = true }: TelemetryPanelProp
   const activeScenarioId = useSimulatorStore((s) => s.activeScenarioId);
 
   const currentCmd = currentCommandIndex !== null ? commandQueue[currentCommandIndex] : null;
-  const activeLessonNumber = activeLesson ? Number(activeLesson.replace('lesson-', '')) : null;
   const remaining =
     currentCommandIndex !== null
       ? commandQueue.length - currentCommandIndex - 1
@@ -83,7 +82,7 @@ export default function TelemetryPanel({ showHeader = true }: TelemetryPanelProp
         />
         <TelRow
           label="Mode"
-          value={isFreePlay ? '🎮 Free Play' : `🎓 Lesson ${activeLessonNumber ?? ''}`.trim()}
+          value={isFreePlay ? 'Free Play' : 'Lesson'}
           color={isFreePlay ? 'text-blue-400' : 'text-yellow-400'}
         />
         {isFreePlay && currentScenario && (
@@ -122,13 +121,13 @@ export default function TelemetryPanel({ showHeader = true }: TelemetryPanelProp
           }
         />
         <TelRow
-          label="Left"
-          value={robot.sensors.leftObstacle ? '⚠ Alert' : '✓ Clear'}
+          label="Left ⚠"
+          value={robot.sensors.leftObstacle ? '⚠ Warn' : 'Clear'}
           color={robot.sensors.leftObstacle ? 'text-yellow-400' : 'text-slate-400'}
         />
         <TelRow
-          label="Right"
-          value={robot.sensors.rightObstacle ? '⚠ Alert' : '✓ Clear'}
+          label="Right ⚠"
+          value={robot.sensors.rightObstacle ? '⚠ Warn' : 'Clear'}
           color={robot.sensors.rightObstacle ? 'text-yellow-400' : 'text-slate-400'}
         />
         <TelRow label="Target Dist" value={`${robot.sensors.targetDistance.toFixed(1)} m`} />
