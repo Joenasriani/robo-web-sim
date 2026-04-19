@@ -24,7 +24,7 @@ function ModelCard({
   editModeEnabled,
 }: {
   model: ModelDefinition;
-  onSelectTool: (id: string) => void;
+  onSelectTool: (id: string) => boolean;
   selected: boolean;
   editModeEnabled: boolean;
 }) {
@@ -131,7 +131,9 @@ function ModelCard({
 
           {/* Place button */}
           <button
-            onClick={() => { onSelectTool(model.id); setExpanded(false); }}
+            onClick={() => {
+              if (onSelectTool(model.id)) setExpanded(false);
+            }}
             disabled={!editModeEnabled}
             className="btn-secondary text-xs w-full"
             aria-label={`Select ${model.name} as placement tool`}

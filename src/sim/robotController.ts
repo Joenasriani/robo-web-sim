@@ -151,6 +151,8 @@ export interface SimulatorStore {
   placementPreviewPosition: [number, number, number] | null;
   /** Snapshot of the active scenario's default arena used to power "Reset Arena". */
   defaultArenaSnapshot: ArenaConfig | null;
+  /** True when viewport matches desktop layout (lg breakpoint and above). */
+  isDesktopLayout: boolean;
 
   // Robot controls
   moveForward: () => void;
@@ -199,6 +201,7 @@ export interface SimulatorStore {
 
   // Arena editor actions
   setEditMode: (active: boolean) => void;
+  setIsDesktopLayout: (isDesktopLayout: boolean) => void;
   selectEditObject: (type: 'obstacle' | 'target', id: string) => void;
   deselectEditObject: () => void;
   moveSelectedObject: (direction: 'north' | 'south' | 'east' | 'west') => void;
@@ -211,10 +214,10 @@ export interface SimulatorStore {
   addObstacle: () => void;
   resetArenaToDefault: () => void;
 
-  // Model library (free-play only)
+  // Model library
   /** Place a curated model from the library into the current free-play arena. */
   placeModelFromLibrary: (modelId: string) => void;
-  selectPlacementTool: (modelId: string) => void;
+  selectPlacementTool: (modelId: string) => boolean;
   clearPlacementTool: () => void;
   setPlacementPreviewPosition: (position: [number, number, number] | null) => void;
   placeSelectedModelAt: (position: [number, number, number]) => void;
@@ -396,6 +399,12 @@ function applyLessonStatusUpdate(
   return { lessonStatus, completedLessons };
 }
 
+function canUsePlacementTools(state: Pick<SimulatorStore, 'activeLesson' | 'isEditMode' | 'isDesktopLayout'>): boolean {
+  if (!state.isEditMode) return false;
+  if (state.activeLesson === null) return true;
+  return state.isDesktopLayout;
+}
+
 export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   robot: makeInitialRobot(),
   arena: DEFAULT_ARENA,
@@ -425,6 +434,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   placementTool: null,
   placementPreviewPosition: null,
   defaultArenaSnapshot: DEFAULT_ARENA,
+  isDesktopLayout: false,
 
   savedScenes: loadSavedScenesFromStorage(),
   savedPrograms: loadSavedProgramsFromStorage(),
@@ -920,7 +930,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   },
 
   // ---------------------------------------------------------------------------
-  // Arena editor actions (free-play only)
+  // Arena editor actions
   // ---------------------------------------------------------------------------
 
   setEditMode: (active) => {
@@ -934,6 +944,15 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
         placementPreviewPosition: null,
       });
     }
+  },
+
+  setIsDesktopLayout: (isDesktopLayout) => {
+    set((s) => ({
+      isDesktopLayout,
+      ...(!isDesktopLayout && s.activeLesson !== null
+        ? { placementTool: null, placementPreviewPosition: null }
+        : {}),
+    }));
   },
 
   selectEditObject: (type, id) => {
@@ -1183,15 +1202,15 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   },
 
   selectPlacementTool: (modelId) => {
-    const { activeLesson, isEditMode } = get();
-    if (activeLesson !== null || !isEditMode) return;
+    const state = get();
+    if (!canUsePlacementTools(state)) return false;
 
     const model = getModelById(modelId);
     if (!model) {
       set((s) => ({
         eventLog: [...s.eventLog, makeEvent(`⚠️ Unknown model: ${modelId}`, 'warning')].slice(-MAX_EVENT_LOG),
       }));
-      return;
+      return false;
     }
 
     set((s) => ({
@@ -1206,6 +1225,7 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
       selectedEditObject: null,
       eventLog: [...s.eventLog, makeEvent(`🎯 Placement tool selected: ${model.name}`, 'info')].slice(-MAX_EVENT_LOG),
     }));
+    return true;
   },
 
   clearPlacementTool: () => {
@@ -1219,8 +1239,8 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   },
 
   placeSelectedModelAt: (position) => {
-    const { activeLesson, isEditMode, arena, placementTool } = get();
-    if (activeLesson !== null || !isEditMode || !placementTool) return;
+    const { arena, placementTool, ...state } = get();
+    if (!canUsePlacementTools(state) || !placementTool) return;
 
     const half = arena.size / 2 - 0.6;
     const x = Math.max(-half, Math.min(half, position[0]));
