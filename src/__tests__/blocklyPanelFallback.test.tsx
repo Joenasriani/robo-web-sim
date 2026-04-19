@@ -44,7 +44,9 @@ jest.mock('@/components/BlocklyWorkspace', () => ({
         initError: 'inject timeout',
         lastInitStep: 'initialization failed',
       });
-      // run once on mount for a stable never-ready mock
+      // This mock intentionally emits a single failed lifecycle snapshot on mount.
+      // Re-running it on every render would create a feedback loop that doesn't model
+      // the real integration point for this test ("never became ready within timeout").
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return <div>MOCK_BLOCKLY_WORKSPACE</div>;

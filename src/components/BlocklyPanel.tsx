@@ -37,6 +37,8 @@ const BLOCK_COLOR: Record<string, string> = {
   robot_wait:       'bg-amber-800/70 hover:bg-amber-700/80 border-amber-600/50 text-amber-200',
 };
 const WORKSPACE_READY_TIMEOUT_MS = 5000;
+const PRIORITIZED_WORKSPACE_FRAME_CLASS = 'h-[460px] min-h-[420px] lg:h-[52vh] lg:min-h-[460px]';
+const DEFAULT_WORKSPACE_FRAME_CLASS = 'h-[360px] min-h-[320px] sm:h-[400px]';
 
 export default function BlocklyPanel({
   showHeader = true,
@@ -110,7 +112,7 @@ export default function BlocklyPanel({
     }
   }, []);
 
-  const handleWorkspaceReadyReason = useCallback((_: boolean, reason: string) => {
+  const handleWorkspaceReasonChange = useCallback((_ready: boolean, reason: string) => {
     setWorkspaceReadyReason(reason);
   }, []);
 
@@ -146,8 +148,8 @@ export default function BlocklyPanel({
   const hasWorkspaceInitFailure = !isWorkspaceReady && workspaceTimeoutElapsed;
   const shouldShowWorkspaceDebug = process.env.NODE_ENV !== 'production' && (isDebugQueryEnabled || hasWorkspaceInitFailure);
   const workspaceFrameClass = prioritizeWorkspace
-    ? 'h-[460px] min-h-[420px] lg:h-[52vh] lg:min-h-[460px]'
-    : 'h-[360px] min-h-[320px] sm:h-[400px]';
+    ? PRIORITIZED_WORKSPACE_FRAME_CLASS
+    : DEFAULT_WORKSPACE_FRAME_CLASS;
 
   const handleRetryWorkspace = useCallback(() => {
     setWorkspaceMountNonce((prev) => prev + 1);
@@ -241,7 +243,7 @@ export default function BlocklyPanel({
               key={workspaceMountNonce}
               onWorkspaceApi={setWorkspaceApi}
               onWorkspaceReadyChange={handleWorkspaceReadyChange}
-              onReadyChange={handleWorkspaceReadyReason}
+              onReadyChange={handleWorkspaceReasonChange}
               onError={handleWorkspaceError}
               onDiagnostics={handleWorkspaceDiagnostics}
               showDebugPanel={shouldShowWorkspaceDebug}

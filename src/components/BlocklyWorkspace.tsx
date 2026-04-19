@@ -483,7 +483,6 @@ export default function BlocklyWorkspace({
 
         resizeWorkspace();
         requestAnimationFrame(() => resizeWorkspace());
-        requestAnimationFrame(() => resizeWorkspace());
         syncBlockCount();
         updateDebugState({ lastInitStep: 'workspace rendered and resized' });
       } catch (err) {
@@ -529,16 +528,15 @@ export default function BlocklyWorkspace({
     window.addEventListener('focus', onWindowFocus);
     window.addEventListener('pageshow', onWindowFocus);
 
-    // Delay first init by a few frames so expanded panel dimensions are measurable.
-    requestAnimationFrame(() => {
-      void tryInitWorkspace();
+    const retryInitAcrossFrames = (remaining: number) => {
+      if (remaining <= 0 || disposed || workspaceRef.current) return;
       requestAnimationFrame(() => {
         void tryInitWorkspace();
-        requestAnimationFrame(() => {
-          void tryInitWorkspace();
-        });
+        retryInitAcrossFrames(remaining - 1);
       });
-    });
+    };
+    // Delay initial attempts across a few frames so tab/layout transitions settle.
+    retryInitAcrossFrames(3);
 
     const scheduleInitRetry = () => {
       if (disposed || workspaceRef.current) return;
