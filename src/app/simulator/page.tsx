@@ -78,16 +78,6 @@ const VALID_LESSON_IDS = [
   'lesson-5', 'lesson-6', 'lesson-7', 'lesson-8',
 ];
 
-function normalizeLessonParam(value: string | null): string | null {
-  if (!value) return null;
-  if (VALID_LESSON_IDS.includes(value)) return value;
-  const asIndex = Number(value);
-  if (Number.isInteger(asIndex) && asIndex >= 1 && asIndex <= VALID_LESSON_IDS.length) {
-    return `lesson-${asIndex}`;
-  }
-  return null;
-}
-
 function LessonDeepLink() {
   const searchParams = useSearchParams();
   const setActiveLesson = useSimulatorStore((s) => s.setActiveLesson);
@@ -96,8 +86,8 @@ function LessonDeepLink() {
   useEffect(() => {
     if (applied.current) return;
     applied.current = true;
-    const lessonId = normalizeLessonParam(searchParams.get('lesson'));
-    if (lessonId) {
+    const lessonId = searchParams.get('lesson');
+    if (lessonId && VALID_LESSON_IDS.includes(lessonId)) {
       setActiveLesson(lessonId);
     }
     // intentional: run once on mount only — query param is stable at page load
@@ -168,17 +158,17 @@ export default function SimulatorPage() {
           <div className="shrink-0 border-b border-slate-700 bg-slate-900/60">
             <CenterModeTabs isEditMode={isEditMode} simState={simState} onSetEditMode={setEditMode} />
           </div>
-          <main className="relative flex-1 min-h-[300px] min-w-0">
+          <main className="relative flex-1 min-h-0">
             <Arena3D />
             <SimFeedback />
             <EditModeBadge />
             {/* Touch-friendly edit controls overlay — mobile only, visible when object is selected */}
             <MobileEditOverlay />
             {/* Canvas interaction hint */}
-            <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden lg:block">
+            <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
               Drag to orbit • Scroll to zoom • Right-drag to pan
             </div>
-            <div className="absolute bottom-2 left-2 text-xs text-slate-600 pointer-events-none block lg:hidden">
+            <div className="absolute bottom-2 left-2 text-xs text-slate-600 pointer-events-none sm:hidden">
               Drag to orbit • Pinch to zoom
             </div>
           </main>
@@ -203,22 +193,22 @@ export default function SimulatorPage() {
           <div className="shrink-0 border-b border-slate-700 bg-slate-900/60">
             <CenterModeTabs isEditMode={isEditMode} simState={simState} onSetEditMode={setEditMode} />
           </div>
-          <main className="relative flex-1 min-h-[300px] min-w-0">
+          <main className="relative flex-1 min-h-0">
             <Arena3D />
             <SimFeedback />
             <EditModeBadge />
             <MobileEditOverlay />
-            <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden lg:block">
+            <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
               Drag to orbit • Scroll to zoom • Right-drag to pan
             </div>
-            <div className="absolute bottom-2 left-2 text-xs text-slate-600 pointer-events-none block lg:hidden">
+            <div className="absolute bottom-2 left-2 text-xs text-slate-600 pointer-events-none sm:hidden">
               Drag to orbit • Pinch to zoom
             </div>
           </main>
         </div>
 
         <aside data-testid="desktop-right-panel" className="h-full min-h-0 overflow-hidden border-l border-slate-700 bg-slate-800">
-          <div className="hidden h-full min-h-0 lg:flex lg:flex-col" data-testid="desktop-right-panel-content">
+          <div className="flex h-full min-h-0 flex-col" data-testid="desktop-right-panel-content">
             <section
               data-testid="right-dock-primary-workspace"
               className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4"

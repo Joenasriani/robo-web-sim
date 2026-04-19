@@ -9,15 +9,15 @@ const SIM_STATE_LABEL: Record<SimState, string> = {
   idle:      'Idle',
   running:   'Running',
   paused:    'Paused',
-  completed: 'Stopped',
-  blocked:   'Stopped',
+  completed: 'Completed',
+  blocked:   'Blocked',
 };
 
 const SIM_STATE_COLOR: Record<SimState, string> = {
-  idle:      'text-zinc-400',
+  idle:      'text-slate-400',
   running:   'text-green-400',
   paused:    'text-yellow-400',
-  completed: 'text-red-400',
+  completed: 'text-green-300',
   blocked:   'text-red-400',
 };
 
@@ -59,7 +59,6 @@ export default function CurrentContextPanel() {
   const lesson = !isFreePlay
     ? LESSONS.find((l) => l.id === activeLesson) ?? null
     : null;
-  const activeLessonNumber = activeLesson ? Number(activeLesson.replace('lesson-', '')) : null;
 
   return (
     <div className="bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 flex items-start justify-between gap-3 text-xs">
@@ -73,7 +72,7 @@ export default function CurrentContextPanel() {
                 : 'bg-yellow-900/50 text-yellow-300 border border-yellow-700'
             }`}
           >
-            {isFreePlay ? '🎮 Free Play' : `🎓 Lesson ${activeLessonNumber ?? ''}`.trim()}
+            {isFreePlay ? 'Free Play' : 'Lesson'}
           </span>
           {!isFreePlay && lesson && (
             <span

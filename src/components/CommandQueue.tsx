@@ -26,7 +26,7 @@ export default function CommandQueue() {
           <div className="flex flex-col items-center justify-center gap-1 py-3">
             <p className="text-xs text-slate-500">Queue is empty</p>
             <p className="text-[11px] text-slate-600 text-center leading-relaxed">
-              Add commands above, then use <span className="text-slate-500">▶ Run Queue</span> in the Controls panel to execute.
+              Add commands above, then use <span className="text-slate-500">▶ Play Queue</span> in the Controls panel to execute.
             </p>
           </div>
         ) : (
