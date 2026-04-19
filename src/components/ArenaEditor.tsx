@@ -11,10 +11,6 @@ export default function ArenaEditor() {
   const setEditMode              = useSimulatorStore((s) => s.setEditMode);
   const deselectEditObject       = useSimulatorStore((s) => s.deselectEditObject);
   const clearPlacementTool       = useSimulatorStore((s) => s.clearPlacementTool);
-  const moveSelectedObject       = useSimulatorStore((s) => s.moveSelectedObject);
-  const rotateSelectedObject     = useSimulatorStore((s) => s.rotateSelectedObject);
-  const deleteSelectedObstacle   = useSimulatorStore((s) => s.deleteSelectedObstacle);
-  const duplicateSelectedObstacle = useSimulatorStore((s) => s.duplicateSelectedObstacle);
   const addObstacle              = useSimulatorStore((s) => s.addObstacle);
   const resetArenaToDefault      = useSimulatorStore((s) => s.resetArenaToDefault);
 
@@ -42,9 +38,6 @@ export default function ArenaEditor() {
   }
 
   const hasSelection = selectedEditObject !== null;
-  const canDelete    = hasSelection && selectedEditObject?.type === 'obstacle';
-  const canRotate    = hasSelection && selectedEditObject?.type === 'obstacle';
-  const canDuplicate = hasSelection && selectedEditObject?.type === 'obstacle';
 
   return (
     <div className="flex flex-col gap-2">
@@ -78,7 +71,7 @@ export default function ArenaEditor() {
         <>
       {/* Edit mode hint */}
       <p className="text-[10px] text-slate-500 leading-snug">
-        Tap or click an obstacle or target in the 3D view to select it, then use the controls below.
+        Tap or click an obstacle or target in the 3D view to inspect it. Object transform controls are available in the Blocks tab.
       </p>
 
       {/* Selection indicator */}
@@ -113,64 +106,6 @@ export default function ArenaEditor() {
         </div>
       )}
 
-      {/* Directional movement */}
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[9px] text-slate-600 uppercase tracking-wide">Move selected</span>
-        <div className="grid grid-cols-3 gap-0.5 w-fit">
-          <div />
-          <button
-            onClick={() => moveSelectedObject('north')}
-            disabled={!hasSelection}
-            className="btn-small disabled:opacity-30 px-2"
-            title="Move north (–Z)"
-          >▲</button>
-          <div />
-          <button
-            onClick={() => moveSelectedObject('west')}
-            disabled={!hasSelection}
-            className="btn-small disabled:opacity-30 px-2"
-            title="Move west (–X)"
-          >◀</button>
-          <button
-            onClick={deselectEditObject}
-            disabled={!hasSelection}
-            className="btn-small disabled:opacity-30 px-1.5 text-[10px]"
-            title="Deselect"
-          >✕</button>
-          <button
-            onClick={() => moveSelectedObject('east')}
-            disabled={!hasSelection}
-            className="btn-small disabled:opacity-30 px-2"
-            title="Move east (+X)"
-          >▶</button>
-          <div />
-          <button
-            onClick={() => moveSelectedObject('south')}
-            disabled={!hasSelection}
-            className="btn-small disabled:opacity-30 px-2"
-            title="Move south (+Z)"
-          >▼</button>
-          <div />
-        </div>
-      </div>
-
-      {/* Rotation */}
-      <div className="flex items-center gap-1">
-        <span className="text-[9px] text-slate-600 uppercase tracking-wide flex-1">Rotate</span>
-        <button
-          onClick={() => rotateSelectedObject('ccw')}
-          disabled={!canRotate}
-          className="btn-small disabled:opacity-30 px-2"
-          title="Rotate 45° counter-clockwise"
-        >↺</button>
-        <button
-          onClick={() => rotateSelectedObject('cw')}
-          disabled={!canRotate}
-          className="btn-small disabled:opacity-30 px-2"
-          title="Rotate 45° clockwise"
-        >↻</button>
-      </div>
-
       {/* Action buttons */}
       <div className="flex flex-wrap gap-1">
         <button
@@ -179,22 +114,6 @@ export default function ArenaEditor() {
           title="Add a new obstacle to the arena"
         >
           ➕ Add Obstacle
-        </button>
-        <button
-          onClick={duplicateSelectedObstacle}
-          disabled={!canDuplicate}
-          className="btn-small disabled:opacity-30"
-          title={canDuplicate ? 'Duplicate selected obstacle' : 'Select an obstacle first'}
-        >
-          📋 Duplicate
-        </button>
-        <button
-          onClick={deleteSelectedObstacle}
-          disabled={!canDelete}
-          className="btn-small disabled:opacity-30"
-          title={canDelete ? 'Remove selected obstacle' : 'Select an obstacle first'}
-        >
-          🗑️ Delete
         </button>
         <button
           onClick={resetArenaToDefault}
