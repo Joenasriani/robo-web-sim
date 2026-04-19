@@ -38,7 +38,7 @@ export default function MobileEditOverlay() {
 
   return (
     <div
-      className="rounded-lg border border-amber-500/40 bg-slate-900/90 px-3 py-3"
+      className="rounded-lg border border-amber-500/40 bg-slate-900/90 p-3"
       role="region"
       aria-label="Object edit controls"
     >

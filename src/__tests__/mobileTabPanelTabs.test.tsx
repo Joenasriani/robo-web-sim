@@ -80,6 +80,25 @@ describe('MobileTabPanel tabs', () => {
     expect(container.textContent).not.toContain('MOBILE_CONTROLS');
   });
 
+  it('keeps scenarios tab unchanged in edit mode', () => {
+    mockStoreState.isEditMode = true;
+    act(() => {
+      root.render(<MobileTabPanel />);
+    });
+
+    const scenariosTab = container.querySelector('button[aria-label="Scenarios"]') as HTMLButtonElement;
+    expect(scenariosTab).not.toBeNull();
+    act(() => {
+      scenariosTab.click();
+    });
+
+    expect(container.textContent).toContain('MOBILE_SCENARIOS');
+    expect(container.textContent).not.toContain('MOBILE_ARENA_EDITOR');
+    expect(container.textContent).not.toContain('MOBILE_MODEL_LIBRARY');
+    expect(container.textContent).not.toContain('MOBILE_SAVED_SCENES');
+    expect(container.textContent).not.toContain('MOBILE_EDIT_CONTROLS');
+  });
+
   it('keeps info tab dedicated to telemetry and logs only', () => {
     act(() => {
       root.render(<MobileTabPanel />);
