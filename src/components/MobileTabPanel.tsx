@@ -7,11 +7,13 @@ import LessonsSidebar from '@/components/LessonsSidebar';
 import CommandQueue from '@/components/CommandQueue';
 import TelemetryPanel from '@/components/TelemetryPanel';
 import EventLog from '@/components/EventLog';
+import ArenaEditor from '@/components/ArenaEditor';
 import ModelLibrary from '@/components/ModelLibrary';
 import SavedScenes from '@/components/SavedScenes';
 import BlocklyPanel from '@/components/BlocklyPanel';
+import { useSimulatorStore } from '@/sim/robotController';
 
-type Tab = 'scenarios' | 'models' | 'scenes' | 'blocks' | 'info';
+type Tab = 'scenarios' | 'blocks' | 'info';
 
 interface TabDef {
   id: Tab;
@@ -21,37 +23,42 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: 'scenarios', label: 'Scenarios', icon: '🗺️' },
-  { id: 'models',    label: 'Assets',    icon: '📦' },
-  { id: 'scenes',    label: 'Scenes',    icon: '💾' },
   { id: 'blocks',    label: 'Blocks',    icon: '🧩' },
   { id: 'info',      label: 'Info',      icon: '📊' },
 ];
 
 export default function MobileTabPanel() {
+  const isEditMode = useSimulatorStore((s) => s.isEditMode);
   const [activeTab, setActiveTab] = useState<Tab>('blocks');
+  const effectiveTab: Tab = isEditMode && activeTab !== 'info' ? 'scenarios' : activeTab;
 
   return (
     <div className="lg:hidden flex flex-col shrink-0">
       {/* Persistent content panel — normal document flow below the 3D canvas */}
       <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[45vh] p-3">
-        {activeTab === 'scenarios' && (
+        {effectiveTab === 'scenarios' && (
           <div className="flex flex-col gap-4">
-            <ScenarioSelector />
-            <hr className="border-slate-700" />
-            <LessonsSidebar />
+            {isEditMode ? (
+              <>
+                <ArenaEditor />
+                <hr className="border-slate-700" />
+                <ModelLibrary />
+                <hr className="border-slate-700" />
+                <SavedScenes />
+              </>
+            ) : (
+              <>
+                <ScenarioSelector />
+                <hr className="border-slate-700" />
+                <LessonsSidebar />
+                <p className="text-xs text-slate-500 leading-snug">
+                  Switch to Edit Arena mode using the Simulate / Edit Arena toggle above to access Assets and Saved Scenes.
+                </p>
+              </>
+            )}
           </div>
         )}
-        {activeTab === 'models' && (
-          <div className="flex flex-col gap-4">
-            <ModelLibrary />
-          </div>
-        )}
-        {activeTab === 'scenes' && (
-          <div className="flex flex-col gap-4">
-            <SavedScenes />
-          </div>
-        )}
-        {activeTab === 'blocks' && (
+        {effectiveTab === 'blocks' && (
           <div className="flex flex-col gap-4">
             <BlocklyPanel />
             <hr className="border-slate-700" />
@@ -60,7 +67,7 @@ export default function MobileTabPanel() {
             <RobotControls showMovementControls={false} />
           </div>
         )}
-        {activeTab === 'info' && (
+        {effectiveTab === 'info' && (
           <div className="flex flex-col gap-4">
             <TelemetryPanel />
             <hr className="border-slate-700" />
@@ -79,10 +86,10 @@ export default function MobileTabPanel() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            aria-pressed={activeTab === tab.id}
+            aria-pressed={effectiveTab === tab.id}
             aria-label={tab.label}
             className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-xs font-medium transition-colors min-h-[52px] touch-manipulation ${
-              activeTab === tab.id
+              effectiveTab === tab.id
                 ? 'bg-slate-700 text-blue-400'
                 : 'text-slate-400 active:bg-slate-700 active:text-slate-200'
             }`}
