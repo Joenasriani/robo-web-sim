@@ -8,6 +8,7 @@ const mockStoreState = {
   isEditMode: false,
   simState: 'idle',
   setEditMode: jest.fn(),
+  setIsDesktopLayout: jest.fn(),
   clearPlacementTool: jest.fn(),
   deleteSelectedEditObject: jest.fn(),
 };
@@ -101,6 +102,7 @@ describe('Desktop right panel layout', () => {
     mockStoreState.isEditMode = false;
     mockStoreState.simState = 'idle';
     mockStoreState.setEditMode = jest.fn();
+    mockStoreState.setIsDesktopLayout = jest.fn();
     mockStoreState.clearPlacementTool = jest.fn();
     mockStoreState.deleteSelectedEditObject = jest.fn();
   });

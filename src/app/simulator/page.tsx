@@ -101,9 +101,24 @@ export default function SimulatorPage() {
   const isEditMode = useSimulatorStore((s) => s.isEditMode);
   const simState = useSimulatorStore((s) => s.simState);
   const setEditMode = useSimulatorStore((s) => s.setEditMode);
+  const setIsDesktopLayout = useSimulatorStore((s) => s.setIsDesktopLayout);
   const clearPlacementTool = useSimulatorStore((s) => s.clearPlacementTool);
   const deleteSelectedEditObject = useSimulatorStore((s) => s.deleteSelectedEditObject);
   const workspaceMode = useMemo(() => resolveWorkspaceMode(isEditMode, simState), [isEditMode, simState]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    const syncDesktopLayout = () => setIsDesktopLayout(mediaQuery.matches);
+    syncDesktopLayout();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncDesktopLayout);
+      return () => mediaQuery.removeEventListener('change', syncDesktopLayout);
+    }
+
+    mediaQuery.addListener(syncDesktopLayout);
+    return () => mediaQuery.removeListener(syncDesktopLayout);
+  }, [setIsDesktopLayout]);
 
   useEffect(() => {
     if (!isEditMode) return;

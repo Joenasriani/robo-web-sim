@@ -38,6 +38,7 @@ beforeEach(() => {
     isHydrated: false,
     commandQueue: [],
     simState: 'idle',
+    isDesktopLayout: false,
     placementTool: null,
     placementPreviewPosition: null,
     robot: {
@@ -385,6 +386,26 @@ describe('arena editor', () => {
     expect(useSimulatorStore.getState().placementTool?.modelId).toBe('ml-red-crate');
   });
 
+  it('selectPlacementTool works in lesson edit mode on desktop layout', () => {
+    useSimulatorStore.getState().setActiveLesson('lesson-1');
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().setIsDesktopLayout(true);
+
+    const selected = useSimulatorStore.getState().selectPlacementTool('ml-red-crate');
+    expect(selected).toBe(true);
+    expect(useSimulatorStore.getState().placementTool?.modelId).toBe('ml-red-crate');
+  });
+
+  it('selectPlacementTool is blocked in lesson edit mode on non-desktop layout', () => {
+    useSimulatorStore.getState().setActiveLesson('lesson-1');
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().setIsDesktopLayout(false);
+
+    const selected = useSimulatorStore.getState().selectPlacementTool('ml-red-crate');
+    expect(selected).toBe(false);
+    expect(useSimulatorStore.getState().placementTool).toBeNull();
+  });
+
   it('placeSelectedModelAt adds an obstacle when a placement tool is active', () => {
     useSimulatorStore.getState().setEditMode(true);
     const before = useSimulatorStore.getState().arena.obstacles.length;
@@ -394,6 +415,32 @@ describe('arena editor', () => {
     const state = useSimulatorStore.getState();
     expect(state.arena.obstacles.length).toBe(before + 1);
     expect(state.arena.obstacles.at(-1)?.modelId).toBe('ml-traffic-cone');
+  });
+
+  it('placeSelectedModelAt works in lesson edit mode on desktop layout', () => {
+    useSimulatorStore.getState().setActiveLesson('lesson-1');
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().setIsDesktopLayout(true);
+    useSimulatorStore.getState().selectPlacementTool('ml-traffic-cone');
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+
+    useSimulatorStore.getState().placeSelectedModelAt([1.2, 0.5, -2.3]);
+
+    const state = useSimulatorStore.getState();
+    expect(state.arena.obstacles.length).toBe(before + 1);
+    expect(state.arena.obstacles.at(-1)?.modelId).toBe('ml-traffic-cone');
+  });
+
+  it('placeSelectedModelAt is blocked in lesson edit mode on non-desktop layout', () => {
+    useSimulatorStore.getState().setActiveLesson('lesson-1');
+    useSimulatorStore.getState().setEditMode(true);
+    useSimulatorStore.getState().setIsDesktopLayout(false);
+    useSimulatorStore.getState().selectPlacementTool('ml-traffic-cone');
+    const before = useSimulatorStore.getState().arena.obstacles.length;
+
+    useSimulatorStore.getState().placeSelectedModelAt([1.2, 0.5, -2.3]);
+
+    expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before);
   });
 
   it('setEditMode(false) clears placement tool and preview', () => {
