@@ -19,6 +19,7 @@ jest.mock('@/components/EventLog', () => function EventLogMock() { return <div>M
 jest.mock('@/components/ArenaEditor', () => function ArenaEditorMock() { return <div>MOBILE_ARENA_EDITOR</div>; });
 jest.mock('@/components/ModelLibrary', () => function ModelLibraryMock() { return <div>MOBILE_MODEL_LIBRARY</div>; });
 jest.mock('@/components/SavedScenes', () => function SavedScenesMock() { return <div>MOBILE_SAVED_SCENES</div>; });
+jest.mock('@/components/MobileEditOverlay', () => function MobileEditOverlayMock() { return <div>MOBILE_EDIT_CONTROLS</div>; });
 jest.mock('@/components/BlocklyPanel', () => function BlocklyPanelMock() { return <div>MOBILE_BLOCKLY_PANEL</div>; });
 
 describe('MobileTabPanel tabs', () => {
@@ -116,6 +117,7 @@ describe('MobileTabPanel tabs', () => {
     expect(container.textContent).toContain('MOBILE_ARENA_EDITOR');
     expect(container.textContent).toContain('MOBILE_MODEL_LIBRARY');
     expect(container.textContent).toContain('MOBILE_SAVED_SCENES');
+    expect(container.textContent).toContain('MOBILE_EDIT_CONTROLS');
     expect(container.textContent).not.toContain('MOBILE_BLOCKLY_PANEL');
     expect(container.textContent).not.toContain('MOBILE_COMMAND_QUEUE');
     expect(container.textContent).not.toContain('MOBILE_CONTROLS');
@@ -152,6 +154,7 @@ describe('MobileTabPanel tabs', () => {
     expect(container.textContent).not.toContain('MOBILE_ARENA_EDITOR');
     expect(container.textContent).not.toContain('MOBILE_MODEL_LIBRARY');
     expect(container.textContent).not.toContain('MOBILE_SAVED_SCENES');
+    expect(container.textContent).not.toContain('MOBILE_EDIT_CONTROLS');
     expect(container.textContent).not.toContain('EDIT MODE: ON');
   });
 });
