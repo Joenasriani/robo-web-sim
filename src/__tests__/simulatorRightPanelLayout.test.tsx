@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 const mockStoreState = {
   addCommand: jest.fn(),
   robot: { isRunningQueue: false },
+  activeLesson: null as string | null,
   isEditMode: false,
   simState: 'idle',
   setEditMode: jest.fn(),
@@ -96,6 +97,7 @@ describe('Desktop right panel layout', () => {
   beforeEach(() => {
     mockStoreState.addCommand = jest.fn();
     mockStoreState.robot = { isRunningQueue: false };
+    mockStoreState.activeLesson = null;
     mockStoreState.isEditMode = false;
     mockStoreState.simState = 'idle';
     mockStoreState.setEditMode = jest.fn();
@@ -146,6 +148,16 @@ describe('Desktop right panel layout', () => {
     expect(html).not.toContain('RIGHT_COMMAND_QUEUE');
     expect(html).not.toContain('RIGHT_SIM_SETTINGS');
     expect(html).not.toContain('RIGHT_PLAY_PAUSE_STOP_CONTENT');
+  });
+
+  it('keeps model library visible in desktop edit mode even when a lesson is active', async () => {
+    mockStoreState.activeLesson = 'lesson-1';
+    mockStoreState.isEditMode = true;
+    const { default: SimulatorPage } = await import('@/app/simulator/page');
+    const html = renderToStaticMarkup(<SimulatorPage />);
+
+    expect(html).toContain('Assets / Props / Model Library');
+    expect(html).toContain('MODEL_LIBRARY');
   });
 
   it('renders run mode with controls first and expanded telemetry/event log', async () => {

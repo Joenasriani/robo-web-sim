@@ -163,8 +163,8 @@ export default function ModelLibrary() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [clearPlacementTool, isEditMode, placementTool]);
 
-  // Model library is only available in free-play mode
-  if (activeLesson !== null) return null;
+  // Model library is hidden during lessons unless the user is actively editing the arena
+  if (activeLesson !== null && !isEditMode) return null;
 
   const visibleModels = CURATED_MODELS.filter((m) => m.category === activeCategory);
 
