@@ -17,6 +17,7 @@ import MobileTabPanel from '@/components/MobileTabPanel';
 import OnboardingStrip from '@/components/OnboardingStrip';
 import EditModeBadge from '@/components/EditModeBadge';
 import ModelLibrary from '@/components/ModelLibrary';
+import MobileEditOverlay from '@/components/MobileEditOverlay';
 import BlocklyPanel from '@/components/BlocklyPanel';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import CommandQueue from '@/components/CommandQueue';
@@ -242,6 +243,10 @@ export default function SimulatorPage() {
 
                 {workspaceMode === 'edit' && (
                   <>
+                    <div className="rounded-lg border border-amber-700/50 bg-amber-900/20 p-3">
+                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-amber-300">Object Edit Controls</h3>
+                      <MobileEditOverlay />
+                    </div>
                     <div className="rounded-lg border border-slate-700 bg-slate-900/30 p-3">
                       <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-300">Assets / Props / Model Library</h3>
                       <ModelLibrary />
