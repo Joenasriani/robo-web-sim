@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import RobotControls from '@/components/RobotControls';
 import ScenarioSelector from '@/components/ScenarioSelector';
 import LessonsSidebar from '@/components/LessonsSidebar';
@@ -30,16 +30,13 @@ const TABS: TabDef[] = [
 export default function MobileTabPanel() {
   const isEditMode = useSimulatorStore((s) => s.isEditMode);
   const [activeTab, setActiveTab] = useState<Tab>('blocks');
-
-  useEffect(() => {
-    if (isEditMode) setActiveTab('scenarios');
-  }, [isEditMode]);
+  const effectiveTab: Tab = isEditMode && activeTab !== 'info' ? 'scenarios' : activeTab;
 
   return (
     <div className="lg:hidden flex flex-col shrink-0">
       {/* Persistent content panel — normal document flow below the 3D canvas */}
       <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[45vh] p-3">
-        {activeTab === 'scenarios' && (
+        {effectiveTab === 'scenarios' && (
           <div className="flex flex-col gap-4">
             {isEditMode ? (
               <>
@@ -61,7 +58,7 @@ export default function MobileTabPanel() {
             )}
           </div>
         )}
-        {activeTab === 'blocks' && (
+        {effectiveTab === 'blocks' && (
           <div className="flex flex-col gap-4">
             <BlocklyPanel />
             <hr className="border-slate-700" />
@@ -70,7 +67,7 @@ export default function MobileTabPanel() {
             <RobotControls showMovementControls={false} />
           </div>
         )}
-        {activeTab === 'info' && (
+        {effectiveTab === 'info' && (
           <div className="flex flex-col gap-4">
             <TelemetryPanel />
             <hr className="border-slate-700" />
@@ -89,10 +86,10 @@ export default function MobileTabPanel() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            aria-pressed={activeTab === tab.id}
+            aria-pressed={effectiveTab === tab.id}
             aria-label={tab.label}
             className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 text-xs font-medium transition-colors min-h-[52px] touch-manipulation ${
-              activeTab === tab.id
+              effectiveTab === tab.id
                 ? 'bg-slate-700 text-blue-400'
                 : 'text-slate-400 active:bg-slate-700 active:text-slate-200'
             }`}
