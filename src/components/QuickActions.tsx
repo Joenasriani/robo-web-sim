@@ -9,9 +9,11 @@ export default function QuickActions() {
   const restartLesson    = useSimulatorStore((s) => s.restartLesson);
   const replayFromStart  = useSimulatorStore((s) => s.replayFromStart);
   const commandQueue     = useSimulatorStore((s) => s.commandQueue);
+  const queueEverCompleted = useSimulatorStore((s) => s.queueEverCompleted);
 
   const isFreePlay = activeLesson === null;
   const hasQueue   = commandQueue.length > 0;
+  const canReplay = hasQueue && queueEverCompleted;
 
   if (isFreePlay) {
     return (
@@ -28,9 +30,17 @@ export default function QuickActions() {
           </button>
           <button
             onClick={replayFromStart}
-            disabled={!activeScenarioId || !hasQueue}
-            className="btn-small disabled:opacity-40"
-            title={!activeScenarioId ? 'No scenario selected' : !hasQueue ? 'Add commands to the queue first' : 'Reset robot to start pose and replay the queue'}
+            disabled={!activeScenarioId || !canReplay}
+            className="btn-small disabled:opacity-40 disabled:cursor-not-allowed"
+            title={
+              !activeScenarioId
+                ? 'No scenario selected'
+                : !hasQueue
+                ? 'Add commands to the queue first'
+                : !queueEverCompleted
+                ? 'Run the queue once to enable Replay.'
+                : 'Reset robot to start pose and replay the queue'
+            }
           >
             ↩ Replay
           </button>
@@ -43,9 +53,9 @@ export default function QuickActions() {
             🏠 Default
           </button>
         </div>
-        {!hasQueue && activeScenarioId && (
+        {!canReplay && activeScenarioId && (
           <p className="text-[10px] text-slate-600 italic mt-0.5">
-            Add commands to enable Replay.
+            Run the queue once to enable Replay.
           </p>
         )}
       </div>
@@ -66,16 +76,16 @@ export default function QuickActions() {
         </button>
         <button
           onClick={replayFromStart}
-          disabled={!activeLesson || !hasQueue}
-          className="btn-small disabled:opacity-40"
-          title={!hasQueue ? 'Add commands to the queue first' : 'Reset robot to lesson start pose and replay the queue'}
+          disabled={!activeLesson || !canReplay}
+          className="btn-small disabled:opacity-40 disabled:cursor-not-allowed"
+          title={!hasQueue ? 'Add commands to the queue first' : !queueEverCompleted ? 'Run the queue once to enable Replay.' : 'Reset robot to lesson start pose and replay the queue'}
         >
           ↩ Replay
         </button>
       </div>
-      {!hasQueue && activeLesson && (
+      {!canReplay && activeLesson && (
         <p className="text-[10px] text-slate-600 italic mt-0.5">
-          Add commands to enable Replay.
+          Run the queue once to enable Replay.
         </p>
       )}
     </div>

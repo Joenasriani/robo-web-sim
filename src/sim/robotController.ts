@@ -277,7 +277,8 @@ function feedbackForHealth(
   return { feedbackMessage: prevMessage, feedbackType: prevType, feedbackPriority: prevPriority };
 }
 
-const STORAGE_KEY = 'robo-web-sim-completed-lessons';
+const STORAGE_KEY = 'robo-web-sim:lesson-progress';
+const LEGACY_STORAGE_KEY = 'robo-web-sim-completed-lessons';
 
 // ---------------------------------------------------------------------------
 // Context persistence keys
@@ -302,7 +303,7 @@ function safeLocalSet(key: string, value: string | null) {
 function loadCompletedLessons(): string[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -312,6 +313,7 @@ function loadCompletedLessons(): string[] {
 function saveCompletedLessons(lessons: string[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(lessons));
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
 }
 
 /** Persist free-play context to localStorage. */
