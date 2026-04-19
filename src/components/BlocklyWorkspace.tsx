@@ -97,6 +97,9 @@ function registerBlocks(Blockly: typeof import('blockly')) {
 export interface BlocklyWorkspaceProps {
   onWorkspaceApi?: (api: BlocklyWorkspaceApi | null) => void;
   onWorkspaceReadyChange?: (ready: boolean) => void;
+  onReadyChange?: (ready: boolean, reason: string) => void;
+  onError?: (error: string | null) => void;
+  onDiagnostics?: (diagnostics: BlocklyWorkspaceDiagnostics) => void;
   className?: string;
   showDebugPanel?: boolean;
 }
@@ -106,6 +109,18 @@ export interface BlocklyWorkspaceApi {
   appendBlockType: (blockType: string) => void;
   getBlockTypes: () => string[];
   clearWorkspace: () => void;
+}
+
+export interface BlocklyWorkspaceDiagnostics {
+  initStarted: boolean;
+  mounted: boolean;
+  toolboxLoaded: boolean;
+  blockCount: number;
+  containerReadinessReason: string;
+  containerWidth: number;
+  containerHeight: number;
+  initError: string;
+  lastInitStep: string;
 }
 
 function appendStarterBlock(workspace: WorkspaceSvg, blockType: string) {
@@ -125,6 +140,9 @@ function appendStarterBlock(workspace: WorkspaceSvg, blockType: string) {
 export default function BlocklyWorkspace({
   onWorkspaceApi,
   onWorkspaceReadyChange,
+  onReadyChange,
+  onError,
+  onDiagnostics,
   className = '',
   showDebugPanel = false,
 }: BlocklyWorkspaceProps) {
@@ -139,6 +157,7 @@ export default function BlocklyWorkspace({
     containerWidth: 0,
     containerHeight: 0,
     initError: '',
+    lastInitStep: 'idle',
   });
 
   const updateDebugState = useCallback((next: Partial<typeof debugState>) => {
@@ -157,6 +176,10 @@ export default function BlocklyWorkspace({
         return 'robot_wait';
     }
   }, []);
+
+  useEffect(() => {
+    onDiagnostics?.(debugState);
+  }, [debugState, onDiagnostics]);
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -219,6 +242,7 @@ export default function BlocklyWorkspace({
       }
       onWorkspaceApi?.(null);
       onWorkspaceReadyChange?.(false);
+      onReadyChange?.(false, 'workspace disposed');
       updateDebugState({ mounted: false, toolboxLoaded: false, blockCount: 0 });
     };
 
@@ -251,27 +275,32 @@ export default function BlocklyWorkspace({
         containerReadinessReason: readiness.ready ? 'ready' : readiness.reason ?? 'not ready',
         containerWidth: readiness.width,
         containerHeight: readiness.height,
+        lastInitStep: 'container readiness evaluated',
       });
       console.info('[BlocklyWorkspace] Container readiness before init:', readiness);
       if (!readiness.ready) {
         console.info('[BlocklyWorkspace] Skipping init:', readiness.reason);
+        onReadyChange?.(false, readiness.reason ?? 'container not ready');
         return;
       }
 
       initializing = true;
-      updateDebugState({ initStarted: true });
+      updateDebugState({ initStarted: true, lastInitStep: 'initialization started' });
 
       try {
+        updateDebugState({ lastInitStep: 'importing blockly module' });
         const mod = BlocklyMod ?? await import('blockly');
         const postImportReadiness = getContainerReadiness();
         updateDebugState({
           containerReadinessReason: postImportReadiness.ready ? 'ready' : postImportReadiness.reason ?? 'not ready',
           containerWidth: postImportReadiness.width,
           containerHeight: postImportReadiness.height,
+          lastInitStep: 'post-import readiness check',
         });
         if (disposed || !postImportReadiness.ready) {
           if (!postImportReadiness.ready) {
             console.info('[BlocklyWorkspace] Skipping init after import:', postImportReadiness);
+            onReadyChange?.(false, postImportReadiness.reason ?? 'container not ready after import');
           }
           initializing = false;
           return;
@@ -279,6 +308,7 @@ export default function BlocklyWorkspace({
 
         BlocklyMod = mod;
         registerBlocks(mod);
+        updateDebugState({ lastInitStep: 'block definitions registered' });
 
         const registeredTypes = BLOCK_DEFINITIONS.filter((def) => Boolean(mod.Blocks[def.type])).map((def) => def.type);
         console.info('[BlocklyWorkspace] Registered block definitions:', registeredTypes);
@@ -296,6 +326,7 @@ export default function BlocklyWorkspace({
         container.replaceChildren();
 
         console.info('[BlocklyWorkspace] Blockly.inject start');
+        updateDebugState({ lastInitStep: 'calling Blockly.inject' });
         const ws = mod.inject(container, {
           toolbox: TOOLBOX,
           scrollbars: true,
@@ -330,6 +361,8 @@ export default function BlocklyWorkspace({
         }
 
         onWorkspaceReadyChange?.(true);
+        onReadyChange?.(true, 'workspace mounted');
+        onError?.(null);
         updateDebugState({ mounted: true, toolboxLoaded, initError: '' });
 
         const onWorkspaceChanged = () => {
@@ -450,12 +483,16 @@ export default function BlocklyWorkspace({
 
         resizeWorkspace();
         requestAnimationFrame(() => resizeWorkspace());
+        requestAnimationFrame(() => resizeWorkspace());
         syncBlockCount();
+        updateDebugState({ lastInitStep: 'workspace rendered and resized' });
       } catch (err) {
         console.warn('[BlocklyWorkspace] Failed to initialize workspace:', err);
         const message = err instanceof Error ? err.message : String(err);
-        updateDebugState({ initError: message });
+        updateDebugState({ initError: message, lastInitStep: 'initialization failed' });
         onWorkspaceReadyChange?.(false);
+        onReadyChange?.(false, message);
+        onError?.(message);
       } finally {
         initializing = false;
       }
@@ -480,10 +517,27 @@ export default function BlocklyWorkspace({
       void tryInitWorkspace();
     };
     window.addEventListener('resize', onWindowResize);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void tryInitWorkspace();
+      }
+    };
+    const onWindowFocus = () => {
+      void tryInitWorkspace();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onWindowFocus);
+    window.addEventListener('pageshow', onWindowFocus);
 
-    // Delay first init by one frame so expanded panel dimensions are measurable.
+    // Delay first init by a few frames so expanded panel dimensions are measurable.
     requestAnimationFrame(() => {
       void tryInitWorkspace();
+      requestAnimationFrame(() => {
+        void tryInitWorkspace();
+        requestAnimationFrame(() => {
+          void tryInitWorkspace();
+        });
+      });
     });
 
     const scheduleInitRetry = () => {
@@ -498,6 +552,9 @@ export default function BlocklyWorkspace({
     return () => {
       disposed = true;
       window.removeEventListener('resize', onWindowResize);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onWindowFocus);
+      window.removeEventListener('pageshow', onWindowFocus);
       resizeObserver?.disconnect();
       if (retryTimer !== null) {
         clearTimeout(retryTimer);
@@ -519,7 +576,7 @@ export default function BlocklyWorkspace({
       }
       disposeWorkspace();
     };
-  }, [commandToBlockType, onWorkspaceApi, onWorkspaceReadyChange, updateDebugState]);
+  }, [commandToBlockType, onWorkspaceApi, onWorkspaceReadyChange, onReadyChange, onError, updateDebugState]);
 
   return (
     <div className={`flex h-full w-full min-h-[280px] flex-1 self-stretch flex-col overflow-hidden ${className}`}>
@@ -532,6 +589,7 @@ export default function BlocklyWorkspace({
           <div>{`Block count: ${debugState.blockCount}`}</div>
           <div>{`Container: ${Math.round(debugState.containerWidth)} × ${Math.round(debugState.containerHeight)}`}</div>
           <div>{`Readiness: ${debugState.containerReadinessReason}`}</div>
+          <div>{`Step: ${debugState.lastInitStep}`}</div>
           {debugState.initError && <div>{`Init error: ${debugState.initError}`}</div>}
         </div>
       )}

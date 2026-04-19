@@ -35,7 +35,7 @@ export default function MobileTabPanel() {
   return (
     <div className="lg:hidden flex flex-col shrink-0">
       {/* Persistent content panel — normal document flow below the 3D canvas */}
-      <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[45vh] p-3">
+      <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[45vh] min-h-[280px] p-3">
         {effectiveTab === 'scenarios' && (
           <div className="flex flex-col gap-4">
             {isEditMode ? (
@@ -59,8 +59,10 @@ export default function MobileTabPanel() {
           </div>
         )}
         {effectiveTab === 'blocks' && (
-          <div className="flex flex-col gap-4">
-            <BlocklyPanel />
+          <div className="flex min-h-[520px] flex-col gap-4">
+            <div className="min-h-[360px]">
+              <BlocklyPanel className="h-full" />
+            </div>
             <hr className="border-slate-700" />
             <CommandQueue />
             <hr className="border-slate-700" />

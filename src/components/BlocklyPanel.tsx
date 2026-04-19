@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
 import { convertBlockTypesToCommands } from '@/sim/blocklyConverter';
 import { CommandType } from '@/sim/commandExecution';
-import BlocklyWorkspace, { type BlocklyWorkspaceApi, BLOCK_DEFINITIONS } from './BlocklyWorkspace';
+import BlocklyWorkspace, {
+  type BlocklyWorkspaceApi,
+  type BlocklyWorkspaceDiagnostics,
+  BLOCK_DEFINITIONS,
+} from './BlocklyWorkspace';
 
 interface BlocklyPanelProps {
   showHeader?: boolean;
@@ -32,6 +36,7 @@ const BLOCK_COLOR: Record<string, string> = {
   robot_turn_right: 'bg-violet-800/70 hover:bg-violet-700/80 border-violet-600/50 text-violet-200',
   robot_wait:       'bg-amber-800/70 hover:bg-amber-700/80 border-amber-600/50 text-amber-200',
 };
+const WORKSPACE_READY_TIMEOUT_MS = 5000;
 
 export default function BlocklyPanel({
   showHeader = true,
@@ -44,6 +49,21 @@ export default function BlocklyPanel({
   const [workspaceApi, setWorkspaceApi]         = useState<BlocklyWorkspaceApi | null>(null);
   const [isWorkspaceReady, setIsWorkspaceReady] = useState(false);
   const [feedback, setFeedback]                 = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [workspaceInitError, setWorkspaceInitError] = useState<string | null>(null);
+  const [workspaceReadyReason, setWorkspaceReadyReason] = useState('not ready');
+  const [workspaceTimeoutElapsed, setWorkspaceTimeoutElapsed] = useState(false);
+  const [workspaceMountNonce, setWorkspaceMountNonce] = useState(0);
+  const [workspaceDiagnostics, setWorkspaceDiagnostics] = useState<BlocklyWorkspaceDiagnostics>({
+    initStarted: false,
+    mounted: false,
+    toolboxLoaded: false,
+    blockCount: 0,
+    containerReadinessReason: 'not evaluated',
+    containerWidth: 0,
+    containerHeight: 0,
+    initError: '',
+    lastInitStep: 'idle',
+  });
 
   const showFeedback = useCallback((type: 'success' | 'error', msg: string) => {
     setFeedback({ type, msg });
@@ -83,11 +103,59 @@ export default function BlocklyPanel({
     showFeedback('success', 'Cleared all blocks.');
   }, [workspaceApi, showFeedback]);
 
+  const handleWorkspaceReadyChange = useCallback((ready: boolean) => {
+    setIsWorkspaceReady(ready);
+    if (ready) {
+      setWorkspaceTimeoutElapsed(false);
+    }
+  }, []);
+
+  const handleWorkspaceReadyReason = useCallback((_: boolean, reason: string) => {
+    setWorkspaceReadyReason(reason);
+  }, []);
+
+  const handleWorkspaceError = useCallback((error: string | null) => {
+    setWorkspaceInitError(error);
+  }, []);
+
+  const handleWorkspaceDiagnostics = useCallback((diagnostics: BlocklyWorkspaceDiagnostics) => {
+    setWorkspaceDiagnostics(diagnostics);
+  }, []);
+
   useEffect(() => {
     if (!feedback) return;
     const t = setTimeout(() => setFeedback(null), 2200);
     return () => clearTimeout(t);
   }, [feedback]);
+
+  const isDebugQueryEnabled = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const q = new URLSearchParams(window.location.search);
+    const value = q.get('blocklyDebug');
+    return value === '1' || value === 'true';
+  }, []);
+
+  useEffect(() => {
+    if (isWorkspaceReady) return;
+    const timer = window.setTimeout(() => {
+      setWorkspaceTimeoutElapsed(true);
+    }, WORKSPACE_READY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [isWorkspaceReady, workspaceMountNonce]);
+
+  const hasWorkspaceInitFailure = !isWorkspaceReady && workspaceTimeoutElapsed;
+  const shouldShowWorkspaceDebug = process.env.NODE_ENV !== 'production' && (isDebugQueryEnabled || hasWorkspaceInitFailure);
+  const workspaceFrameClass = prioritizeWorkspace
+    ? 'h-[460px] min-h-[420px] lg:h-[52vh] lg:min-h-[460px]'
+    : 'h-[360px] min-h-[320px] sm:h-[400px]';
+
+  const handleRetryWorkspace = useCallback(() => {
+    setWorkspaceMountNonce((prev) => prev + 1);
+    setWorkspaceTimeoutElapsed(false);
+    setWorkspaceInitError(null);
+    setWorkspaceReadyReason('retry requested');
+    setIsWorkspaceReady(false);
+  }, []);
 
   return (
     <div className={`flex h-full min-h-0 flex-col rounded-lg border border-slate-700 bg-slate-900/40 ${prioritizeWorkspace ? 'p-2.5' : 'p-4'} ${className}`}>  
@@ -137,8 +205,8 @@ export default function BlocklyPanel({
             ⚠ Stop the queue before editing blocks.
           </p>
         ) : (
-          <div className={`relative flex min-h-0 flex-1 items-stretch overflow-hidden ${prioritizeWorkspace ? 'h-[360px] min-h-[360px]' : 'min-h-[320px]'}`}>  
-            {!isWorkspaceReady && (
+          <div className={`relative overflow-hidden ${workspaceFrameClass}`}>
+            {!isWorkspaceReady && !hasWorkspaceInitFailure && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded border border-slate-700 bg-slate-900/80">
                 <div className="flex flex-col items-center gap-2 text-slate-400">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-600 border-t-blue-400" />
@@ -146,10 +214,38 @@ export default function BlocklyPanel({
                 </div>
               </div>
             )}
+            {hasWorkspaceInitFailure && (
+              <div className="absolute inset-0 z-20 overflow-y-auto rounded border border-rose-700 bg-slate-950/95 p-3 text-xs text-rose-100">
+                <p className="font-semibold text-rose-200">⚠ Block editor failed to become ready.</p>
+                <p className="mt-1 text-slate-300">The workspace container may still be sizing. You can retry initialization.</p>
+                <div className="mt-2 space-y-1 font-mono text-[11px] text-slate-300">
+                  <div>{`Container: ${Math.round(workspaceDiagnostics.containerWidth)} × ${Math.round(workspaceDiagnostics.containerHeight)}`}</div>
+                  <div>{`Readiness: ${workspaceDiagnostics.containerReadinessReason}`}</div>
+                  <div>{`Last step: ${workspaceDiagnostics.lastInitStep}`}</div>
+                  <div>{`Block count: ${workspaceDiagnostics.blockCount}`}</div>
+                  <div>{`Ready state: ${workspaceReadyReason}`}</div>
+                  {(workspaceInitError || workspaceDiagnostics.initError) && (
+                    <div className="text-rose-300">{`Error: ${workspaceInitError ?? workspaceDiagnostics.initError}`}</div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary mt-3 text-xs"
+                  onClick={handleRetryWorkspace}
+                >
+                  Retry editor initialization
+                </button>
+              </div>
+            )}
             <BlocklyWorkspace
+              key={workspaceMountNonce}
               onWorkspaceApi={setWorkspaceApi}
-              onWorkspaceReadyChange={setIsWorkspaceReady}
-              className={prioritizeWorkspace ? 'rounded border border-slate-700 bg-slate-900' : ''}
+              onWorkspaceReadyChange={handleWorkspaceReadyChange}
+              onReadyChange={handleWorkspaceReadyReason}
+              onError={handleWorkspaceError}
+              onDiagnostics={handleWorkspaceDiagnostics}
+              showDebugPanel={shouldShowWorkspaceDebug}
+              className={`h-full w-full ${prioritizeWorkspace ? 'rounded border border-slate-700 bg-slate-900' : ''}`}
             />
           </div>
         )}

@@ -219,4 +219,25 @@ describe('BlocklyWorkspace lifecycle', () => {
     await flushMicrotasks();
     expect(container.textContent).not.toContain('Blockly Debug State');
   });
+
+  it('retries initialization after visibility change when container gains size', async () => {
+    act(() => {
+      root.render(<BlocklyWorkspace showDebugPanel />);
+    });
+    await flushMicrotasks();
+    expect(mockBlocklyModule.inject).not.toHaveBeenCalled();
+
+    const workspaceContainer = container.querySelector('[aria-label="Block programming workspace"]');
+    expect(workspaceContainer).not.toBeNull();
+    setSize(workspaceContainer as Element, 420, 280);
+
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await flushMicrotasks();
+
+    expect(mockBlocklyModule.inject).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain('Container: 420 × 280');
+    expect(container.textContent).toContain('Readiness: ready');
+  });
 });
