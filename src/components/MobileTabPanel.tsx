@@ -52,7 +52,7 @@ export default function MobileTabPanel() {
                 <hr className="border-slate-700" />
                 <LessonsSidebar />
                 <p className="text-xs text-slate-500 leading-snug">
-                  Switch to Edit Arena mode using the Simulate/Edit Arena toggle above to access Assets and Saved Scenes.
+                  Switch to Edit Arena mode using the Simulate / Edit Arena toggle above to access Assets and Saved Scenes.
                 </p>
               </>
             )}
