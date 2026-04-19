@@ -435,9 +435,10 @@ describe('arena editor', () => {
     useSimulatorStore.getState().setActiveLesson('lesson-1');
     useSimulatorStore.getState().setEditMode(true);
     useSimulatorStore.getState().setIsDesktopLayout(false);
-    useSimulatorStore.getState().selectPlacementTool('ml-traffic-cone');
+    const selected = useSimulatorStore.getState().selectPlacementTool('ml-traffic-cone');
     const before = useSimulatorStore.getState().arena.obstacles.length;
 
+    expect(selected).toBe(false);
     useSimulatorStore.getState().placeSelectedModelAt([1.2, 0.5, -2.3]);
 
     expect(useSimulatorStore.getState().arena.obstacles.length).toBe(before);
