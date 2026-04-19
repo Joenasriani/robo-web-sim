@@ -89,7 +89,7 @@ jest.mock('@/components/ModelLibrary', () => {
   return function ModelLibraryMock() { return <div>MODEL_LIBRARY</div>; };
 });
 jest.mock('@/components/MobileEditOverlay', () => {
-  return function MobileEditOverlayMock() { return null; };
+  return function MobileEditOverlayMock() { return <div>RIGHT_OBJECT_EDIT_CONTROLS</div>; };
 });
 
 describe('Desktop right panel layout', () => {
@@ -133,11 +133,13 @@ describe('Desktop right panel layout', () => {
     expect((html.match(/grid-template-rows:0fr/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders edit mode with model library only while hiding build/run tools', async () => {
+  it('renders edit mode with object edit controls and model library while hiding build/run tools', async () => {
     mockStoreState.isEditMode = true;
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
+    expect(html).toContain('Object Edit Controls');
+    expect(html).toContain('RIGHT_OBJECT_EDIT_CONTROLS');
     expect(html).toContain('Assets / Props / Model Library');
     expect(html).toContain('MODEL_LIBRARY');
     expect(html).not.toContain('RIGHT_BLOCK_PROGRAMMING');
