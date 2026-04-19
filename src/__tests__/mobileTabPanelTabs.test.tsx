@@ -12,7 +12,6 @@ jest.mock('@/sim/robotController', () => ({
 
 jest.mock('@/components/RobotControls', () => function RobotControlsMock() { return <div>MOBILE_CONTROLS</div>; });
 jest.mock('@/components/ScenarioSelector', () => function ScenarioSelectorMock() { return <div>MOBILE_SCENARIOS</div>; });
-jest.mock('@/components/LessonsSidebar', () => function LessonsSidebarMock() { return <div>MOBILE_LESSONS</div>; });
 jest.mock('@/components/CommandQueue', () => function CommandQueueMock() { return <div>MOBILE_COMMAND_QUEUE</div>; });
 jest.mock('@/components/TelemetryPanel', () => function TelemetryPanelMock() { return <div>MOBILE_TELEMETRY</div>; });
 jest.mock('@/components/EventLog', () => function EventLogMock() { return <div>MOBILE_EVENT_LOG</div>; });
@@ -20,6 +19,7 @@ jest.mock('@/components/ArenaEditor', () => function ArenaEditorMock() { return 
 jest.mock('@/components/ModelLibrary', () => function ModelLibraryMock() { return <div>MOBILE_MODEL_LIBRARY</div>; });
 jest.mock('@/components/SavedScenes', () => function SavedScenesMock() { return <div>MOBILE_SAVED_SCENES</div>; });
 jest.mock('@/components/BlocklyPanel', () => function BlocklyPanelMock() { return <div>MOBILE_BLOCKLY_PANEL</div>; });
+jest.mock('@/components/MobileEditOverlay', () => function MobileEditOverlayMock() { return <div>MOBILE_EDIT_CONTROLS</div>; });
 
 describe('MobileTabPanel tabs', () => {
   let container: HTMLDivElement;
@@ -58,19 +58,68 @@ describe('MobileTabPanel tabs', () => {
     expect(container.textContent).toContain('MOBILE_BLOCKLY_PANEL');
     expect(container.textContent).toContain('MOBILE_COMMAND_QUEUE');
     expect(container.textContent).toContain('MOBILE_CONTROLS');
+    expect(container.textContent).not.toContain('MOBILE_ARENA_EDITOR');
   });
 
-  it('shows arena edit stack (editor, assets, scenes) in scenarios panel when edit mode is active', () => {
+  it('keeps scenarios tab dedicated to scene selection only', () => {
+    act(() => {
+      root.render(<MobileTabPanel />);
+    });
+
+    const scenariosTab = container.querySelector('button[aria-label="Scenarios"]') as HTMLButtonElement;
+    expect(scenariosTab).not.toBeNull();
+    act(() => {
+      scenariosTab.click();
+    });
+
+    expect(container.textContent).toContain('MOBILE_SCENARIOS');
+    expect(container.textContent).not.toContain('MOBILE_ARENA_EDITOR');
+    expect(container.textContent).not.toContain('MOBILE_MODEL_LIBRARY');
+    expect(container.textContent).not.toContain('MOBILE_SAVED_SCENES');
+    expect(container.textContent).not.toContain('MOBILE_COMMAND_QUEUE');
+    expect(container.textContent).not.toContain('MOBILE_CONTROLS');
+  });
+
+  it('keeps info tab dedicated to telemetry and logs only', () => {
+    act(() => {
+      root.render(<MobileTabPanel />);
+    });
+
+    const infoTab = container.querySelector('button[aria-label="Info"]') as HTMLButtonElement;
+    expect(infoTab).not.toBeNull();
+    act(() => {
+      infoTab.click();
+    });
+
+    expect(container.textContent).toContain('MOBILE_TELEMETRY');
+    expect(container.textContent).toContain('MOBILE_EVENT_LOG');
+    expect(container.textContent).not.toContain('MOBILE_ARENA_EDITOR');
+    expect(container.textContent).not.toContain('MOBILE_COMMAND_QUEUE');
+    expect(container.textContent).not.toContain('MOBILE_CONTROLS');
+  });
+
+  it('shows edit controls stack only in blocks tab when edit mode is active', () => {
     mockStoreState.isEditMode = true;
 
     act(() => {
       root.render(<MobileTabPanel />);
     });
 
+    expect(container.textContent).toContain('MOBILE_BLOCKLY_PANEL');
+    expect(container.textContent).toContain('MOBILE_COMMAND_QUEUE');
+    expect(container.textContent).toContain('MOBILE_CONTROLS');
+    expect(container.textContent).toContain('MOBILE_EDIT_CONTROLS');
     expect(container.textContent).toContain('MOBILE_ARENA_EDITOR');
     expect(container.textContent).toContain('MOBILE_MODEL_LIBRARY');
     expect(container.textContent).toContain('MOBILE_SAVED_SCENES');
-    expect(container.textContent).not.toContain('MOBILE_SCENARIOS');
-    expect(container.textContent).not.toContain('MOBILE_LESSONS');
+
+    const scenariosTab = container.querySelector('button[aria-label="Scenarios"]') as HTMLButtonElement;
+    expect(scenariosTab).not.toBeNull();
+    act(() => {
+      scenariosTab.click();
+    });
+    expect(container.textContent).toContain('MOBILE_SCENARIOS');
+    expect(container.textContent).not.toContain('MOBILE_ARENA_EDITOR');
+    expect(container.textContent).not.toContain('MOBILE_EDIT_CONTROLS');
   });
 });

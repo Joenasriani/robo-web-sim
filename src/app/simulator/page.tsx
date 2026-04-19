@@ -18,7 +18,6 @@ import OnboardingStrip from '@/components/OnboardingStrip';
 import EditModeBadge from '@/components/EditModeBadge';
 import ModelLibrary from '@/components/ModelLibrary';
 import BlocklyPanel from '@/components/BlocklyPanel';
-import MobileEditOverlay from '@/components/MobileEditOverlay';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import CommandQueue from '@/components/CommandQueue';
 import { useSimulatorStore } from '@/sim/robotController';
@@ -162,8 +161,6 @@ export default function SimulatorPage() {
             <Arena3D />
             <SimFeedback />
             <EditModeBadge />
-            {/* Touch-friendly edit controls overlay — mobile only, visible when object is selected */}
-            <MobileEditOverlay />
             {/* Canvas interaction hint */}
             <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
               Drag to orbit • Scroll to zoom • Right-drag to pan
@@ -197,7 +194,6 @@ export default function SimulatorPage() {
             <Arena3D />
             <SimFeedback />
             <EditModeBadge />
-            <MobileEditOverlay />
             <div className="absolute bottom-2 left-2 text-xs text-slate-500 pointer-events-none hidden sm:block">
               Drag to orbit • Scroll to zoom • Right-drag to pan
             </div>
