@@ -10,6 +10,7 @@ import LessonsSidebar from '@/components/LessonsSidebar';
 import ArenaEditor from '@/components/ArenaEditor';
 import ModelLibrary from '@/components/ModelLibrary';
 import SavedScenes from '@/components/SavedScenes';
+import MobileEditOverlay from '@/components/MobileEditOverlay';
 import BlocklyPanel from '@/components/BlocklyPanel';
 import { useSimulatorStore } from '@/sim/robotController';
 
@@ -55,6 +56,7 @@ export default function MobileTabPanel() {
                   <div className="rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-amber-300">
                     EDIT MODE: ON
                   </div>
+                  <MobileEditOverlay />
                   <ArenaEditor />
                   <ModelLibrary />
                   <SavedScenes />
