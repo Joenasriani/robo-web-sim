@@ -110,14 +110,8 @@ export default function SimulatorPage() {
     const mediaQuery = window.matchMedia('(min-width: 1024px)');
     const syncDesktopLayout = () => setIsDesktopLayout(mediaQuery.matches);
     syncDesktopLayout();
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', syncDesktopLayout);
-      return () => mediaQuery.removeEventListener('change', syncDesktopLayout);
-    }
-
-    mediaQuery.addListener(syncDesktopLayout);
-    return () => mediaQuery.removeListener(syncDesktopLayout);
+    mediaQuery.addEventListener('change', syncDesktopLayout);
+    return () => mediaQuery.removeEventListener('change', syncDesktopLayout);
   }, [setIsDesktopLayout]);
 
   useEffect(() => {
