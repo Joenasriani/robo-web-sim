@@ -1,7 +1,21 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSimulatorStore, LessonStatus } from '@/sim/robotController';
 import { LESSONS } from '@/lessons/lessonData';
+
+const LESSON_PROGRESS_KEY = 'robo-web-sim:lesson-progress';
+
+function readCompletedLessonsFromStorage(): string[] {
+  try {
+    const raw = localStorage.getItem(LESSON_PROGRESS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 const STATUS_LABEL: Record<LessonStatus, string> = {
   not_started: 'Not Started',
@@ -34,6 +48,20 @@ export default function LessonsSidebar() {
   const completeLesson = useSimulatorStore((s) => s.completeLesson);
   const setActiveLesson = useSimulatorStore((s) => s.setActiveLesson);
   const restartLesson = useSimulatorStore((s) => s.restartLesson);
+  const [persistedCompletedLessons, setPersistedCompletedLessons] = useState<string[]>(() =>
+    typeof window === 'undefined' ? [] : readCompletedLessonsFromStorage(),
+  );
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key && event.key !== LESSON_PROGRESS_KEY) return;
+      setPersistedCompletedLessons(readCompletedLessonsFromStorage());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  const completedSet = new Set([...completedLessons, ...persistedCompletedLessons]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -44,7 +72,7 @@ export default function LessonsSidebar() {
         </p>
       )}
       {LESSONS.map((lesson, lessonIndex) => {
-        const isComplete = completedLessons.includes(lesson.id);
+        const isComplete = completedSet.has(lesson.id);
         const isActive = activeLesson === lesson.id;
         // Only allow manual "Mark Complete" when the store has verified all completion rules are met.
         const canComplete = isActive && lessonStatus === 'completed' && !isComplete;
@@ -55,13 +83,13 @@ export default function LessonsSidebar() {
         return (
           <div
             key={lesson.id}
-            className={`rounded-lg border transition-colors ${
-              isComplete
-                ? 'border-green-700 bg-green-900/20'
-                : isActive
-                ? 'border-blue-500 bg-slate-800'
+              className={`rounded-lg border transition-colors ${
+                isActive
+                ? 'bg-zinc-800 border-l-2 border-blue-500'
+                : isComplete
+                  ? 'border-green-700 bg-green-900/20'
                 : 'border-slate-700 bg-slate-800/50'
-            }`}
+              }`}
           >
             {/* Header */}
             <button
@@ -78,14 +106,14 @@ export default function LessonsSidebar() {
               <span
                 className={`text-xs font-medium ${
                   isComplete ? 'text-green-300' : isActive ? 'text-white' : 'text-slate-300'
-                }`}
+                } ${isComplete ? 'opacity-60' : ''}`}
               >
                 {lesson.title}
               </span>
               {isActive && !isComplete && (
                 <span className="ml-auto text-blue-400 text-xs font-bold">ACTIVE</span>
               )}
-              {isComplete && <span className="ml-auto text-green-400 text-xs">🏆</span>}
+              {isComplete && <span className="ml-auto text-green-400 text-xs">✅</span>}
               {!isActive && !isComplete && (
                 <span className="ml-auto text-slate-500 text-xs">▼</span>
               )}
@@ -225,4 +253,3 @@ export default function LessonsSidebar() {
     </div>
   );
 }
-

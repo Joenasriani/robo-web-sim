@@ -53,7 +53,7 @@ export const LESSONS: Lesson[] = [
       { instruction: 'Watch the robot move in the 3D view. The status bar shows when you arrive.' },
     ],
     successCondition: 'Robot reaches the green target marker.',
-    hint: 'The target is directly ahead (North). Press Forward 7 times — each press moves 0.5m.',
+    hint: "The target is directly ahead. Keep pressing Forward until the status bar shows you've reached the target.",
     startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
     arenaOverrides: {
       obstacles: [],
@@ -111,14 +111,14 @@ export const LESSONS: Lesson[] = [
   {
     id: 'lesson-4',
     title: 'Lesson 4: Build and Run a Command Queue',
-    objective: 'Plan your full route using the Command Builder, then execute it in one go with Play Queue.',
+    objective: 'Plan your full route using the Command Builder, then execute it in one go with Run Queue.',
     steps: [
-      { instruction: 'Find the "Command Builder" panel on the right. Add commands by clicking the buttons (↑ Forward, ← Turn Left, etc.).' },
+      { instruction: `Find the "Command Builder" panel on the right. Click '↑ Forward' in the Command Builder to add it to the queue.` },
       { instruction: 'Build this exact sequence: Forward × 7. That\'s it — target is straight ahead.' },
-      { instruction: 'Click "▶ Play Queue" in Movement Controls. Watch the robot execute every command. The queue must run all the way through.' },
+      { instruction: 'Click "▶ Run Queue" in Movement Controls. Watch the robot execute every command. The queue must run all the way through.' },
     ],
     successCondition: 'Robot reaches the target by running the full command queue to completion.',
-    hint: 'Add 7 Forward commands to the queue, then press Play Queue. The whole queue must finish — do not stop it early.',
+    hint: 'Add 7 Forward commands to the queue, then press Run Queue. The whole queue must finish — do not stop it early.',
     startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
     arenaOverrides: {
       obstacles: [
@@ -138,14 +138,14 @@ export const LESSONS: Lesson[] = [
     steps: [
       { instruction: 'Build this sequence in the Command Builder: Turn Left × 4, Forward × 5, Turn Right × 4, Forward × 7.' },
       { instruction: 'Review the list in the queue — all 20 commands should be listed. Turn Left appears 4 times at the start, then 5 Forwards, then Turn Right 4 times, then 7 Forwards.' },
-      { instruction: 'Press "▶ Play Queue". Watch the robot turn East, drive East, turn North, drive to the target.' },
+      { instruction: 'Press "▶ Run Queue". Watch the robot turn East, drive East, turn North, drive to the target.' },
     ],
     successCondition: 'Robot reaches the target by running a queued route that includes turns.',
     hint: 'Turn Left 4× (faces East), Forward 5× (x=2.5), Turn Right 4× (faces North), Forward 7× (z=3.5). Total: 20 commands.',
-    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: 0 },
+    startPose: { position: { x: 0, y: 0.25, z: 0 }, rotation: Math.PI },
     arenaOverrides: {
       obstacles: [
-        { id: 'obs1', position: [0, 0.5, 1.5], size: [1, 1, 1], color: '#ef4444' },
+        { id: 'obs1', position: [0, 0.5, -1.5], size: [1, 1, 1], color: '#ef4444' },
         { id: 'obs2', position: [-2.5, 0.5, 1.5], size: [1, 1, 1], color: '#f97316' },
       ],
       targets: [
@@ -209,7 +209,7 @@ export const LESSONS: Lesson[] = [
     steps: [
       { instruction: 'Study the arena — the target is at East-North. The direct North path is blocked.' },
       { instruction: 'Build the full program in Command Builder: Turn Left × 4, Forward × 4, Turn Right × 4, Forward × 4. That is 16 commands total.' },
-      { instruction: 'Press "▶ Play Queue". Do not press Pause or Stop — the full queue must run uninterrupted to completion.' },
+      { instruction: 'Press "▶ Run Queue". Do not press Pause or Stop — the full queue must run uninterrupted to completion.' },
     ],
     successCondition: 'Robot reaches the target by running the full 16-command queue without stopping, having turned at least once.',
     hint: 'Turn Left 4× (East), Forward 4× (x=2.0), Turn Right 4× (North), Forward 4× (z=2.0) — robot arrives at target (2,2). All 16 commands must complete.',

@@ -1,9 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Robot Simulator — Free Tool | RoboMarket.ae',
   description: 'A free browser-based robotics simulator. Learn robot navigation, command queuing, and sensor-guided movement — no installation required. Brought to you by RoboMarket.ae.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

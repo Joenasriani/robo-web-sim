@@ -1,12 +1,46 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LESSONS } from '@/lessons/lessonData';
 import { useSimulatorStore } from '@/sim/robotController';
 
+const LESSON_PROGRESS_KEY = 'robo-web-sim:lesson-progress';
+
+function readLessonProgressCount(): number {
+  try {
+    const raw = localStorage.getItem(LESSON_PROGRESS_KEY);
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export default function LessonsPage() {
   const completedLessons = useSimulatorStore((s) => s.completedLessons);
   const resetProgress = useSimulatorStore((s) => s.resetLessonProgress);
+  const [lessonProgressCount, setLessonProgressCount] = useState(() =>
+    typeof window === 'undefined' ? 0 : readLessonProgressCount(),
+  );
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key && event.key !== LESSON_PROGRESS_KEY) return;
+      setLessonProgressCount(readLessonProgressCount());
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  const handleResetProgress = () => {
+    if (!window.confirm('Reset all lesson progress? This cannot be undone.')) return;
+    resetProgress();
+    localStorage.removeItem(LESSON_PROGRESS_KEY);
+    setLessonProgressCount(0);
+  };
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -24,10 +58,10 @@ export default function LessonsPage() {
           </div>
           <div className="text-right">
             <div className="text-sm text-slate-300">
-              {completedLessons.length}/{LESSONS.length} complete
+              {lessonProgressCount}/{LESSONS.length} complete
             </div>
             <button
-              onClick={resetProgress}
+              onClick={handleResetProgress}
               className="text-xs text-red-400 hover:text-red-300 mt-1 underline"
             >
               Reset progress
@@ -37,11 +71,11 @@ export default function LessonsPage() {
 
         {/* Progress bar */}
         <div className="w-full bg-slate-700 rounded-full h-2">
-          <div
-            className="bg-green-500 h-2 rounded-full transition-all duration-500"
-            style={{ width: `${(completedLessons.length / LESSONS.length) * 100}%` }}
-          />
-        </div>
+            <div
+              className="bg-green-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${(lessonProgressCount / LESSONS.length) * 100}%` }}
+            />
+          </div>
 
         {/* Lessons */}
         <div className="space-y-6">
@@ -90,7 +124,7 @@ export default function LessonsPage() {
 
                 <div className="mt-4">
                   <Link
-                    href={`/simulator?lesson=${lesson.id}`}
+                    href={`/simulator?lesson=${index + 1}`}
                     className="inline-block bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
                   >
                     Practice in Simulator →
