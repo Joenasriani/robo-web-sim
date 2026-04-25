@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
-import { convertBlockTypesToCommands } from '@/sim/blocklyConverter';
 import { CommandType } from '@/sim/commandExecution';
 import BlocklyWorkspace, {
   type BlocklyWorkspaceApi,
@@ -70,26 +69,6 @@ export default function BlocklyPanel({
   const showFeedback = useCallback((type: 'success' | 'error', msg: string) => {
     setFeedback({ type, msg });
   }, []);
-
-  const handleSendToQueue = useCallback(() => {
-    const blockTypes = workspaceApi?.getBlockTypes() ?? [];
-    setFeedback(null);
-    if (blockTypes.length === 0) {
-      showFeedback('error', 'Workspace is empty — drag some blocks first.');
-      return;
-    }
-    const { commands, errors } = convertBlockTypesToCommands(blockTypes);
-    if (errors.length > 0) {
-      showFeedback('error', `Unsupported blocks: ${errors.join(', ')}`);
-      return;
-    }
-    if (commands.length === 0) {
-      showFeedback('error', 'No valid commands were generated.');
-      return;
-    }
-    for (const cmd of commands) addCommand(cmd);
-    showFeedback('success', `Added ${commands.length} command${commands.length !== 1 ? 's' : ''} to queue.`);
-  }, [addCommand, workspaceApi, showFeedback]);
 
   const handleQuickAdd = useCallback((blockType: string) => {
     if (isRunning || !isWorkspaceReady) return;
@@ -253,15 +232,7 @@ export default function BlocklyPanel({
         )}
 
         {/* Action buttons */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={handleSendToQueue}
-            className="btn-green text-xs"
-            disabled={!isWorkspaceReady || isRunning}
-            title="Convert all workspace blocks to commands and add to queue"
-          >
-            ➕ Send to Queue
-          </button>
+        <div className="grid grid-cols-1 gap-2">
           <button
             onClick={handleClearBlocks}
             className="btn-secondary text-xs"
