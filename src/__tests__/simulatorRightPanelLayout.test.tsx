@@ -186,12 +186,13 @@ describe('Desktop right panel layout', () => {
     expect(html).not.toContain('RIGHT_SIM_SETTINGS');
   });
 
-  it('uses strict 3-column desktop layout and no separate desktop block panel container', async () => {
+  it('uses desktop layout container with draggable panel separators and no separate desktop block panel container', async () => {
     const { default: SimulatorPage } = await import('@/app/simulator/page');
     const html = renderToStaticMarkup(<SimulatorPage />);
 
     expect(html).toContain('data-testid="simulator-desktop-grid"');
-    expect(html).toContain('lg:grid-cols-[280px_minmax(0,1fr)_400px]');
+    expect(html).toContain('aria-label="Resize left panel"');
+    expect(html).toContain('aria-label="Resize right panel"');
     expect(html).toContain('data-testid="desktop-right-panel"');
     expect(html).not.toContain('data-testid="desktop-block-programming-panel"');
   });
