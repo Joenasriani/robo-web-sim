@@ -47,7 +47,7 @@ describe('BlocklyPanel default state', () => {
     expect(html).toContain('Or drag from the toolbox on the left of the workspace below.');
     expect(html).toContain('min-h-[320px]');
     expect(html).toContain('title="Block editor is loading…"');
-    expect(html).toContain('<button class="btn-green text-xs" disabled="" title="Convert all workspace blocks to commands and add to queue">➕ Send to Queue</button>');
+    expect(html).not.toContain('➕ Send to Queue');
     expect(html).toContain('<button class="btn-secondary text-xs" disabled="" title="Remove all blocks from the workspace">🗑 Clear Blocks</button>');
   });
 });

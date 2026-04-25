@@ -132,8 +132,8 @@ function appendStarterBlock(workspace: WorkspaceSvg, blockType: string) {
 
 /**
  * Renders a Blockly workspace pre-loaded with robot command blocks.
- * When "Send to Queue" is clicked, the ordered list of block type strings
- * is passed to the `onSendToQueue` callback.
+ * The parent can read ordered block type strings through `getBlockTypes()`
+ * and append blocks using `appendCommandBlock()`.
  *
  * Must only be rendered on the client (use dynamic import with ssr: false).
  */
