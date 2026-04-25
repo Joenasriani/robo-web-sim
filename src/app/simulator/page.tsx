@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RobotControls from '@/components/RobotControls';
 import LessonsSidebar from '@/components/LessonsSidebar';
@@ -98,6 +98,15 @@ function LessonDeepLink() {
 }
 
 export default function SimulatorPage() {
+  const desktopLayoutRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{
+    side: 'left' | 'right';
+    containerLeft: number;
+    containerWidth: number;
+  } | null>(null);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(280);
+  const [rightPanelWidth, setRightPanelWidth] = useState(400);
+
   const isEditMode = useSimulatorStore((s) => s.isEditMode);
   const simState = useSimulatorStore((s) => s.simState);
   const setEditMode = useSimulatorStore((s) => s.setEditMode);
@@ -132,6 +141,60 @@ export default function SimulatorPage() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [clearPlacementTool, deleteSelectedEditObject, isEditMode]);
+
+  useEffect(() => {
+    const stopDragging = () => {
+      dragStateRef.current = null;
+      document.body.style.removeProperty('cursor');
+      document.body.style.removeProperty('user-select');
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      const dragState = dragStateRef.current;
+      if (!dragState) return;
+
+      const minSidePanelWidth = 220;
+      const minCenterWidth = 360;
+      const maxPanelWidth =
+        dragState.containerWidth - minCenterWidth - minSidePanelWidth;
+      if (maxPanelWidth <= minSidePanelWidth) return;
+
+      if (dragState.side === 'left') {
+        const nextWidth = event.clientX - dragState.containerLeft;
+        const clampedWidth = Math.min(Math.max(nextWidth, minSidePanelWidth), maxPanelWidth);
+        setLeftPanelWidth(clampedWidth);
+        return;
+      }
+
+      const pointerFromLeft = event.clientX - dragState.containerLeft;
+      const rightFromLeft = dragState.containerWidth - pointerFromLeft;
+      const clampedWidth = Math.min(Math.max(rightFromLeft, minSidePanelWidth), maxPanelWidth);
+      setRightPanelWidth(clampedWidth);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', stopDragging);
+    window.addEventListener('pointercancel', stopDragging);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', stopDragging);
+      window.removeEventListener('pointercancel', stopDragging);
+    };
+  }, []);
+
+  const startPanelResize = (side: 'left' | 'right') => (event: ReactPointerEvent<HTMLDivElement>) => {
+    const container = desktopLayoutRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    dragStateRef.current = {
+      side,
+      containerLeft: rect.left,
+      containerWidth: rect.width,
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    event.preventDefault();
+  };
 
   return (
     <div className="h-screen flex flex-col text-white overflow-hidden pb-[52px] lg:pb-0" style={{ background: 'var(--rm-bg)' }}>
@@ -183,10 +246,14 @@ export default function SimulatorPage() {
       </div>
 
       <div
+        ref={desktopLayoutRef}
         data-testid="simulator-desktop-grid"
-        className="hidden lg:grid lg:flex-1 lg:min-h-0 lg:grid-cols-[280px_minmax(0,1fr)_400px]"
+        className="hidden lg:flex lg:flex-1 lg:min-h-0 lg:overflow-hidden"
       >
-        <aside className="h-full min-h-0 overflow-hidden border-r border-slate-700 bg-slate-800">
+        <aside
+          className="h-full min-h-0 overflow-hidden border-r border-slate-700 bg-slate-800"
+          style={{ width: `${leftPanelWidth}px` }}
+        >
           <div className="h-full min-h-0 overflow-y-auto p-4">
             <div className="flex flex-col gap-4">
               <ScenarioSelector />
@@ -196,7 +263,15 @@ export default function SimulatorPage() {
           </div>
         </aside>
 
-        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <div
+          role="separator"
+          aria-label="Resize left panel"
+          aria-orientation="vertical"
+          onPointerDown={startPanelResize('left')}
+          className="hidden w-1.5 shrink-0 cursor-col-resize bg-slate-700/60 transition-colors hover:bg-blue-500/80 lg:block"
+        />
+
+        <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div className="shrink-0 border-b border-slate-700 bg-slate-900/60">
             <CenterModeTabs isEditMode={isEditMode} simState={simState} onSetEditMode={setEditMode} />
           </div>
@@ -213,7 +288,19 @@ export default function SimulatorPage() {
           </main>
         </div>
 
-        <aside data-testid="desktop-right-panel" className="h-full min-h-0 overflow-hidden border-l border-slate-700 bg-slate-800">
+        <div
+          role="separator"
+          aria-label="Resize right panel"
+          aria-orientation="vertical"
+          onPointerDown={startPanelResize('right')}
+          className="hidden w-1.5 shrink-0 cursor-col-resize bg-slate-700/60 transition-colors hover:bg-blue-500/80 lg:block"
+        />
+
+        <aside
+          data-testid="desktop-right-panel"
+          className="h-full min-h-0 overflow-hidden border-l border-slate-700 bg-slate-800"
+          style={{ width: `${rightPanelWidth}px` }}
+        >
           <div className="flex h-full min-h-0 flex-col" data-testid="desktop-right-panel-content">
             <section
               data-testid="right-dock-primary-workspace"
