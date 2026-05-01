@@ -11,8 +11,9 @@ import ArenaEditor from '@/components/ArenaEditor';
 import ModelLibrary from '@/components/ModelLibrary';
 import SavedScenes from '@/components/SavedScenes';
 import MobileEditOverlay from '@/components/MobileEditOverlay';
-import BlocklyPanel from '@/components/BlocklyPanel';
+import BlocklyPanel, { APPEND_BLOCKLY_COMMAND_EVENT } from '@/components/BlocklyPanel';
 import { useSimulatorStore } from '@/sim/robotController';
+import type { CommandType } from '@/sim/commandExecution';
 
 type Tab = 'program' | 'queue' | 'arena' | 'info';
 
@@ -22,6 +23,13 @@ interface TabDef {
   icon: string;
 }
 
+interface QuickAddCommand {
+  type: CommandType;
+  label: string;
+  icon: string;
+  className: string;
+}
+
 const TABS: TabDef[] = [
   { id: 'program', label: 'Program', icon: '🧩' },
   { id: 'queue',   label: 'Queue',   icon: '▶' },
@@ -29,8 +37,72 @@ const TABS: TabDef[] = [
   { id: 'info',    label: 'Info',    icon: '📊' },
 ];
 
+const QUICK_ADD_COMMANDS: QuickAddCommand[] = [
+  {
+    type: 'forward',
+    label: 'Forward',
+    icon: '↑',
+    className: 'bg-emerald-800/70 hover:bg-emerald-700/80 border-emerald-600/50 text-emerald-200',
+  },
+  {
+    type: 'backward',
+    label: 'Backward',
+    icon: '↓',
+    className: 'bg-sky-800/70 hover:bg-sky-700/80 border-sky-600/50 text-sky-200',
+  },
+  {
+    type: 'left',
+    label: 'Left',
+    icon: '↺',
+    className: 'bg-violet-800/70 hover:bg-violet-700/80 border-violet-600/50 text-violet-200',
+  },
+  {
+    type: 'right',
+    label: 'Right',
+    icon: '↻',
+    className: 'bg-violet-800/70 hover:bg-violet-700/80 border-violet-600/50 text-violet-200',
+  },
+  {
+    type: 'wait',
+    label: 'Wait',
+    icon: '⏸',
+    className: 'bg-amber-800/70 hover:bg-amber-700/80 border-amber-600/50 text-amber-200',
+  },
+];
+
+function MobileQuickAdd({ isRunning }: { isRunning: boolean }) {
+  const appendCommand = (command: CommandType) => {
+    window.dispatchEvent(new CustomEvent(APPEND_BLOCKLY_COMMAND_EVENT, { detail: command }));
+  };
+
+  return (
+    <section className="rounded-lg border border-slate-700 bg-slate-900/40 p-3" aria-label="Quick-add queue commands">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Quick-Add</h3>
+        <span className="text-[11px] text-slate-500">adds real blocks</span>
+      </div>
+      <div className="grid grid-cols-5 gap-1.5">
+        {QUICK_ADD_COMMANDS.map((command) => (
+          <button
+            key={command.type}
+            type="button"
+            onClick={() => appendCommand(command.type)}
+            disabled={isRunning}
+            title={isRunning ? 'Stop the queue first' : `Add ${command.label} to Program and Queue`}
+            className={`flex min-h-[64px] flex-col items-center justify-center gap-0.5 rounded border px-1 py-1.5 text-center text-[10px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 touch-manipulation select-none ${command.className}`}
+          >
+            <span className="text-sm leading-none">{command.icon}</span>
+            <span className="text-[9px]">{command.label}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function MobileTabPanel() {
   const isEditMode = useSimulatorStore((s) => s.isEditMode);
+  const isRunning = useSimulatorStore((s) => s.robot.isRunningQueue);
   const commandQueueLength = useSimulatorStore((s) => s.commandQueue.length);
   const [activeTab, setActiveTab] = useState<Tab>('program');
 
@@ -40,11 +112,15 @@ export default function MobileTabPanel() {
     }
   }, [isEditMode]);
 
+  useEffect(() => {
+    window.dispatchEvent(new Event('resize'));
+  }, [activeTab]);
+
   return (
     <div className="lg:hidden flex flex-col shrink-0">
       {/* Persistent content panel — normal document flow below the 3D canvas */}
       <div className="bg-slate-800 border-t border-slate-700 overflow-y-auto max-h-[45vh] min-h-[280px] p-3">
-        {activeTab === 'program' && (
+        <div className={activeTab === 'program' ? 'block' : 'hidden'}>
           <div className="flex min-h-[430px] flex-col gap-3">
             <div className="rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2">
               <div className="flex items-center justify-between gap-2">
@@ -58,10 +134,10 @@ export default function MobileTabPanel() {
               </p>
             </div>
             <div className="min-h-[360px]">
-              <BlocklyPanel className="h-full" />
+              <BlocklyPanel className="h-full" showQuickAdd={false} />
             </div>
           </div>
-        )}
+        </div>
 
         {activeTab === 'queue' && (
           <div className="flex flex-col gap-4">
@@ -73,9 +149,10 @@ export default function MobileTabPanel() {
                 </span>
               </div>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-                Review the generated queue, then run, pause, resume, or stop the simulation.
+                Add commands here, review the queue, then run, pause, resume, or stop the simulation.
               </p>
             </div>
+            <MobileQuickAdd isRunning={isRunning} />
             <CommandQueue />
             <hr className="border-slate-700" />
             <RobotControls showMovementControls={false} />
