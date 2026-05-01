@@ -12,9 +12,12 @@ import BlocklyWorkspace, {
 
 interface BlocklyPanelProps {
   showHeader?: boolean;
+  showQuickAdd?: boolean;
   className?: string;
   prioritizeWorkspace?: boolean;
 }
+
+export const APPEND_BLOCKLY_COMMAND_EVENT = 'robo-web-sim:append-blockly-command';
 
 const BLOCK_TYPE_TO_COMMAND: Record<string, CommandType> = {
   robot_forward:    'forward',
@@ -43,6 +46,7 @@ const DEFAULT_WORKSPACE_FRAME_CLASS = 'h-[360px] min-h-[320px] sm:h-[400px]';
 
 export default function BlocklyPanel({
   showHeader = true,
+  showQuickAdd = true,
   className = '',
   prioritizeWorkspace = false,
 }: BlocklyPanelProps) {
@@ -94,14 +98,18 @@ export default function BlocklyPanel({
     }
   }, [addCommand, clearQueue, isRunning, workspaceApi]);
 
+  const appendCommandBlock = useCallback((commandType: CommandType, sourceLabel = 'workspace') => {
+    if (isRunning || !isWorkspaceReady || !workspaceApi) return;
+    workspaceApi.appendCommandBlock(commandType);
+    syncWorkspaceToCommandQueue();
+    showFeedback('success', `Added ${commandType} from ${sourceLabel}.`);
+  }, [isRunning, isWorkspaceReady, showFeedback, syncWorkspaceToCommandQueue, workspaceApi]);
+
   const handleQuickAdd = useCallback((blockType: string) => {
-    if (isRunning || !isWorkspaceReady) return;
     const commandType = BLOCK_TYPE_TO_COMMAND[blockType];
     if (!commandType) return;
-    workspaceApi?.appendCommandBlock(commandType);
-    syncWorkspaceToCommandQueue();
-    showFeedback('success', `Added ${commandType} to workspace & queue.`);
-  }, [isRunning, isWorkspaceReady, workspaceApi, showFeedback, syncWorkspaceToCommandQueue]);
+    appendCommandBlock(commandType, 'quick-add');
+  }, [appendCommandBlock]);
 
   const handleClearBlocks = useCallback(() => {
     workspaceApi?.clearWorkspace();
@@ -157,6 +165,17 @@ export default function BlocklyPanel({
     return () => window.clearInterval(interval);
   }, [isRunning, isWorkspaceReady, syncWorkspaceToCommandQueue, workspaceApi]);
 
+  useEffect(() => {
+    const handleExternalQuickAdd = (event: Event) => {
+      const commandType = (event as CustomEvent<CommandType>).detail;
+      if (!commandType) return;
+      appendCommandBlock(commandType, 'queue quick-add');
+    };
+
+    window.addEventListener(APPEND_BLOCKLY_COMMAND_EVENT, handleExternalQuickAdd);
+    return () => window.removeEventListener(APPEND_BLOCKLY_COMMAND_EVENT, handleExternalQuickAdd);
+  }, [appendCommandBlock]);
+
   const hasWorkspaceInitFailure = !isWorkspaceReady && workspaceTimeoutElapsed;
   const shouldShowWorkspaceDebug = process.env.NODE_ENV !== 'production' && (isDebugQueryEnabled || hasWorkspaceInitFailure);
   const workspaceFrameClass = prioritizeWorkspace
@@ -183,36 +202,38 @@ export default function BlocklyPanel({
       <div className={`flex min-h-0 flex-1 flex-col gap-3 ${prioritizeWorkspace ? 'pb-1' : ''}`}>  
 
         {/* Single compact 5-column quick-add palette */}
-        <div>
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Quick-Add</p>
-          <div className="grid grid-cols-5 gap-1.5">
-            {BLOCK_DEFINITIONS.map((def) => {
-              const cmd = BLOCK_TYPE_TO_COMMAND[def.type];
-              const label = cmd
-                ? cmd.charAt(0).toUpperCase() + cmd.slice(1)
-                : def.type.replace('robot_', '');
-              return (
-                <button
-                  key={def.type}
-                  onClick={() => handleQuickAdd(def.type)}
-                  disabled={isRunning || !isWorkspaceReady}
-                  title={
-                    !isWorkspaceReady ? 'Block editor is loading…'
-                    : isRunning ? 'Stop the queue first'
-                    : `Add "${label}" to workspace & queue`
-                  }
-                  className={`flex flex-col items-center gap-0.5 rounded border px-1 py-1.5 text-center text-[10px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 touch-manipulation select-none ${BLOCK_COLOR[def.type] ?? 'bg-slate-700/70 border-slate-500/50 text-slate-200'}`}
-                >
-                  <span className="text-sm leading-none">{BLOCK_ICON[def.type] ?? '🧩'}</span>
-                  <span className="text-[9px]">{label}</span>
-                </button>
-              );
-            })}
+        {showQuickAdd && (
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Quick-Add</p>
+            <div className="grid grid-cols-5 gap-1.5">
+              {BLOCK_DEFINITIONS.map((def) => {
+                const cmd = BLOCK_TYPE_TO_COMMAND[def.type];
+                const label = cmd
+                  ? cmd.charAt(0).toUpperCase() + cmd.slice(1)
+                  : def.type.replace('robot_', '');
+                return (
+                  <button
+                    key={def.type}
+                    onClick={() => handleQuickAdd(def.type)}
+                    disabled={isRunning || !isWorkspaceReady}
+                    title={
+                      !isWorkspaceReady ? 'Block editor is loading…'
+                      : isRunning ? 'Stop the queue first'
+                      : `Add "${label}" to workspace & queue`
+                    }
+                    className={`flex flex-col items-center gap-0.5 rounded border px-1 py-1.5 text-center text-[10px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 touch-manipulation select-none ${BLOCK_COLOR[def.type] ?? 'bg-slate-700/70 border-slate-500/50 text-slate-200'}`}
+                  >
+                    <span className="text-sm leading-none">{BLOCK_ICON[def.type] ?? '🧩'}</span>
+                    <span className="text-[9px]">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-[10px] text-slate-600 italic">
+              Or drag from the toolbox on the left of the workspace below.
+            </p>
           </div>
-          <p className="mt-1 text-[10px] text-slate-600 italic">
-            Or drag from the toolbox on the left of the workspace below.
-          </p>
-        </div>
+        )}
 
         {/* Blockly Workspace */}
         {isRunning ? (
