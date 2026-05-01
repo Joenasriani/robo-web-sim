@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSimulatorStore } from '@/sim/robotController';
+import { convertBlockTypesToCommands } from '@/sim/blocklyConverter';
 import { CommandType } from '@/sim/commandExecution';
 import BlocklyWorkspace, {
   type BlocklyWorkspaceApi,
@@ -36,6 +37,7 @@ const BLOCK_COLOR: Record<string, string> = {
   robot_wait:       'bg-amber-800/70 hover:bg-amber-700/80 border-amber-600/50 text-amber-200',
 };
 const WORKSPACE_READY_TIMEOUT_MS = 5000;
+const WORKSPACE_QUEUE_SYNC_INTERVAL_MS = 120;
 const PRIORITIZED_WORKSPACE_FRAME_CLASS = 'h-[460px] min-h-[420px] lg:h-[52vh] lg:min-h-[460px]';
 const DEFAULT_WORKSPACE_FRAME_CLASS = 'h-[360px] min-h-[320px] sm:h-[400px]';
 
@@ -45,7 +47,9 @@ export default function BlocklyPanel({
   prioritizeWorkspace = false,
 }: BlocklyPanelProps) {
   const addCommand = useSimulatorStore((s) => s.addCommand);
+  const clearQueue = useSimulatorStore((s) => s.clearQueue);
   const isRunning  = useSimulatorStore((s) => s.robot.isRunningQueue);
+  const lastSyncedBlockSignatureRef = useRef('');
 
   const [workspaceApi, setWorkspaceApi]         = useState<BlocklyWorkspaceApi | null>(null);
   const [isWorkspaceReady, setIsWorkspaceReady] = useState(false);
@@ -70,19 +74,40 @@ export default function BlocklyPanel({
     setFeedback({ type, msg });
   }, []);
 
+  const syncWorkspaceToCommandQueue = useCallback(() => {
+    if (!workspaceApi || isRunning) return;
+
+    const blockTypes = workspaceApi.getBlockTypes();
+    const blockSignature = blockTypes.join('|');
+    if (blockSignature === lastSyncedBlockSignatureRef.current) return;
+
+    lastSyncedBlockSignatureRef.current = blockSignature;
+    const { commands, errors } = convertBlockTypesToCommands(blockTypes);
+
+    if (errors.length > 0) {
+      console.warn('[BlocklyPanel] Unsupported Blockly blocks while syncing command queue:', errors);
+    }
+
+    clearQueue();
+    for (const command of commands) {
+      addCommand(command);
+    }
+  }, [addCommand, clearQueue, isRunning, workspaceApi]);
+
   const handleQuickAdd = useCallback((blockType: string) => {
     if (isRunning || !isWorkspaceReady) return;
     const commandType = BLOCK_TYPE_TO_COMMAND[blockType];
     if (!commandType) return;
-    addCommand(commandType);
     workspaceApi?.appendCommandBlock(commandType);
+    syncWorkspaceToCommandQueue();
     showFeedback('success', `Added ${commandType} to workspace & queue.`);
-  }, [addCommand, isRunning, isWorkspaceReady, workspaceApi, showFeedback]);
+  }, [isRunning, isWorkspaceReady, workspaceApi, showFeedback, syncWorkspaceToCommandQueue]);
 
   const handleClearBlocks = useCallback(() => {
     workspaceApi?.clearWorkspace();
+    syncWorkspaceToCommandQueue();
     showFeedback('success', 'Cleared all blocks.');
-  }, [workspaceApi, showFeedback]);
+  }, [workspaceApi, showFeedback, syncWorkspaceToCommandQueue]);
 
   const handleWorkspaceReadyChange = useCallback((ready: boolean) => {
     setIsWorkspaceReady(ready);
@@ -124,6 +149,14 @@ export default function BlocklyPanel({
     return () => clearTimeout(timer);
   }, [isWorkspaceReady, workspaceMountNonce]);
 
+  useEffect(() => {
+    if (!workspaceApi || !isWorkspaceReady || isRunning) return;
+
+    syncWorkspaceToCommandQueue();
+    const interval = window.setInterval(syncWorkspaceToCommandQueue, WORKSPACE_QUEUE_SYNC_INTERVAL_MS);
+    return () => window.clearInterval(interval);
+  }, [isRunning, isWorkspaceReady, syncWorkspaceToCommandQueue, workspaceApi]);
+
   const hasWorkspaceInitFailure = !isWorkspaceReady && workspaceTimeoutElapsed;
   const shouldShowWorkspaceDebug = process.env.NODE_ENV !== 'production' && (isDebugQueryEnabled || hasWorkspaceInitFailure);
   const workspaceFrameClass = prioritizeWorkspace
@@ -136,6 +169,7 @@ export default function BlocklyPanel({
     setWorkspaceInitError(null);
     setWorkspaceReadyReason('retry requested');
     setIsWorkspaceReady(false);
+    lastSyncedBlockSignatureRef.current = '';
   }, []);
 
   return (
