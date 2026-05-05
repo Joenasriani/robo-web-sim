@@ -111,8 +111,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="py-6 text-center text-sm border-t" style={{ background: 'var(--rm-surface)', borderColor: 'var(--rm-border)', color: 'var(--rm-text-muted)' }}>
-        <p>Free educational tool by RoboMarket.ae</p>
+      <footer className="py-6 text-center text-sm border-t" style={{ background: 'var(--rm-surface)', borderColor: 'var(--rm-border)' }}>
+        <div className="flex flex-col md:flex-row items-center justify-center gap-2">
+          <p style={{ color: 'var(--rm-text-muted)' }}>
+            © 2026 Free learning tool by{' '}
+            <a
+              href="https://RoboMarket.ae"
+              className="text-blue-400 hover:text-blue-300 transition-colors"
+              style={{ textDecoration: 'none' }}
+            >
+              RoboMarket.ae
+            </a>
+          </p>
+        </div>
+        <div className="flex flex-col md:flex-row items-center justify-center gap-2 mt-1">
+          <p style={{ color: 'var(--rm-text-muted)' }}>
+            Part of{' '}
+            <a
+              href="https://apexinnovate.ae"
+              className="text-gray-400 hover:text-gray-300 transition-colors"
+              style={{ textDecoration: 'none' }}
+            >
+              Apex Innovate FZE LLC
+            </a>
+          </p>
+        </div>
       </footer>
     </main>
   );
