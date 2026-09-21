@@ -4,7 +4,7 @@
 **Play:** https://joenasr.itch.io/robosim  
 **Source project:** RoboWebSim  
 **Creator:** Joe Nasr  
-**Creator profile:** https://joe-nasr-signals.vercel.app/v2/
+**Creator profile:** https://joe-nasr-signals.vercel.app/
 
 RoboSim is the public game title. RoboWebSim is the current source-project name for the browser robotics-learning simulator behind it.
 
