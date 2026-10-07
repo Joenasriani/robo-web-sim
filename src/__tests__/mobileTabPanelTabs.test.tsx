@@ -92,7 +92,10 @@ describe('MobileTabPanel tabs', () => {
     expect(container.textContent).toContain('Quick-Add');
     expect(container.textContent).toContain('MOBILE_COMMAND_QUEUE');
     expect(container.textContent).toContain('MOBILE_CONTROLS');
-    expect(container.textContent).not.toContain('MOBILE_BLOCKLY_PANEL');
+    expect(container.textContent).toContain('MOBILE_BLOCKLY_PANEL');
+    const hiddenProgram = Array.from(container.querySelectorAll('.hidden'))
+      .find((element) => element.textContent?.includes('MOBILE_BLOCKLY_PANEL'));
+    expect(hiddenProgram).toBeDefined();
     expect(container.textContent).not.toContain('MOBILE_SCENARIOS');
   });
 
@@ -129,6 +132,8 @@ describe('MobileTabPanel tabs', () => {
     mockStoreState.isEditMode = true;
     act(() => {
       root.render(<MobileTabPanel />);
+    });
+    act(() => {
       jest.runOnlyPendingTimers();
     });
 
