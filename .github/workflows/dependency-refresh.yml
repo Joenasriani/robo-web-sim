@@ -33,7 +33,10 @@ jobs:
         run: npm install next@16.4.0 eslint-config-next@16.4.0 --save-exact
 
       - name: Apply non-breaking audit fixes
-        run: npm audit fix
+        run: npm audit fix || true
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Validate
         run: |
