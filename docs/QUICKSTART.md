@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- Node.js 18 or newer
-- npm (bundled with Node.js)
-- A modern web browser (Chrome, Firefox, Safari, Edge)
+- Node.js supported by the current RoboWebSim dependency tree
+- npm
+- A modern browser with WebGL support
 
 ## Installation
 
@@ -14,62 +14,89 @@ cd robo-web-sim
 npm install
 ```
 
-## Development Server
+## Development server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open:
 
-## Production Build
+```text
+http://localhost:3000
+```
+
+## Production build
 
 ```bash
 npm run build
 npm start
 ```
 
-## Vercel Deployment
+## Validation
 
-1. Push the repo to GitHub
-2. Go to [vercel.com](https://vercel.com) → **Add New Project** → import the repo
-3. Framework preset: **Next.js** (auto-detected)
-4. No environment variables needed for MVP
-5. Click **Deploy**
+Before proposing a change, run:
 
-## What You'll See
+```bash
+npm run lint
+npm test -- --runInBand
+npm run build
+```
 
-### Landing Page (`/`)
-- Product overview, feature highlights
-- **Launch Simulator** button → opens 3D arena
-- **Open Lessons** button → opens lessons page
+## Main routes
 
-### Simulator Page (`/simulator`)
-Three-column layout:
-- **Left sidebar**: Lesson objectives and progress
-- **Center**: 3D arena (drag to orbit, scroll to zoom)
-- **Right sidebar**: Movement controls + command queue builder
+### `/`
 
-### Lessons Page (`/lessons`)
-- Full list of all beginner lessons
-- Progress bar showing completion count
-- Links back to simulator for practice
+Project introduction and entry points to the simulator and lessons.
 
-## Controls
+### `/simulator`
 
-| Action | Control |
-|--------|---------|
-| Move Forward | ↑ Arrow key or Forward button |
-| Move Backward | ↓ Arrow key or Back button |
-| Turn Left | ← Arrow key or Left button |
-| Turn Right | → Arrow key or Right button |
-| Reset Robot | Reset button |
-| Run Command Queue | "Run Queue" button |
-| Pause Queue | "Pause" button while queue runs |
-| Stop Queue | "Stop" button while queue runs |
+The main robotics workspace. Depending on viewport and active mode, it provides access to:
 
-## Tips
+- the 3D arena
+- robot movement controls
+- Blockly programming
+- the command queue
+- run / pause / stop controls
+- lesson and scenario selection
+- arena editing tools
+- model-library placement
+- sensor/telemetry information
+- event feedback
 
-- The robot body turns **green** when it reaches a target and **red** when it hits an obstacle
-- The yellow protrusion on the robot shows which direction it is facing
-- Use the command queue to program multi-step paths before running them
+### `/lessons`
+
+Lesson browser and local progress view.
+
+## First robot program
+
+1. Open `/simulator`.
+2. Load a beginner free-play scenario.
+3. Add movement blocks in Blockly.
+4. Run the program.
+5. Watch the command queue and robot execute the same native command sequence.
+6. Observe whether the robot reaches the target, collides, or remains active.
+
+## Direct controls
+
+RoboWebSim supports direct movement controls alongside programmed execution. Current native robot actions include:
+
+- forward
+- backward
+- turn left
+- turn right
+- wait
+
+Keyboard and visible-control availability can vary with the active layout and focused UI area.
+
+## Persistence
+
+RoboWebSim stores supported progress, saved scenes, and saved command programs in browser `localStorage`.
+
+There is currently no account or cloud-sync requirement.
+
+## Deployment
+
+RoboWebSim is a standard Next.js application and can be deployed using a platform that supports its current Next.js version.
+
+The repository does not require environment variables for its current browser-first simulator workflow unless future features introduce them.
