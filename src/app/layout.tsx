@@ -2,8 +2,34 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Robot Simulator — Free Tool | RoboMarket.ae',
-  description: 'A free browser-based robotics simulator. Learn robot navigation, command queuing, and sensor-guided movement — no installation required. Brought to you by RoboMarket.ae.',
+  metadataBase: new URL('https://robo-web-sim.vercel.app'),
+  title: {
+    default: 'RoboWebSim | 3D Robotics Learning Simulator',
+    template: '%s | RoboWebSim',
+  },
+  description:
+    'Program a robot with Blockly, run command queues, edit 3D arenas, use virtual sensors and complete robotics lessons directly in the browser.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'RoboWebSim | 3D Robotics Learning Simulator',
+    description:
+      'Program a robot with Blockly, run command queues, edit 3D arenas, use virtual sensors and complete robotics lessons directly in the browser.',
+    url: '/',
+    siteName: 'RoboWebSim',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'RoboWebSim | 3D Robotics Learning Simulator',
+    description:
+      'Program a robot with Blockly, run command queues, edit 3D arenas, use virtual sensors and complete robotics lessons directly in the browser.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
