@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Suspense, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RobotControls from '@/components/RobotControls';
 import LessonsSidebar from '@/components/LessonsSidebar';
@@ -182,7 +182,7 @@ export default function SimulatorPage() {
     };
   }, []);
 
-  const startPanelResize = (side: 'left' | 'right') => (event: ReactPointerEvent<HTMLDivElement>) => {
+  const startPanelResize = useCallback((side: 'left' | 'right', event: ReactPointerEvent<HTMLDivElement>) => {
     const container = desktopLayoutRef.current;
     if (!container) return;
     const rect = container.getBoundingClientRect();
@@ -194,7 +194,7 @@ export default function SimulatorPage() {
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     event.preventDefault();
-  };
+  }, []);
 
   return (
     <div className="h-screen flex flex-col text-white overflow-hidden pb-[52px] lg:pb-0" style={{ background: 'var(--rm-bg)' }}>
@@ -267,7 +267,7 @@ export default function SimulatorPage() {
           role="separator"
           aria-label="Resize left panel"
           aria-orientation="vertical"
-          onPointerDown={startPanelResize('left')}
+          onPointerDown={(event) => startPanelResize('left', event)}
           className="hidden w-1.5 shrink-0 cursor-col-resize bg-slate-700/60 transition-colors hover:bg-blue-500/80 lg:block"
         />
 
@@ -292,7 +292,7 @@ export default function SimulatorPage() {
           role="separator"
           aria-label="Resize right panel"
           aria-orientation="vertical"
-          onPointerDown={startPanelResize('right')}
+          onPointerDown={(event) => startPanelResize('right', event)}
           className="hidden w-1.5 shrink-0 cursor-col-resize bg-slate-700/60 transition-colors hover:bg-blue-500/80 lg:block"
         />
 

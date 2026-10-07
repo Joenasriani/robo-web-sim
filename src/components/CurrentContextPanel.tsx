@@ -46,9 +46,12 @@ export default function CurrentContextPanel() {
   const [showRestored, setShowRestored] = useState(false);
   useEffect(() => {
     if (!isHydrated) return;
-    setShowRestored(true);
-    const t = setTimeout(() => setShowRestored(false), 3000);
-    return () => clearTimeout(t);
+    const showTimer = setTimeout(() => setShowRestored(true), 0);
+    const hideTimer = setTimeout(() => setShowRestored(false), 3000);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [isHydrated]);
 
   const isFreePlay = activeLesson === null;

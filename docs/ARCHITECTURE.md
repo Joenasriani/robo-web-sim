@@ -1,202 +1,345 @@
 # Architecture Overview
 
-## High-Level Design
+## High-level design
 
-RoboWebSim is a **browser-first** application. All simulation logic runs client-side — there is no backend or API. The app is a statically generated Next.js site.
+RoboWebSim is a browser-first robotics-learning application. Its current simulator workflow runs client-side and does not require a robotics backend, ROS runtime, or native simulator process.
 
-```
+```text
 Browser
-  └── Next.js App (App Router)
-       ├── Pages: /, /simulator, /lessons
-       ├── React Three Fiber (Three.js 3D scene)
-       ├── Zustand Store (global simulation state)
-       └── localStorage (lesson progress persistence)
+  └── Next.js App Router
+       ├── /                  project entry
+       ├── /simulator         3D simulator workspace
+       ├── /lessons           lesson browser
+       ├── React UI           controls, panels, Blockly, editing
+       ├── React Three Fiber  3D rendering
+       ├── Zustand            simulator state and execution
+       └── localStorage       supported local persistence
 ```
 
-## Directory Structure
+The architecture deliberately separates simulation logic from presentation so deterministic robot behavior can be tested independently of React and WebGL rendering.
 
+## Main architectural areas
+
+### Application routes
+
+`src/app/`
+
+Contains the App Router pages and global presentation layer.
+
+Primary routes:
+
+- `/`
+- `/simulator`
+- `/lessons`
+
+The simulator's WebGL-dependent scene is loaded client-side.
+
+### UI and interaction components
+
+`src/components/`
+
+This layer contains the simulator interface, including:
+
+- 3D arena rendering
+- robot controls
+- Blockly programming workspace
+- command queue UI
+- lesson/scenario controls
+- arena editing
+- model-library interaction
+- simulator settings
+- telemetry and virtual-sensor presentation
+- event feedback and logging
+- responsive/mobile interaction panels
+
+UI components read and update simulator state through the central controller rather than implementing separate robot-state logic.
+
+### Simulation core
+
+`src/sim/`
+
+The simulation core is the source of truth for deterministic robot behavior.
+
+It includes responsibilities such as:
+
+- robot state
+- motion
+- collision and target detection
+- command types and execution
+- virtual sensors
+- simulator lifecycle
+- arena state
+- validation
+- saved-program handling
+- saved-scene handling
+- local persistence
+- central Zustand coordination
+
+The exact file list can evolve, but simulation behavior should remain in this layer rather than being duplicated in UI components.
+
+### Lessons
+
+`src/lessons/`
+
+Lessons are data-driven and can define:
+
+- arena overrides
+- robot starting context
+- completion requirements
+
+Supported rule concepts include:
+
+- reaching a target
+- avoiding collisions
+- making at least one turn
+- completing the command queue
+
+Enabled completion rules use AND semantics.
+
+### Scenarios
+
+`src/scenarios/`
+
+Free-play scenarios define complete starting environments independently of lesson mode.
+
+Scenario data can include:
+
+- ID
+- title
+- description
+- difficulty
+- robot starting pose
+- full arena definition
+
+Loading a scenario resets relevant simulator context before activating the selected free-play environment.
+
+### Model library
+
+`src/models/`
+
+The model library stores curated model definitions and provenance metadata.
+
+A model definition can describe:
+
+- stable ID
+- display name
+- category
+- description
+- creator
+- source
+- license
+- preview image
+- render type
+- local GLB path
+- placement defaults
+
+Current render strategies:
+
+- `builtin` — Three.js primitive geometry
+- `glb` — local GLB/glTF assets
+
+Shipped GLB files live under `public/models/`.
+
+## State and execution controller
+
+The Zustand simulator controller coordinates application state such as:
+
+- robot pose and health
+- arena configuration
+- command queue
+- active command
+- execution lifecycle
+- lessons
+- scenarios
+- collisions and target results
+- virtual sensors
+- event log
+- editing state
+- selected/placed models
+- saved scenes
+- saved programs
+- local persistence
+
+Simulator lifecycle states are explicit:
+
+```text
+idle | running | paused | completed | blocked
 ```
-src/
-├── app/                  # Next.js pages (App Router)
-│   ├── globals.css       # Tailwind base + custom component classes
-│   ├── layout.tsx        # Root layout with metadata
-│   ├── page.tsx          # Landing page (/)
-│   ├── simulator/
-│   │   └── page.tsx      # Simulator page (/simulator)
-│   └── lessons/
-│       └── page.tsx      # Lessons page (/lessons)
-│
-├── components/           # React UI components
-│   ├── Arena3D.tsx       # Three.js 3D scene (Robot, Obstacles, Targets, Walls)
-│   ├── RobotControls.tsx # D-pad buttons + play/pause/stop
-│   ├── CommandQueue.tsx  # Command builder + queue list + run/clear controls
-│   ├── LessonsSidebar.tsx # Collapsible lesson list with status + completion rules
-│   ├── ScenarioSelector.tsx # Free-play scenario chooser with metadata panel
-│   ├── TelemetryPanel.tsx # Numeric readouts + sim state + mode + scenario/lesson status
-│   ├── EventLog.tsx      # Chronological event ring-buffer panel
-│   ├── SimFeedback.tsx   # Overlay feedback toast
-│   └── SimSettings.tsx   # Speed / step sliders
-│
-├── sim/                  # Simulation core (pure logic, no UI)
-│   ├── robotState.ts     # RobotState type + INITIAL_ROBOT_STATE constant
-│   ├── arenaConfig.ts    # Obstacle/Target/ArenaConfig/ArenaOverrides types + DEFAULT_ARENA
-│   ├── motionSystem.ts   # moveForward, moveBackward, turnLeft, turnRight
-│   ├── collisionHelpers.ts # AABB obstacle collision, radius target detection, wall check
-│   ├── commandExecution.ts # CommandType enum + Command type + createCommand factory
-│   └── robotController.ts  # Zustand store (SimulatorStore) — wires everything together
-│
-├── lessons/
-│   └── lessonData.ts     # LESSONS array with CompletionRules + ArenaOverrides per lesson
-│
-├── scenarios/            # Arena loader + importable example scenarios
-│   ├── arenaLoader.ts    # mergeArena(base, overrides) + arenaForLesson() helper
-│   ├── index.ts          # Barrel export for all scenarios + FREE_PLAY_SCENARIOS registry
-│   └── examples/
-│       ├── defaultArenaScenario.ts  # Beginner: default sandbox arena
-│       ├── straightLineScenario.ts  # Beginner: clear straight path to target
-│       └── mazeLiteScenario.ts      # Intermediate: three-obstacle corridor
-│
-└── configs/
-    └── simulatorConfig.ts # Constants (move step, turn step, camera position, delay)
+
+Lesson state is tracked independently:
+
+```text
+not_started | in_progress | completed | failed
 ```
 
-## Core Modules
+This prevents general execution state and lesson progress from being conflated.
 
-### `robotState.ts`
-Defines the shape of the robot's runtime state:
-- `position`: 3D coordinates `{ x, y, z }`
-- `rotation`: Y-axis rotation in radians
-- `isMoving`, `isRunningQueue`, `isPaused`: control flags
-- `health`: `'ok' | 'hit_obstacle' | 'reached_target'`
+## Robot motion
 
-### `arenaConfig.ts`
-Static configuration for the simulation world:
-- `DEFAULT_ARENA`: two red obstacles, one green circular target, 10×10 arena
-- `ArenaOverrides`: partial override type (size, obstacles, targets, colors)
+Robot motion is deterministic and step-based.
 
-### `scenarios/arenaLoader.ts`
-Data-driven arena assembly:
-- `mergeArena(base, overrides)` — shallow-merges overrides on top of a base `ArenaConfig`
-- `arenaForLesson(lesson)` — convenience wrapper: `mergeArena(DEFAULT_ARENA, lesson?.arenaOverrides)`
+Current defaults:
 
-### `lessons/lessonData.ts`
-Each `Lesson` now carries:
-- `arenaOverrides?: ArenaOverrides` — per-lesson obstacle/target layout
-- `completionRules?: CompletionRules` — explicit success conditions (AND semantics: **all** enabled flags must pass):
-  - `reachTarget` — robot must reach the target zone
-  - `avoidCollision` — robot must not hit any obstacle
-  - `makeAtLeastOneTurn` — robot must turn at least once
-  - `completeQueue` — command queue must run to completion
+- translation: `0.5` world units per step
+- rotation: `π / 8` radians per turn
 
-### `motionSystem.ts`
-Pure functions that take `RobotState` and return a partial state diff:
-- Each step moves `MOVE_STEP = 0.5` units in the facing direction
-- Each turn rotates `TURN_STEP = π/8` radians
+Supported native commands:
 
-### `collisionHelpers.ts`
-- **AABB** (axis-aligned bounding box) for obstacle collision
-- **Radius check** for target detection
-- **Wall boundary check** to prevent leaving the arena
+- `forward`
+- `backward`
+- `left`
+- `right`
+- `wait`
 
-### `commandExecution.ts`
-Defines `CommandType` and the `Command` interface. `createCommand(type)` generates a command with a unique id and display label.
+The same starting robot state, arena state, and command sequence should produce the same result.
 
-### `robotController.ts` (Zustand store)
-The single source of truth for all simulator state. New in PR #4:
-- `lessonStatus: LessonStatus` — `'not_started' | 'in_progress' | 'completed' | 'failed'`
-- `hasTurned: boolean` — tracks whether the robot has turned (feeds `makeAtLeastOneTurn` rule)
-- `queueEverCompleted: boolean` — tracks whether the queue ran to completion (feeds `completeQueue` rule)
-- `setActiveLesson(id)` — now also applies the lesson's arena overrides and resets the robot pose
-- `restartLesson()` — restores lesson-specific arena + robot pose + clears completion-rule trackers
-- Auto-completes lessons when all `CompletionRules` are satisfied
-- Auto-fails lessons when `avoidCollision` is required and a collision occurs
+## Command execution
 
-Added in PR #5:
-- `activeScenarioId: string | null` — ID of the active free-play scenario (`null` when a lesson is running)
-- `loadScenario(id)` — loads a free-play scenario by ID: resets arena, robot pose, queue, lesson state, and logs an event
+Robot programs use an ordered native command queue.
 
-## Lesson Status Lifecycle
+Execution supports:
 
+- run
+- pause
+- stop
+- restart
+- replay from start
+- configurable speed
+- terminal collision/target handling
+
+The controller tracks current execution and prevents stale asynchronous runs from continuing after interruption or restart.
+
+## Blockly integration
+
+Blockly is an authoring interface over the simulator's native command model.
+
+Current mapping:
+
+| Blockly block | Native command |
+| --- | --- |
+| `robot_forward` | `forward` |
+| `robot_backward` | `backward` |
+| `robot_turn_left` | `left` |
+| `robot_turn_right` | `right` |
+| `robot_wait` | `wait` |
+
+Unsupported block types are rejected by the conversion layer.
+
+The visible command queue and Blockly workspace are therefore not separate execution systems: both resolve to the simulator's native command representation.
+
+## Collision and target detection
+
+Collision and target detection are handled in simulation logic rather than delegated to a rigid-body physics engine.
+
+Current behavior includes:
+
+- obstacle collision checks
+- rotated-obstacle handling
+- arena-boundary detection
+- target-radius detection
+
+Robot health states include:
+
+- `ok`
+- `hit_obstacle`
+- `reached_target`
+
+## Virtual sensors
+
+Virtual sensors are derived from robot pose and arena geometry.
+
+Current sensor concepts include:
+
+- front obstacle distance
+- left obstacle detection
+- right obstacle detection
+- nearest target distance
+
+These are deterministic educational sensor models. They are not intended to reproduce calibrated hardware noise or research-grade physical sensing.
+
+## 3D rendering
+
+RoboWebSim renders the arena with Three.js through React Three Fiber and helpers from `@react-three/drei`.
+
+The scene supports:
+
+- arena floor and boundaries
+- robot representation
+- obstacles
+- targets
+- built-in primitives
+- local GLB assets
+- orbit/navigation controls
+- editable transforms
+
+Robot state is sourced from the simulator controller and reflected into the 3D scene.
+
+## Arena editing
+
+Free-play editing is intentionally separated from controlled lesson layouts.
+
+Current editing concepts include:
+
+- object selection
+- movement
+- obstacle rotation
+- duplication
+- deletion
+- adding obstacles
+- model-library placement
+- scenario reset
+
+## Persistence
+
+RoboWebSim is local-first.
+
+Browser storage is currently used for supported state such as:
+
+- lesson progress
+- active mode/context
+- saved scenes
+- saved command programs
+
+Saved scenes preserve arena configuration and relevant model references/transforms.
+
+Saved programs preserve validated native command sequences.
+
+There is currently no cloud synchronization requirement for the simulator.
+
+## Testing boundary
+
+The test suite covers simulation and UI behavior including areas such as:
+
+- store transitions
+- motion and command execution
+- terminal states
+- Blockly conversion/workspace behavior
+- saved programs and scenes
+- model-library behavior
+- arena editing
+- responsive/mobile panel behavior
+- simulator controls
+
+Repository CI is intended to run:
+
+```bash
+npm run lint
+npm test -- --runInBand
+npm run build
 ```
-setActiveLesson(id)
-       │
-       ▼
- lessonStatus = 'not_started'
-       │
-  (first action)
-       ▼
- lessonStatus = 'in_progress'
-       │
-  ┌────┴─────────────┐
-  │ avoidCollision   │ all rules satisfied
-  │ + collision      │
-  ▼                  ▼
-'failed'         'completed'
-```
 
-## Data Flow
+## Scope boundary
 
-```
-User Input (key / button)
-       │
-       ▼
-useSimulatorStore action
-  (moveForward, addCommand, loadScenario, etc.)
-       │
-       ▼
-Zustand State Update
-  + lesson-rule evaluation
-  + arena = mergeArena(DEFAULT_ARENA, lesson.arenaOverrides)   [lesson mode]
-  + arena = scenario.arena                                     [free-play mode]
-       │
-       ▼
-React re-render
-  ├── Arena3D (useFrame reads robot state each frame)
-  ├── RobotControls (reads robot.health, robot.isRunningQueue)
-  ├── CommandQueue (reads commandQueue, currentCommandIndex)
-  ├── ScenarioSelector (reads activeScenarioId, activeLesson; calls loadScenario)
-  ├── LessonsSidebar (reads completedLessons, lessonStatus, completionRules)
-  └── TelemetryPanel (reads simState, activeScenarioId, activeLesson, lessonStatus)
-```
+RoboWebSim is not currently a replacement for a research or industrial robotics simulator.
 
-## 3D Rendering
+The architecture does not claim:
 
-`Arena3D.tsx` uses `@react-three/fiber` (`Canvas`, `useFrame`) and `@react-three/drei` (`Box`, `Cylinder`, `Grid`, `OrbitControls`).
+- continuous rigid-body physics
+- validated dynamics
+- ROS interoperability
+- Webots compatibility
+- hardware-in-the-loop control
+- physical robot control
+- realistic sensor noise
 
-The `Robot` component reads position/rotation from Zustand on every frame via `useFrame`, enabling smooth visual updates without causing unnecessary React re-renders.
-
-Arena3D is **dynamically imported** in the simulator page with `ssr: false` to prevent Three.js from running on the server during static generation.
-
-## State Persistence
-
-Lesson completion is stored in `localStorage` under the key `robo-web-sim-completed-lessons`. All localStorage access is guarded with `typeof window !== 'undefined'` for SSR compatibility.
-
-## Scenario Examples
-
-Three importable free-play scenarios live in `src/scenarios/examples/` and are registered in `FREE_PLAY_SCENARIOS`:
-
-| Scenario | ID | Difficulty | Description |
-|----------|----|------------|-------------|
-| `defaultArenaScenario` | `default-arena` | beginner | Default sandbox: two obstacles, one target |
-| `straightLineScenario` | `example-straight-line` | beginner | Clear path; press Forward to win |
-| `mazeLiteScenario` | `example-maze-lite` | intermediate | Three-obstacle corridor requiring turns |
-
-Each `ScenarioExample` carries: `id`, `title`, `description`, `difficulty`, `startPose`, and a full `arena`.
-`loadScenario(id)` in the Zustand store switches the active arena + robot pose, clears lesson state, and logs an event.
-
-The `ScenarioSelector` component (left sidebar) exposes all `FREE_PLAY_SCENARIOS` with:
-- Metadata preview: description, target count, obstacle count, arena size, difficulty badge
-- A "Load Scenario" button that calls `loadScenario`
-- Clear visual distinction between **Free Play** mode (scenario active) and **Lesson** mode
-
-## Tech Stack Summary
-
-| Technology | Role |
-|------------|------|
-| Next.js 16 (App Router) | Routing, SSG, React server/client components |
-| TypeScript | Type safety across all modules |
-| Tailwind CSS | Utility-first styling |
-| Three.js | 3D rendering engine |
-| @react-three/fiber | React bindings for Three.js |
-| @react-three/drei | Three.js helpers (Box, Grid, OrbitControls) |
-| Zustand | Global simulation state management |
+Those boundaries are part of the product definition, not undocumented omissions.

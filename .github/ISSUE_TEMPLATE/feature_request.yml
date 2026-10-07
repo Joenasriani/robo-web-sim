@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a focused RoboWebSim improvement
+title: "[Feature]: "
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or learning need
+      description: What user or developer problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the smallest useful implementation.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Lessons
+        - Scenarios
+        - Blockly programming
+        - Virtual sensors
+        - Arena / model library
+        - Simulator logic
+        - Mobile / accessibility
+        - Testing
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and tradeoffs
+      description: Note anything that should remain unchanged or any known costs.
