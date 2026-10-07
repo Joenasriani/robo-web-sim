@@ -159,7 +159,7 @@ export const LESSONS: Lesson[] = [
     title: 'Lesson 6: Avoid Obstacles Without Hitting Any',
     objective: 'Navigate a multi-obstacle arena to the target — without touching a single obstacle.',
     steps: [
-      { instruction: 'An obstacle blocks the path directly ahead. You cannot go straight — you must detour.' },
+      { instruction: 'Move Forward 2 times, then prepare to detour around the obstacle blocking the direct route.' },
       { instruction: 'Turn Right 4 times to face West. Move Forward 4 times to clear the obstacle.' },
       { instruction: 'Turn Left 4 times to face North. Move Forward 5 times to reach the target.' },
     ],
