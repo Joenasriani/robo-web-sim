@@ -4,12 +4,12 @@
 
 **Browser-based 3D robotics programming and navigation simulator.**
 
-RoboWebSim lets learners and developers program a robot, run ordered command sequences, build Blockly programs, inspect virtual sensors, edit 3D arenas, and work through guided lessons directly in the browser.
+RoboWebSim runs robot programs directly in the browser using Blockly, command queues, virtual sensors, editable 3D arenas, lessons and free play scenarios.
 
 **Live simulator:** https://robo-web-sim.vercel.app  
 **Public game:** https://joenasr.itch.io/robosim
 
-> RoboWebSim is intentionally a browser-first educational simulator. It does not require ROS, a robotics backend, or a native simulator runtime.
+> RoboWebSim runs entirely in the browser. It does not require ROS, a robotics backend or a native simulator.
 
 ## What you can do
 
@@ -17,10 +17,10 @@ RoboWebSim lets learners and developers program a robot, run ordered command seq
 - build robot programs with Blockly
 - execute ordered command queues with run, pause, stop, restart, and replay
 - work through data-driven lessons with explicit completion rules
-- load free-play scenarios
+- load free play scenarios
 - inspect deterministic virtual sensor readings
 - edit arena obstacles and targets
-- place built-in and local GLB model-library assets
+- place built in objects and local GLB assets
 - save and restore arena scenes locally
 - save, load, rename, delete, and import command programs
 - use the simulator on desktop and mobile layouts
@@ -63,10 +63,10 @@ npm run build
 
 ## First robot program
 
-A simple first success path is:
+Try this first:
 
 1. Open `/simulator`.
-2. Load a beginner free-play scenario.
+2. Load a beginner free play scenario.
 3. Add robot movement blocks in the Blockly program area.
 4. Run the program.
 5. Observe the command queue, robot movement, sensor state, and target/collision result.
@@ -104,7 +104,7 @@ Core stack:
 - browser `localStorage`
 - Jest / jsdom
 
-The application is organized around three primary layers.
+The code is split into three main parts.
 
 ### Simulation core
 
@@ -120,7 +120,7 @@ Simulation logic is kept separate from the React UI so deterministic state trans
 
 The arena is rendered with Three.js through React Three Fiber. It supports arena boundaries, robot rendering, obstacles, targets, built-in geometry, local GLB assets, orbit/navigation controls, and editable transforms.
 
-WebGL-dependent scene code is loaded client-side.
+WebGL scene code loads in the browser.
 
 ### State and execution controller
 
@@ -155,7 +155,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the current architecture in
 
 ## Robot motion model
 
-Robot movement is deterministic and step-based.
+Robot movement is deterministic and uses fixed steps.
 
 Default translation step:
 
@@ -200,7 +200,7 @@ Current behavior includes:
 - obstacle collision tests
 - rotated-obstacle handling
 - arena boundary detection
-- target-radius detection
+- target distance detection
 
 Robot health states:
 
@@ -240,9 +240,9 @@ Asset source and license metadata is stored with the model definitions. The gene
 
 ## Saved scenes and programs
 
-RoboWebSim is local-first.
+Saved scenes and programs are stored in the browser.
 
-Saved scenes preserve complete arena configurations, including model IDs, transforms, local GLB references, and targets.
+Saved scenes preserve complete arena configurations, including model IDs, transforms, local GLB references and targets.
 
 Saved programs preserve validated native command sequences.
 
@@ -256,7 +256,7 @@ There is currently no cloud synchronization.
 
 ## Lessons and scenarios
 
-Lessons are data-driven and can define:
+Each lesson can define:
 
 - arena overrides
 - starting robot context
@@ -271,7 +271,7 @@ Completion rules can require combinations of:
 
 Enabled rules use AND semantics.
 
-Free-play scenarios define complete starting environments independently of lesson mode.
+Free play scenarios define complete starting environments independently of lesson mode.
 
 ## Testing
 
@@ -298,7 +298,7 @@ The CI workflow also runs lint, tests, and a production build for pull requests 
 
 ## Scope and simulation model
 
-RoboWebSim is a robotics-learning and interaction simulator focused on browser accessibility, robot-command logic, navigation, environment authoring, and educational programming.
+RoboWebSim covers robot commands, navigation, arena editing, sensors and programming exercises in a browser based 3D simulator.
 
 The current implementation does **not** claim to provide:
 
@@ -306,7 +306,7 @@ The current implementation does **not** claim to provide:
 - validated robotics dynamics
 - ROS interoperability
 - Webots compatibility
-- hardware-in-the-loop control
+- hardware in the loop control
 - physical robot control
 - realistic sensor noise
 - research-grade robot simulation
@@ -331,7 +331,7 @@ Procedurally generated model assets may carry separate CC0 declarations as docum
 
 ## Project
 
-RoboSim / RoboWebSim is also used as an interactive robotics-learning module within RoboMarket.
+RoboSim / RoboWebSim is also used as an interactive robotics learning module within RoboMarket.
 
 - RoboMarket: https://robomarket.ae/
 - Joe Nasr: https://joe-nasr-signals.vercel.app/
