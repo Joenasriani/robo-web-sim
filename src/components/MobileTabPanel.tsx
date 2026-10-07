@@ -107,9 +107,9 @@ export default function MobileTabPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('program');
 
   useEffect(() => {
-    if (isEditMode) {
-      setActiveTab('arena');
-    }
+    if (!isEditMode) return;
+    const timer = setTimeout(() => setActiveTab('arena'), 0);
+    return () => clearTimeout(timer);
   }, [isEditMode]);
 
   useEffect(() => {
