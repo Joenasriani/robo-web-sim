@@ -19,13 +19,13 @@ export default function HomePage() {
           </svg>
         </div>
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4 bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(to right, #1d6ff4, #38bdf8)' }}>
-          Robot Simulator
+          RoboWebSim
         </h1>
         <p className="text-xl max-w-2xl mb-3" style={{ color: 'var(--rm-text)' }}>
-          A free learning tool by RoboMarket.ae
+          3D Robotics Learning Simulator
         </p>
         <p className="max-w-xl mb-10" style={{ color: 'var(--rm-text-muted)' }}>
-          Control a robot in a 3D arena, complete guided lessons, and learn the fundamentals of autonomous navigation — all directly in your browser, no installation required.
+          Program a robot with Blockly, run command queues, edit 3D arenas, use virtual sensors and complete robotics lessons directly in the browser.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4">
