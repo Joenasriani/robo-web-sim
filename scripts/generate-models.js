@@ -6,6 +6,7 @@
 
 'use strict';
 
+/* eslint-disable @typescript-eslint/no-require-imports -- standalone Node generator intentionally uses CommonJS */
 const fs = require('fs');
 const path = require('path');
 
