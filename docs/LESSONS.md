@@ -1,70 +1,107 @@
 # Lessons Reference
 
-## Overview
+RoboWebSim includes eight guided lessons. They are available from the simulator and from the `/lessons` page.
 
-RoboWebSim includes 3 beginner lessons that teach robot navigation fundamentals. Lessons are accessible via:
-- The **left sidebar** on the `/simulator` page
-- The standalone `/lessons` page
+Lesson progress is stored in browser `localStorage`.
 
-Lesson completion state is stored in `localStorage` (key: `robo-web-sim-completed-lessons`).
+## Lesson 1: Your First Move
 
----
+Move forward to reach the target.
 
-## Lesson 1: Move Forward to a Target
+Completion:
+- reach the target
 
-**Objective**: Move the robot forward until it reaches the green target marker.
+## Lesson 2: Turn and Move
 
-**Steps**:
-1. Press the **Forward** button or `↑` arrow key to move the robot
-2. Keep pressing Forward until the robot reaches the green circle
-3. Watch the status bar — it will tell you when you reach the target
+Turn toward the target, then move to it.
 
-**Success condition**: Robot reaches the green target marker
+Completion:
+- reach the target
+- turn at least once
 
-**Hint**: The target is ahead and to the right. Move forward several steps then turn right.
+## Lesson 3: Navigate Around an Obstacle
 
----
+Reach the target without hitting an obstacle.
 
-## Lesson 2: Turn and Reach a Target
+Completion:
+- reach the target
+- avoid collisions
 
-**Objective**: Use turning controls to orient the robot, then move it to the target.
+## Lesson 4: Build and Run a Command Queue
 
-**Steps**:
-1. Press **Turn Right** or **Turn Left** to rotate the robot
-2. Face the robot toward the green target marker
-3. Press **Forward** to drive toward the target
+Create a route in the command queue and let the queue finish.
 
-**Success condition**: Robot reaches the target after making at least one turn
+Completion:
+- complete the command queue
+- reach the target
 
-**Hint**: Try turning right first, then move forward several steps.
+## Lesson 5: Queue a Turn and Move Route
 
----
+Build a queued route that combines turns and forward movement.
 
-## Lesson 3: Avoid an Obstacle and Reach a Goal
+Completion:
+- complete the command queue
+- reach the target
+- turn at least once
 
-**Objective**: Navigate around the red obstacles and reach the green target.
+## Lesson 6: Avoid Obstacles Without Hitting Any
 
-**Steps**:
-1. Move forward carefully. Red boxes are obstacles — hitting them counts as a collision
-2. When an obstacle is in your path, turn left or right to go around it
-3. After clearing the obstacle, straighten your path and head for the target
+Route:
 
-**Success condition**: Robot reaches the target without hitting any obstacles
+1. Forward ×2
+2. Turn Right ×4
+3. Forward ×4
+4. Turn Left ×4
+5. Forward ×5
 
-**Hint**: Try moving forward a couple steps, turning left to go around the red box, then turning right and heading for the target.
+Completion:
+- reach the target
+- avoid collisions
+- turn at least once
 
----
+## Lesson 7: Read the Telemetry Sensors
 
-## Completion Mechanics
+Use front obstacle distance and target distance to guide the robot.
 
-- When the robot's position overlaps a target (within `target.radius + 0.3` units), `robot.health` becomes `'reached_target'`
-- This causes the robot to turn **green** in the 3D view and shows "🎯 Target reached!" in the status bar
-- On the lessons sidebar and `/lessons` page, a **"Mark as Complete"** button appears while `health === 'reached_target'`
-- Clicking it stores the lesson ID in `completedLessons` and persists to localStorage
-- A **Reset progress** button on `/lessons` clears all saved progress
+Completion:
+- reach the target
+- avoid collisions
 
-## Adding New Lessons
+## Lesson 8: Full Autonomous Program
 
-1. Add a new entry to the `LESSONS` array in `src/lessons/lessonData.ts`
-2. Each lesson needs: `id`, `title`, `objective`, `steps[]`, `successCondition`, `hint`
-3. No changes needed elsewhere — the sidebar and lessons page render all lessons dynamically
+Build and run the full queued route without stopping it early.
+
+Route:
+
+1. Turn Left ×4
+2. Forward ×4
+3. Turn Right ×4
+4. Forward ×4
+
+Completion:
+- complete the command queue
+- reach the target
+- turn at least once
+
+## Lesson data
+
+Lessons are defined in `src/lessons/lessonData.ts`.
+
+Each lesson can define:
+- `id`
+- `title`
+- `objective`
+- `steps`
+- `successCondition`
+- `hint`
+- `startPose`
+- `arenaOverrides`
+- `completionRules`
+
+Enabled completion rules use AND semantics.
+
+Supported rules:
+- `reachTarget`
+- `avoidCollision`
+- `makeAtLeastOneTurn`
+- `completeQueue`
