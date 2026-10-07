@@ -1,5 +1,9 @@
 # RoboWebSim
 
+[English](README.md) | [العربية](docs/i18n/README.ar.md) | [Français](docs/i18n/README.fr.md) | [Español](docs/i18n/README.es.md) | [Português (Brasil)](docs/i18n/README.pt-BR.md) | [简体中文](docs/i18n/README.zh-CN.md) | [日本語](docs/i18n/README.ja.md) | [한국어](docs/i18n/README.ko.md)
+
+> English is the canonical README. Translations may lag slightly behind the latest release.
+
 **Browser-based 3D robotics programming and navigation simulator.**
 
 RoboWebSim lets learners and developers program a robot, run ordered command sequences, build Blockly programs, inspect virtual sensors, edit 3D arenas, and work through guided lessons directly in the browser.
