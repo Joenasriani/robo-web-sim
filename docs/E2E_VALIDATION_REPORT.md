@@ -1,5 +1,7 @@
 # E2E Testing & Validation Report
 
+> **Historical report:** This document records the validation state on 2026-04-24. For the current branch, the latest GitHub CI result is authoritative. The open-source-readiness PR now passes the production dependency audit, lint, tests, and production build.
+
 Date: 2026-04-24 (UTC)
 Scope: robo-web-sim full application smoke + regression validation
 Tester: Codex agent
