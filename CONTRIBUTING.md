@@ -2,7 +2,13 @@
 
 Thanks for considering a contribution.
 
-RoboWebSim is a browser-first robotics learning simulator. Contributions should preserve its current scope: deterministic robot-command logic, browser-based 3D interaction, Blockly programming, lessons, scenarios, arena editing, virtual sensors, and local-first persistence.
+## Contribution direction
+
+Ideas are welcome when they can produce a real improvement, experiment, feature, design, tool, performance gain, accessibility gain or useful extension.
+
+RoboWebSim as it exists today is the starting point, not the ceiling.
+
+Contributions can improve existing systems or explore new directions. They should be clear about what they change, why the change is useful and how it was tested.
 
 ## Setup
 
